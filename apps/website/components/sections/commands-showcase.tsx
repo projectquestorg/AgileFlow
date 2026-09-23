@@ -3,21 +3,21 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useId, useMemo, useState } from 'react';
 import { Container } from '@/components/ui/container';
-import type { LandingContent } from '@/lib/landing-content';
+import type { ShowcaseContent } from '@/lib/landing-content';
 import { cn } from '@/lib/cn';
 import { MOTION } from '@/lib/motion';
 import { track } from '@/lib/track';
 
-type Command = LandingContent['commands']['categories'][number]['commands'][number];
+type Command = ShowcaseContent['categories'][number]['commands'][number];
 
-export function CommandsShowcase({ content }: { content: LandingContent['commands'] }) {
+export function CommandsShowcase({ content }: { content: ShowcaseContent }) {
   const prefersReducedMotion = useReducedMotion();
   const baseId = useId();
 
   const firstCategory = content.categories[0];
   const firstCommand = firstCategory?.commands[0];
 
-  const [openId, setOpenId] = useState<string>(firstCategory?.id ?? 'core');
+  const [openId, setOpenId] = useState<string>(firstCategory?.id ?? '');
   const [selected, setSelected] = useState<{ categoryId: string; command: Command } | null>(
     firstCategory && firstCommand ? { categoryId: firstCategory.id, command: firstCommand } : null,
   );
@@ -25,14 +25,14 @@ export function CommandsShowcase({ content }: { content: LandingContent['command
   const selectedMeta = useMemo(() => {
     if (!selected) return null;
     return {
-      label: `/agileflow:${selected.command.name}`,
+      label: `${content.prefix}${selected.command.name}`,
       description: selected.command.description,
       exampleHtml: selected.command.exampleHtml,
     };
-  }, [selected]);
+  }, [selected, content.prefix]);
 
   return (
-    <section id="commands" className="scroll-mt-24 py-20 sm:py-24 md:py-28">
+    <section id={content.id} className="scroll-mt-24 py-20 sm:py-24 md:py-28">
       <Container>
         <div className="grid gap-10">
           <div className="max-w-[70ch]">
@@ -46,7 +46,7 @@ export function CommandsShowcase({ content }: { content: LandingContent['command
             <div className="lg:col-span-5">
               <div className="surface rounded-card shadow-tile">
                 <div className="border-b border-[var(--border-subtle)] px-5 py-4">
-                  <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)]">Categories</div>
+                  <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)]">{content.listLabel}</div>
                 </div>
                 <div className="divide-y divide-[var(--border-subtle)]">
                   {content.categories.map((category) => {
@@ -61,7 +61,7 @@ export function CommandsShowcase({ content }: { content: LandingContent['command
                           aria-controls={panelId}
                           onClick={() => {
                             setOpenId((current) => (current === category.id ? '' : category.id));
-                            track('commands_category_toggle', { id: category.id, open: !isOpen });
+                            track('commands_category_toggle', { section: content.id, id: category.id, open: !isOpen });
                           }}
                         >
                           <span className="text-sm font-semibold tracking-[-0.01em] text-[var(--text-primary)]">
@@ -110,10 +110,10 @@ export function CommandsShowcase({ content }: { content: LandingContent['command
                                       )}
                                       onClick={() => {
                                         setSelected({ categoryId: category.id, command: cmd });
-                                        track('command_select', { categoryId: category.id, command: cmd.name });
+                                        track('command_select', { section: content.id, categoryId: category.id, command: cmd.name });
                                       }}
                                     >
-                                      /agileflow:{cmd.name}
+                                      {`${content.prefix}${cmd.name}`}
                                     </button>
                                   );
                                 })}
@@ -131,7 +131,7 @@ export function CommandsShowcase({ content }: { content: LandingContent['command
             <div className="lg:col-span-7">
               <div className="surface rounded-card shadow-tile">
                 <div className="border-b border-[var(--border-subtle)] px-5 py-4">
-                  <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)]">Command</div>
+                  <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)]">{content.detailLabel}</div>
                 </div>
                 <div className="p-5">
                   {selectedMeta ? (
@@ -147,7 +147,7 @@ export function CommandsShowcase({ content }: { content: LandingContent['command
                       )}
                     </div>
                   ) : (
-                    <p className="text-sm text-[var(--text-secondary)]">Select a command to view details.</p>
+                    <p className="text-sm text-[var(--text-secondary)]">Select an item to view details.</p>
                   )}
                 </div>
               </div>

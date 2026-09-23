@@ -3,18 +3,13 @@
 import Image from 'next/image';
 import { Terminal, TypingAnimation, AnimatedSpan } from './terminal';
 
-interface AgileFlowTerminalProps {
-  version: string;
-  commands: number;
-  agents: number;
-  skills: number | string;
-}
+const PROMPT = <span className="text-[#4ec9b0]">user@DevMachine</span>;
 
-export function AgileFlowTerminal({ version, commands, agents, skills }: AgileFlowTerminalProps) {
+export function AgileFlowTerminal() {
   return (
     <Terminal className="font-mono" sequence={true} startOnView={false}>
       <AnimatedSpan>
-        <span className="text-[#4ec9b0]">user@DevMachine</span> my-project % npx agileflow setup
+        {PROMPT} ~ % npm install -g agileflow
       </AnimatedSpan>
       <AnimatedSpan>
         <Image
@@ -26,76 +21,35 @@ export function AgileFlowTerminal({ version, commands, agents, skills }: AgileFl
           style={{ imageRendering: 'crisp-edges' }}
         />
       </AnimatedSpan>
-      <AnimatedSpan className="text-gray-500">{`  AgileFlow v${version} - AI-Driven Agile Development`}</AnimatedSpan>
+      <AnimatedSpan className="text-gray-500">  Portable workflows for coding agents</AnimatedSpan>
       <AnimatedSpan> </AnimatedSpan>
-      <AnimatedSpan className="text-[#4ec9b0]">
-        ? Where would you like to install AgileFlow? <TypingAnimation duration={100} className="text-gray-400">.</TypingAnimation>
+      <AnimatedSpan>
+        {PROMPT} my-project % <TypingAnimation duration={60}>agileflow init</TypingAnimation>
       </AnimatedSpan>
-      <AnimatedSpan className="text-[#4ec9b0]">
-        ? Select your IDE(s): <TypingAnimation duration={80} className="text-gray-400">Claude Code</TypingAnimation>
+      <AnimatedSpan className="text-[#6a9955]">  created agileflow.yaml</AnimatedSpan>
+      <AnimatedSpan className="text-[#6a9955]">  created agileflow.lock</AnimatedSpan>
+      <AnimatedSpan> </AnimatedSpan>
+      <AnimatedSpan>
+        {PROMPT} my-project % <TypingAnimation duration={60}>agileflow add diagnosing-bugs</TypingAnimation>
       </AnimatedSpan>
-      <AnimatedSpan className="text-[#4ec9b0]">
-        ? What should agents call you? <TypingAnimation duration={90} className="text-gray-400">Developer</TypingAnimation>
+      <AnimatedSpan className="text-gray-400">  Skill:    diagnosing-bugs</AnimatedSpan>
+      <AnimatedSpan className="text-gray-400">  Source:   @agileflow/diagnosing-bugs</AnimatedSpan>
+      <AnimatedSpan className="text-gray-400">  Contains: SKILL.md, 1 reference file, 0 executable scripts</AnimatedSpan>
+      <AnimatedSpan className="text-[#6a9955]">  installed .agents/skills/diagnosing-bugs</AnimatedSpan>
+      <AnimatedSpan className="text-[#6a9955]">  linked    .claude/skills/diagnosing-bugs</AnimatedSpan>
+      <AnimatedSpan> </AnimatedSpan>
+      <AnimatedSpan>
+        {PROMPT} my-project % <TypingAnimation duration={60}>agileflow list</TypingAnimation>
       </AnimatedSpan>
-      <AnimatedSpan className="text-[#4ec9b0]">
-        ? AgileFlow installation folder name: <TypingAnimation duration={80} className="text-gray-400">.agileflow</TypingAnimation>
-      </AnimatedSpan>
-      <AnimatedSpan className="text-[#4ec9b0]">
-        ? Documentation folder name: <TypingAnimation duration={100} className="text-gray-400">docs</TypingAnimation>
-      </AnimatedSpan>
+      <AnimatedSpan className="text-[#e8683a] font-bold">Providers</AnimatedSpan>
+      <AnimatedSpan className="text-gray-400">  Codex       native .agents/skills</AnimatedSpan>
+      <AnimatedSpan className="text-gray-400">  Cursor      native .agents/skills</AnimatedSpan>
+      <AnimatedSpan className="text-gray-400">  OpenCode    native .agents/skills</AnimatedSpan>
+      <AnimatedSpan className="text-gray-400">  Gemini      native .agents/skills</AnimatedSpan>
+      <AnimatedSpan className="text-gray-400">  Claude      linked</AnimatedSpan>
       <AnimatedSpan> </AnimatedSpan>
-      <AnimatedSpan className="text-[#e8683a] font-bold">Setting Up AgileFlow</AnimatedSpan>
-      <AnimatedSpan className="text-gray-500">Target: /home/user/projects/my-project</AnimatedSpan>
-      <AnimatedSpan> </AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">✔ Core installation complete</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">✓ Installed {agents} agents</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">✓ Installed {commands} commands</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">✓ {typeof skills === 'string' ? `${skills} skill generator` : `Installed ${skills} skills`}</AnimatedSpan>
-      <AnimatedSpan> </AnimatedSpan>
-      <AnimatedSpan className="text-[#e8683a] font-bold">Configuring IDEs</AnimatedSpan>
-      <AnimatedSpan> </AnimatedSpan>
-      <AnimatedSpan>  <TypingAnimation duration={60}>Setting up Claude Code...</TypingAnimation></AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Claude Code configured:</AnimatedSpan>
-      <AnimatedSpan className="text-gray-400">    - {commands} commands installed</AnimatedSpan>
-      <AnimatedSpan className="text-gray-400">    - {agents} agents installed</AnimatedSpan>
-      <AnimatedSpan className="text-gray-400">    - Path: .claude/commands/agileflow</AnimatedSpan>
-      <AnimatedSpan> </AnimatedSpan>
-      <AnimatedSpan className="text-[#e8683a] font-bold">Creating Documentation Structure</AnimatedSpan>
-      <AnimatedSpan className="text-gray-500">Folder: docs/</AnimatedSpan>
-      <AnimatedSpan> </AnimatedSpan>
-      <AnimatedSpan className="text-[#e8683a]"><TypingAnimation duration={60}>Creating docs/ structure...</TypingAnimation></AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/README.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/00-meta/README.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/01-brainstorming/README.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/02-practices/README.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/03-decisions/README.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/04-architecture/README.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/05-epics/README.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/06-stories/README.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/07-testing/README.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/08-project/README.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/09-agents/README.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/10-research/README.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/00-meta/agileflow-metadata.json</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/09-agents/status.json</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/09-agents/bus/log.jsonl</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/02-practices/testing.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/02-practices/git-branching.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/02-practices/releasing.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/02-practices/security.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created docs/02-practices/ci.md</AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">  ✓ Created .gitignore</AnimatedSpan>
-      <AnimatedSpan> </AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">✨ Docs structure created: 15 directories, 21 files</AnimatedSpan>
-      <AnimatedSpan> </AnimatedSpan>
-      <AnimatedSpan className="text-[#6a9955]">✨ Setup complete!</AnimatedSpan>
-      <AnimatedSpan> </AnimatedSpan>
-      <AnimatedSpan className="font-bold">Get started:</AnimatedSpan>
-      <AnimatedSpan className="text-gray-400">  Open your IDE and use /agileflow:help</AnimatedSpan>
-      <AnimatedSpan className="text-gray-400">  Run &apos;npx agileflow status&apos; to check setup</AnimatedSpan>
-      <AnimatedSpan className="text-gray-400">  Run &apos;npx agileflow update&apos; to get updates</AnimatedSpan>
-      <AnimatedSpan> </AnimatedSpan>
-      <AnimatedSpan className="text-gray-500">Installed to: /home/user/projects/my-project/.agileflow</AnimatedSpan>
+      <AnimatedSpan className="font-bold">Next:</AnimatedSpan>
+      <AnimatedSpan className="text-gray-400">  Open Codex / Claude / Cursor as usual.</AnimatedSpan>
     </Terminal>
   );
 }

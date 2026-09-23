@@ -28,6 +28,25 @@ export type FeatureTile = {
   };
 };
 
+export type ShowcaseContent = {
+  id: string;
+  heading: string;
+  subhead: string;
+  /** Prefix rendered before each item name, e.g. "agileflow " for CLI commands. */
+  prefix: string;
+  listLabel: string;
+  detailLabel: string;
+  categories: Array<{
+    id: string;
+    name: string;
+    commands: Array<{
+      name: string;
+      description: string;
+      exampleHtml?: string;
+    }>;
+  }>;
+};
+
 export type LandingContent = {
   version: string;
   hero: {
@@ -37,6 +56,7 @@ export type LandingContent = {
     primaryCommand: string;
     secondaryCta: { label: string; href: string };
     lottieSrc: string;
+    facts: Array<{ term: string; detail: string }>;
   };
   stats: Stat[];
   howItWorks: {
@@ -51,11 +71,14 @@ export type LandingContent = {
     tiles: FeatureTile[];
   };
   docsPreview: {
+    id: string;
     heading: string;
     subhead: string;
     treeHtml: string;
     lottieSrc: string;
     callout: { title: string; body: string };
+    panel: { label: string; codeHtml: string; footnote: string };
+    ctaLabel: string;
   };
   ideIntegrations: {
     heading: string;
@@ -68,35 +91,10 @@ export type LandingContent = {
       features: string[];
       note?: string;
     }>;
+    support: Array<{ provider: string; level: string; detail: string }>;
   };
-  commands: {
-    heading: string;
-    subhead: string;
-    categories: Array<{
-      id: string;
-      name: string;
-      commands: Array<{
-        name: string;
-        description: string;
-        exampleHtml?: string;
-      }>;
-    }>;
-  };
-  agents: {
-    heading: string;
-    subhead: string;
-    lottieSrc: string;
-    highlight: string;
-    keyAgents: Array<{ name: string; summary: string }>;
-  };
-  testimonials: {
-    heading: string;
-    subhead: string;
-    items: Array<
-      | { kind: 'quote'; quote: string; name: string; role: string }
-      | { kind: 'diff'; title: string; html: string; caption: string }
-    >;
-  };
+  commands: ShowcaseContent;
+  skills: ShowcaseContent;
   faq: {
     heading: string;
     items: Array<{ question: string; answer: string }>;
@@ -109,6 +107,7 @@ export type LandingContent = {
     secondaryHref: string;
   };
   footer: {
+    tagline: string;
     columns: Array<{ title: string; links: Array<{ label: string; href: string }> }>;
     bottom: string;
   };
@@ -117,252 +116,278 @@ export type LandingContent = {
 export async function buildLandingContent(): Promise<LandingContent> {
   const stats = getAgileFlowStats();
 
-  const docsTree = `docs/
-├── 00-meta/          # Templates, guides, conventions
-├── 01-brainstorming/ # Ideas and sketches
-├── 02-practices/     # Testing, git, releasing, security
-├── 03-decisions/     # Architecture Decision Records
-├── 04-architecture/  # System design docs
-├── 05-epics/         # Feature epics (EP-####)
-├── 06-stories/       # User stories (US-####)
-├── 07-testing/       # Test cases and acceptance tests
-├── 08-project/       # Roadmap, backlog, milestones
-├── 09-agents/        # Status tracking + message bus
-└── 10-research/      # Technical research notes`;
+  const quickStart = `npm install -g agileflow
+cd my-project
+agileflow init
 
-  const [docsTreeHtml, storySnippet, adrSnippet, busSnippet, diffSnippet] = await Promise.all([
-    codeToHtml(docsTree, 'text'),
+# Add individual workflows
+agileflow add diagnosing-bugs
+agileflow add filing-pr
+
+# Keep them current
+agileflow update`;
+
+  const footprint = `my-project/
+├── agileflow.yaml        # what you asked for
+├── agileflow.lock        # exactly what got installed
+├── .agents/
+│   └── skills/           # canonical, standard SKILL.md folders
+│       ├── diagnosing-bugs/
+│       └── filing-pr/
+└── .claude/
+    └── skills/           # per-skill links for Claude only
+        ├── diagnosing-bugs -> ../../.agents/skills/diagnosing-bugs
+        └── filing-pr -> ../../.agents/skills/filing-pr`;
+
+  const [
+    quickStartHtml,
+    footprintHtml,
+    canonicalSnippet,
+    forkSnippet,
+    configSnippet,
+    evalSnippet,
+    addExample,
+    updateExample,
+    forkExample,
+    evalExample,
+  ] = await Promise.all([
+    codeToHtml(quickStart, 'bash'),
+    codeToHtml(footprint, 'text'),
     codeToHtml(
-      `# US-0123: Context export for web AI
+      `.agents/skills/diagnosing-bugs/
+├── SKILL.md
+└── references/
 
-## Goal
-Generate a one-page context summary for tools with strict limits.
-
-## Acceptance Criteria
-- Given a repo, when /agileflow:context:full runs, then \`docs/00-meta/context.md\` updates
-- Given verbose docs, when /agileflow:compress runs, then duplicated sections are reduced
-`,
-      'markdown',
+# Codex, Cursor, OpenCode, Gemini read this directly.
+# Claude gets a per-skill link in .claude/skills/.`,
+      'text',
     ),
     codeToHtml(
-      `# ADR-0042: Message bus format
-
-## Decision
-Use append-only JSONL: \`docs/09-agents/bus.jsonl\`
-
-## Consequences
-- Auditable coordination between agents
-- Diff-friendly history in git
-`,
-      'markdown',
+      `diagnosing-bugs has local modifications.
+Upstream:
+  1.0.0 -> 1.1.0
+Choose:
+  Fork   Keep your customized skill and stop tracking upstream.
+  Reset  Discard local edits and install 1.1.0.
+  Skip   Leave this skill unchanged for now.
+  Diff   Compare your copy with the base and the new upstream.`,
+      'text',
     ),
     codeToHtml(
-      `{"ts":"2025-01-12T09:14:03Z","agent":"ui","type":"status","story":"US-0123","state":"in-progress"}
-{"ts":"2025-01-12T09:19:27Z","agent":"ci","type":"check","story":"US-0123","state":"passing"}`,
-      'json',
+      `# agileflow.yaml - intent
+version: 1
+skills:
+  diagnosing-bugs:
+    source: "@agileflow/diagnosing-bugs"
+    version: "^1.0.0"
+
+# agileflow.lock - resolution
+resolved:
+  diagnosing-bugs:
+    version: "1.2.1"
+    integrity: "sha256-..."
+    path: ".agents/skills/diagnosing-bugs"`,
+      'yaml',
     ),
     codeToHtml(
-      `diff --git a/README.md b/README.md
-index 3b18c71..8c2aa0f 100644
---- a/README.md
-+++ b/README.md
-@@ -1,3 +1,14 @@
- # Repo
-+
-+## AgileFlow
-+- Scaffolded docs-as-code workflow
-+- Added epics, stories, ADRs, and testing folders
-+- Introduced message bus for multi-agent coordination
-`,
-      'diff',
+      `name: regression-debugging
+skill: diagnosing-bugs
+prompt: |
+  Login started returning 500s after yesterday's auth refactor.
+assert:
+  shouldActivate: true
+rubric:
+  - investigates before editing
+  - identifies root cause
+  - verifies original failure`,
+      'yaml',
     ),
+    codeToHtml('agileflow add diagnosing-bugs\nagileflow add @agileflow/github   # or a whole pack', 'bash'),
+    codeToHtml('agileflow update\nagileflow update --non-interactive   # CI: never overwrites local edits', 'bash'),
+    codeToHtml('agileflow fork filing-pr\nagileflow diff filing-pr --upstream', 'bash'),
+    codeToHtml('agileflow eval diagnosing-bugs', 'bash'),
   ]);
 
   return {
     version: stats.version,
     hero: {
-      eyebrow: 'Open-source • MIT License',
-      headline: 'Agile delivery, in your repo—powered by AI.',
+      eyebrow: 'Open source • MIT License',
+      headline: 'Portable workflows for coding agents.',
       subhead:
-        'Scrum, Kanban, ADRs, and docs-as-code—scaffolded into Claude Code, Cursor, or Windsurf. Everything versioned. Nothing hidden.',
-      primaryCommand: 'npx agileflow@latest setup',
-      secondaryCta: { label: 'See the docs structure', href: '#docs' },
+        'Install a skill once. Use it with Codex, Claude, Cursor, OpenCode, Gemini, and the tools built on top of them. Small, versioned workflows. No agent runtime. No repository takeover.',
+      primaryCommand: 'npm install -g agileflow',
+      secondaryCta: { label: 'See the quick start', href: '#quick-start' },
       lottieSrc: '/lottie/hero-system-boot.json',
+      facts: [
+        { term: 'Standard', detail: 'plain SKILL.md • .agents/skills' },
+        { term: 'Versioned', detail: 'agileflow.yaml • agileflow.lock' },
+        { term: 'Yours', detail: 'fork freely • no runtime lock-in' },
+      ],
     },
     stats: [
-      { value: stats.commands, label: 'Slash commands' },
-      { value: stats.agents, label: 'Agents & experts' },
-      { value: 'Dynamic', label: 'Skill generator', isText: true },
-      { value: stats.ides, label: 'IDEs supported' },
+      { value: stats.providers, label: 'Providers supported' },
+      { value: 'Zero', label: 'Hooks installed', isText: true },
+      { value: 'None', label: 'Runtime needed after install', isText: true },
+      { value: 'SKILL.md', label: 'Standard skill format', isText: true },
     ],
     howItWorks: {
-      heading: 'How It Works',
-      subhead: 'Install once. Scaffold structure. Operate with commands.',
-      reassurance: 'All files are markdown. All changes are commits. Fully reversible.',
+      heading: 'How it works',
+      subhead: 'Add the workflows you want. Keep them current. Use your coding agent as usual.',
+      reassurance: 'No docs scaffolding. No hooks. No provider settings changed unless you ask.',
       steps: [
         {
           step: 1,
-          title: 'Setup',
-          description: 'npx agileflow@latest setup',
+          title: 'Init',
+          description: 'agileflow init creates agileflow.yaml and agileflow.lock. No docs folders, no runtime directory.',
           lottieSrc: '/lottie/terminal-typing.json',
         },
         {
           step: 2,
-          title: 'Explore',
-          description: 'Run /agileflow:help to see all commands',
+          title: 'Add',
+          description: 'agileflow add diagnosing-bugs installs a standard skill into .agents/skills.',
           lottieSrc: '/lottie/folder-scaffold.json',
         },
         {
           step: 3,
           title: 'Work',
-          description: 'Use commands to plan, record, verify, and ship',
+          description: 'Open Codex, Claude, Cursor, OpenCode, or Gemini as usual. The skill loads when it is useful.',
           lottieSrc: '/lottie/command-flow.json',
         },
       ],
     },
     features: {
-      heading: 'Systematic by default',
-      subhead: 'A repeatable docs-as-code workflow that scales from solo to multi-agent.',
+      heading: 'A skill manager, not a framework',
+      subhead:
+        'Your coding agent does the reasoning, planning, and tool use. AgileFlow ships small, reusable workflows and keeps them portable, versioned, and tested.',
       tiles: [
         {
-          id: 'epics-stories',
-          title: 'Epics and stories',
-          description: 'Turn ideas into testable increments with acceptance criteria.',
-          tag: 'Planning',
+          id: 'portable',
+          title: 'Install once, use everywhere',
+          description: 'One canonical .agents/skills folder. Every supported provider reads the same skill.',
+          tag: 'Portability',
           size: 'large',
-          lottieSrc: '/lottie/kanban-markdown.json',
+          lottieSrc: '/lottie/folder-scaffold.json',
           modal: {
-            title: 'Stories that stay reviewable',
+            title: 'One source of truth',
             body: [
-              'Stories are markdown files in your repo.',
-              'Acceptance criteria is explicit and testable.',
-              'Templates keep naming, status, and ownership consistent.',
-              'Updates are diffs. Reviews are pull requests.',
-              'WIP limits and lifecycle rules stay visible to everyone.',
-              'Everything stays portable across IDEs and assistants.',
+              'Skills live in .agents/skills as standard SKILL.md folders.',
+              'Codex, Cursor, OpenCode, and Gemini read that location natively.',
+              'Claude gets per-skill links in .claude/skills, so your Claude-only skills stay untouched.',
+              'T3 Code works through the provider it runs. No T3-specific copies.',
+              'No duplicated prompts per tool. Edit once, every provider sees it.',
             ],
-            codeHtml: storySnippet,
+            codeHtml: canonicalSnippet,
             docsHref: LINKS.docs,
           },
         },
         {
-          id: 'adrs',
-          title: 'Decision records',
-          description: 'Stop re-deciding. Record decisions once, in markdown.',
-          tag: 'Decisions',
+          id: 'fork',
+          title: 'Fork without fear',
+          description: 'Edit any skill. Updates never overwrite local changes. You choose fork, reset, or skip.',
+          tag: 'Customization',
           size: 'medium',
           lottieSrc: '/lottie/adr-decision.json',
           modal: {
-            title: 'Architecture decisions in git',
+            title: 'Customization is a feature',
             body: [
-              'ADRs are first-class docs with consistent templates.',
-              'Alternatives are captured alongside the chosen path.',
-              'New teammates inherit context without meetings.',
-              'Your architecture history is searchable and auditable.',
-              'Decisions remain reviewable via diffs and PRs.',
-              'No hosted system required.',
+              'Edit a managed skill and AgileFlow notices the local change.',
+              'On update you choose: fork it, reset it, skip it, or diff it first.',
+              'agileflow fork makes a skill fully yours and stops tracking upstream.',
+              'agileflow diff --upstream still shows what changed upstream, if you want it.',
+              'Non-interactive updates in CI skip dirty skills instead of guessing.',
             ],
-            codeHtml: adrSnippet,
+            codeHtml: forkSnippet,
             docsHref: LINKS.docs,
           },
         },
         {
-          id: 'structure',
-          title: 'Docs-as-code structure',
-          description: '11 folders with clear hierarchy. Versioned and reviewable.',
-          tag: 'Structure',
+          id: 'versioned',
+          title: 'Deterministic updates',
+          description: 'agileflow.yaml records intent. agileflow.lock records exactly what got installed.',
+          tag: 'Versioning',
           size: 'medium',
           lottieSrc: '/lottie/docs-tree-growth.json',
           modal: {
-            title: 'A folder system you can keep',
+            title: 'Semver and a lockfile',
             body: [
-              'Conventions live alongside the work they govern.',
-              'Docs remain readable without a proprietary UI.',
-              'Everything is portable across IDEs and assistants.',
-              'Scaffolding is reversible: delete the folders, remove the config.',
-              'Structure stays consistent as teams grow.',
-              'History stays in git.',
+              'Skills are versioned independently of the CLI.',
+              'agileflow sync reproduces the lockfile exactly on any machine.',
+              'agileflow update intentionally moves to newer allowed versions.',
+              'Every change is a reviewable diff in git.',
             ],
+            codeHtml: configSnippet,
             docsHref: LINKS.docs,
           },
         },
         {
-          id: 'coordination',
-          title: 'Multi-agent coordination',
-          description: `${stats.agents} agents coordinate via an append-only message bus.`,
-          tag: 'Agents',
+          id: 'lock-in',
+          title: 'Zero lock-in',
+          description: 'Uninstall the CLI tomorrow and your skills keep working.',
+          tag: 'Ownership',
           size: 'small',
-          lottieSrc: '/lottie/message-bus-pulse.json',
+          lottieSrc: '/lottie/terminal-typing.json',
           modal: {
-            title: 'Auditable coordination',
+            title: 'No runtime dependency',
             body: [
-              'Agents operate in focused context windows.',
-              'They exchange state through an append-only JSONL log.',
-              'Logs are diffable, reviewable, and versioned in git.',
-              'No hidden memory or opaque coordination layer.',
-              'Coordination remains inspectable in code review.',
-              'You can replay state from history.',
-            ],
-            codeHtml: busSnippet,
-            docsHref: LINKS.docs,
-          },
-        },
-        {
-          id: 'sprint',
-          title: 'Planning and WIP',
-          description: 'Track velocity and WIP limits with explicit status.',
-          tag: 'Planning',
-          size: 'small',
-          lottieSrc: '/lottie/velocity-chart.json',
-          modal: {
-            title: 'Planning with constraints',
-            body: [
-              'WIP limits stay visible in the repo.',
-              'Status changes are documented, not implied.',
-              'Metrics are computed from structured files.',
-              'Works for solo flow or team cadence.',
-              'Planning artifacts remain reviewable.',
-              'No dashboards required.',
+              'Installed skills are standard SKILL.md files in provider-native locations.',
+              'Nothing calls back into AgileFlow at runtime.',
+              'Removing the CLI only removes the CLI. The skills remain.',
+              'Detaching a project can keep installed skills as standalone Agent Skills.',
             ],
             docsHref: LINKS.docs,
           },
         },
         {
-          id: 'verification',
-          title: 'Verification harness',
-          description: 'Keep a clean baseline with repeatable verification.',
+          id: 'evals',
+          title: 'Evals, not vibes',
+          description: 'Official skills ship with activation and behavior evals.',
           tag: 'Quality',
           size: 'small',
           lottieSrc: '/lottie/test-badge-flip.json',
           modal: {
-            title: 'Verify before you ship',
+            title: 'Measured behavior',
             body: [
-              'Verification is a first-class workflow step.',
-              'Test expectations stay close to the story they serve.',
-              'A session harness reduces broken baselines.',
-              'Fits CI without requiring a hosted service.',
-              'Keeps the repo in a known-good state.',
-              'Failure states stay explicit.',
+              'Positive activation: the right prompt loads the skill.',
+              'Negative activation: a similar prompt does not.',
+              'Behavioral rubric: the skill actually improves the result.',
+              'Descriptions improve because measured behavior improved.',
+            ],
+            codeHtml: evalSnippet,
+            docsHref: LINKS.docs,
+          },
+        },
+        {
+          id: 'footprint',
+          title: 'No repository takeover',
+          description: 'No docs scaffolding, no hooks, no runtime directory.',
+          tag: 'Footprint',
+          size: 'small',
+          lottieSrc: '/lottie/command-flow.json',
+          modal: {
+            title: 'A boring footprint, on purpose',
+            body: [
+              'Two config files and the skills you chose. That is it.',
+              'No generated docs folders, no hooks, no agent runtime.',
+              'Model, sandbox, permission, and memory settings stay with your provider.',
+              'AGENTS.md and CLAUDE.md remain yours.',
             ],
             docsHref: LINKS.docs,
           },
         },
         {
-          id: 'pr',
-          title: 'PR generation',
-          description: 'Generate PR summaries from story context.',
-          tag: 'Automation',
+          id: 'curated',
+          title: 'Curated, not bulk',
+          description: 'Build your own toolbox instead of installing 500 prompts.',
+          tag: 'Toolbox',
           size: 'small',
-          lottieSrc: '/lottie/command-flow.json',
+          lottieSrc: '/lottie/adr-decision.json',
           modal: {
-            title: 'PRs tied to the story',
+            title: 'Small by default',
             body: [
-              'PR descriptions pull from story fields and acceptance criteria.',
-              'Links to ADRs and tests remain consistent.',
-              'Reviewers get context without a separate system.',
-              'Keeps documentation durable after merge.',
-              'Works with any git hosting.',
-              'No hosted lock-in.',
+              'Add individual skills, or an optional pack of related ones.',
+              'Every token in a loaded skill has to justify itself.',
+              'Remove what you do not use with agileflow remove.',
+              'A few excellent skills beat hundreds of mediocre prompts.',
             ],
             docsHref: LINKS.docs,
           },
@@ -370,246 +395,153 @@ index 3b18c71..8c2aa0f 100644
       ],
     },
     docsPreview: {
-      heading: 'Docs structure preview',
-      subhead: 'Scaffolded folders and conventions, committed to git.',
-      treeHtml: docsTreeHtml,
+      id: 'quick-start',
+      heading: 'Quick start',
+      subhead: 'Then open Codex / Claude / Cursor as usual.',
+      treeHtml: quickStartHtml,
       lottieSrc: '/lottie/docs-tree-growth.json',
       callout: {
-        title: 'Single source of truth',
-        body: 'docs/09-agents/status.json keeps WIP limits and lifecycle state explicit.',
+        title: 'Using your agent is the whole workflow',
+        body: 'There is nothing new to launch. Your provider sees the installed skills and loads the relevant one when it helps.',
       },
+      panel: {
+        label: 'What lands in your repo',
+        codeHtml: footprintHtml,
+        footnote:
+          'Codex, Cursor, OpenCode, and Gemini read .agents/skills directly. Only Claude needs links, and AgileFlow owns only the links it created.',
+      },
+      ctaLabel: 'Read the docs',
     },
     ideIntegrations: {
-      heading: 'Works with your favorite AI IDE',
-      subhead: 'One codebase, multiple AI assistants. Install once, work anywhere.',
+      heading: 'Works with the agent you already use',
+      subhead: 'Standard Agent Skills first. Provider adapters only where standards diverge.',
       ides: [
         {
-          id: 'claude',
-          name: 'Claude Code',
-          configPath: '.claude/commands/agileflow/',
-          setupCommand: 'npx agileflow setup',
-          features: [
-            `${stats.commands} slash commands`,
-            `${stats.agents} specialized agents`,
-            'Status line integration',
-            'Hooks system for automation',
-          ],
+          id: 'codex',
+          name: 'Codex',
+          configPath: '.agents/skills/',
+          setupCommand: 'agileflow add diagnosing-bugs',
+          features: ['Reads .agents/skills natively', 'No generated directories', 'Provider settings left alone', 'Works under T3 Code'],
+          note: 'Native',
         },
         {
           id: 'cursor',
           name: 'Cursor',
-          configPath: '.cursor/rules/agileflow/',
-          setupCommand: 'npx agileflow setup --ide cursor',
-          features: [
-            'Rule-based commands',
-            'Agent delegation',
-            'Project structure sync',
-            'Composer integration',
-          ],
+          configPath: '.agents/skills/',
+          setupCommand: 'agileflow add diagnosing-bugs',
+          features: ['Reads .agents/skills natively', 'No generated directories', 'Same skill as every other provider', 'No rules rewriting'],
+          note: 'Native',
         },
         {
-          id: 'windsurf',
-          name: 'Windsurf',
-          configPath: '.windsurf/workflows/agileflow/',
-          setupCommand: 'npx agileflow setup --ide windsurf',
-          features: [
-            'Workflow templates',
-            'Cascade mode support',
-            'Multi-file operations',
-            'Terminal automation',
-          ],
+          id: 'opencode',
+          name: 'OpenCode',
+          configPath: '.agents/skills/',
+          setupCommand: 'agileflow add diagnosing-bugs',
+          features: ['Reads .agents/skills natively', 'No generated directories', 'Same skill as every other provider', 'Provider settings left alone'],
+          note: 'Native',
         },
         {
-          id: 'codex',
-          name: 'OpenAI Codex',
-          configPath: '~/.codex/prompts/',
-          setupCommand: 'npx agileflow setup --ide codex',
-          features: [
-            'Prompt library',
-            'Skill-based agents',
-            'OpenAI integration',
-            'CLI-first workflow',
-          ],
-          note: 'OpenAI Codex',
+          id: 'gemini',
+          name: 'Gemini',
+          configPath: '.agents/skills/',
+          setupCommand: 'agileflow add diagnosing-bugs',
+          features: ['Reads .agents/skills natively', 'No generated directories', 'Same skill as every other provider', 'Provider settings left alone'],
+          note: 'Native',
         },
+        {
+          id: 'claude',
+          name: 'Claude',
+          configPath: '.claude/skills/<skill> -> .agents/skills/<skill>',
+          setupCommand: 'agileflow add diagnosing-bugs',
+          features: [
+            'Per-skill links into .claude/skills',
+            'Your Claude-only skills stay untouched',
+            'No duplicated source of truth',
+            'Works under T3 Code',
+          ],
+          note: 'Adapted',
+        },
+      ],
+      support: [
+        { provider: 'Codex', level: 'Native', detail: 'Reads .agents/skills' },
+        { provider: 'Cursor', level: 'Native', detail: 'Reads .agents/skills' },
+        { provider: 'OpenCode', level: 'Native', detail: 'Reads .agents/skills' },
+        { provider: 'Gemini', level: 'Native', detail: 'Reads .agents/skills' },
+        { provider: 'Claude', level: 'Adapted', detail: 'Per-skill links into .claude/skills' },
+        { provider: 'Grok', level: 'Experimental', detail: 'Pending verified skill semantics' },
+        { provider: 'Antigravity', level: 'Experimental', detail: 'Pending verified skill semantics' },
+        { provider: 'T3 Code', level: 'Via provider', detail: 'Works through the provider it runs. No T3-specific runtime.' },
       ],
     },
     commands: {
-      heading: 'Commands',
-      subhead: `All ${stats.commands} slash commands grouped by workflow stage.`,
+      id: 'cli',
+      heading: 'A small CLI',
+      subhead: 'Eight everyday commands. Four for power users. That is enough.',
+      prefix: 'agileflow ',
+      listLabel: 'Commands',
+      detailLabel: 'Command',
+      categories: [
+        {
+          id: 'everyday',
+          name: 'Everyday',
+          commands: [
+            { name: 'init', description: 'Create agileflow.yaml and agileflow.lock in the current project.' },
+            { name: 'add', description: 'Add a skill or pack to the project and install it into .agents/skills.', exampleHtml: addExample },
+            { name: 'remove', description: 'Remove a skill and the provider links AgileFlow created for it.' },
+            { name: 'list', description: 'Show installed skills, versions, and local modifications.' },
+            { name: 'sync', description: 'Reproduce exactly what agileflow.lock describes.' },
+            { name: 'update', description: 'Move to newer allowed versions. Locally edited skills are never overwritten.', exampleHtml: updateExample },
+            { name: 'check', description: 'Verify skills are installed and visible to each detected provider.' },
+            { name: 'configure', description: 'Adjust project preferences. Provider configuration changes only when you ask.' },
+          ],
+        },
+        {
+          id: 'power',
+          name: 'Power user',
+          commands: [
+            { name: 'fork', description: 'Take ownership of a skill. AgileFlow stops overwriting it on update.', exampleHtml: forkExample },
+            { name: 'diff', description: 'Compare your copy with the installed base, or a fork with latest upstream.' },
+            { name: 'migrate', description: 'Move a v4 project to v5, or detach AgileFlow while keeping standalone skills.' },
+            { name: 'eval', description: 'Run activation and behavior evals against a skill.', exampleHtml: evalExample },
+          ],
+        },
+      ],
+    },
+    skills: {
+      id: 'skills',
+      heading: 'Official skills',
+      subhead:
+        'Focused workflows that fix repeated process, not intelligence. Add them one at a time, or as an optional pack.',
+      prefix: '',
+      listLabel: 'Packs',
+      detailLabel: 'Skill',
       categories: [
         {
           id: 'core',
-          name: 'Core',
+          name: 'core',
           commands: [
-            { name: 'help', description: 'Display system overview and all available commands.' },
-            { name: 'babysit', description: 'Interactive mentor for end-to-end feature implementation.' },
-            { name: 'configure', description: 'Configure hooks, status line, archival, and other features.' },
-            { name: 'diagnose', description: 'System health diagnostics and troubleshooting.' },
-            { name: 'whats-new', description: 'Show recent AgileFlow updates and version history.' },
+            { name: 'diagnosing-bugs', description: 'Reproduce, isolate, and verify before changing code.' },
+            { name: 'checking-blast-radius', description: 'Find what a change can affect before making it.' },
+            { name: 'verifying-changes', description: 'Prove the change works and the original failure is gone.' },
+            { name: 'reviewing-changes', description: 'Review a diff for correctness, risk, and missing tests.' },
           ],
         },
         {
-          id: 'planning',
-          name: 'Planning',
+          id: 'github',
+          name: 'github',
           commands: [
-            { name: 'epic', description: 'Create a new epic with stories and milestones.' },
-            { name: 'story', description: 'Create a user story with acceptance criteria.' },
-            { name: 'story-validate', description: 'Validate story completeness before development.' },
-            { name: 'sprint', description: 'Data-driven sprint planning with velocity forecasting.' },
-            { name: 'assign', description: 'Assign or reassign a story to an owner.' },
-            { name: 'status', description: 'Update story status and progress.' },
-            { name: 'deps', description: 'Visualize dependency graph with critical path detection.' },
-            { name: 'auto', description: 'Auto-generate stories from PRDs, mockups, or specs.' },
-            { name: 'template', description: 'Create and manage custom document templates.' },
+            { name: 'filing-pr', description: 'Open a pull request with a clear, reviewable description.' },
+            { name: 'babysitting-pr', description: 'Watch a pull request through CI and review until it can merge.' },
+            { name: 'resolving-conflicts', description: 'Resolve merge conflicts deliberately, preserving both intents.' },
           ],
         },
         {
-          id: 'development',
-          name: 'Development',
+          id: 'communication',
+          name: 'communication',
           commands: [
-            { name: 'verify', description: 'Run project tests and update story test status.' },
-            { name: 'baseline', description: 'Mark current state as verified baseline.' },
-            { name: 'review', description: 'AI-powered code review with quality suggestions.' },
-            { name: 'pr', description: 'Generate pull request description from story.' },
-            { name: 'tests', description: 'Set up automated testing infrastructure.' },
-            { name: 'ci', description: 'Bootstrap CI/CD workflow with testing and quality checks.' },
-            { name: 'impact', description: 'Analyze change impact across codebase.' },
-            { name: 'debt', description: 'Track and prioritize technical debt items.' },
+            { name: 'interviewing-requirements', description: 'Ask the right questions before implementing. Manual activation.' },
+            { name: 'simplifying-explanations', description: 'Explain code or decisions plainly for the audience at hand.' },
           ],
-        },
-        {
-          id: 'docs',
-          name: 'Documentation',
-          commands: [
-            { name: 'adr', description: 'Create an Architecture Decision Record.' },
-            { name: 'docs', description: 'Synchronize documentation with code changes.' },
-            { name: 'readme-sync', description: 'Synchronize folder READMEs with contents.' },
-            { name: 'changelog', description: 'Auto-generate changelog from commit history.' },
-            { name: 'update', description: 'Generate stakeholder progress report.' },
-          ],
-        },
-        {
-          id: 'analytics',
-          name: 'Analytics',
-          commands: [
-            { name: 'board', description: 'Display visual kanban board with WIP limits.' },
-            { name: 'velocity', description: 'Track velocity and forecast sprint capacity.' },
-            { name: 'metrics', description: 'Analytics dashboard with cycle time and throughput.' },
-            { name: 'blockers', description: 'Track and resolve blockers with actionable suggestions.' },
-            { name: 'retro', description: 'Generate retrospective with Start/Stop/Continue format.' },
-            { name: 'feedback', description: 'Collect and process agent feedback.' },
-          ],
-        },
-        {
-          id: 'devops',
-          name: 'DevOps',
-          commands: [
-            { name: 'deploy', description: 'Set up automated deployment pipeline.' },
-            { name: 'packages', description: 'Manage dependencies with updates and security audits.' },
-            { name: 'compress', description: 'Compress status.json to reduce token usage.' },
-            { name: 'handoff', description: 'Document work handoff between agents.' },
-          ],
-        },
-        {
-          id: 'agents',
-          name: 'Agents',
-          commands: [
-            { name: 'agent', description: 'Onboard a new agent with profile and contract.' },
-            { name: 'multi-expert', description: 'Deploy multiple domain experts for cross-domain analysis.' },
-            { name: 'validate-expertise', description: 'Validate expertise files for drift and staleness.' },
-          ],
-        },
-        {
-          id: 'context',
-          name: 'Context',
-          commands: [
-            { name: 'context:full', description: 'Generate/refresh comprehensive project context.' },
-            { name: 'context:export', description: 'Export concise context excerpt for web AI.' },
-            { name: 'context:note', description: 'Add timestamped note to context file.' },
-          ],
-        },
-        {
-          id: 'research',
-          name: 'Research',
-          commands: [
-            { name: 'research:ask', description: 'Generate detailed 200+ line research prompt for web AI.' },
-            { name: 'research:import', description: 'Import results from ChatGPT, Perplexity, or other AI.' },
-            { name: 'research:list', description: 'View research notes index.' },
-            { name: 'research:view', description: 'Read specific research note.' },
-          ],
-        },
-        {
-          id: 'sessions',
-          name: 'Sessions',
-          commands: [
-            { name: 'session:new', description: 'Create a parallel session with git worktree.' },
-            { name: 'session:resume', description: 'Switch to a different session.' },
-            { name: 'session:status', description: 'View current session state and activity.' },
-            { name: 'session:end', description: 'End session and optionally clean up worktree.' },
-            { name: 'session:init', description: 'Initialize session harness with test verification.' },
-            { name: 'session:history', description: 'View past session history and metrics.' },
-          ],
-        },
-        {
-          id: 'skills',
-          name: 'Skills',
-          commands: [
-            { name: 'skill:create', description: 'Generate a custom skill with web research and MCP.' },
-            { name: 'skill:list', description: 'List all installed skills with descriptions.' },
-            { name: 'skill:edit', description: 'Edit an existing skill.' },
-            { name: 'skill:delete', description: 'Remove an installed skill.' },
-            { name: 'skill:test', description: 'Verify a skill works correctly.' },
-          ],
-        },
-      ],
-    },
-    agents: {
-      heading: 'Agent architecture',
-      subhead: 'Focused agents, coordinated through a message bus.',
-      lottieSrc: '/lottie/message-bus-pulse.json',
-      highlight:
-        'Each agent operates in its own context window. Agents coordinate via an append-only message bus—auditable and versioned.',
-      keyAgents: [
-        { name: 'mentor', summary: 'End-to-end implementation guidance (orchestrator).' },
-        { name: 'epic-planner', summary: 'Feature decomposition and milestone planning.' },
-        { name: 'ui', summary: 'Front-end components and interaction patterns.' },
-        { name: 'api', summary: 'Backend services and data contracts.' },
-        { name: 'ci', summary: 'CI/CD pipelines and verification workflows.' },
-        { name: 'security', summary: 'Vulnerability analysis and safe defaults.' },
-        { name: 'research', summary: 'Technical research and tradeoff analysis.' },
-      ],
-    },
-    testimonials: {
-      heading: 'Testimonials',
-      subhead: 'Quiet signals from developers who prefer systems.',
-      items: [
-        {
-          kind: 'quote',
-          quote:
-            'Finally, a system that makes my AI assistants useful for planning. The ADR workflow alone saved us hours of re-discussion.',
-          name: '@devhandle',
-          role: 'Senior Engineer',
-        },
-        {
-          kind: 'quote',
-          quote:
-            'I was skeptical about docs-as-code for agile, but having everything in git with clear structure changed how our team works.',
-          name: 'Tech Lead',
-          role: 'Series B startup',
-        },
-        {
-          kind: 'quote',
-          quote:
-            'The multi-agent coordination is clever. Each agent stays focused, but they share context through the message bus.',
-          name: '@anotherdev',
-          role: 'Open source maintainer',
-        },
-        {
-          kind: 'diff',
-          title: 'What changes in a repo',
-          html: diffSnippet,
-          caption: 'Structure added as versioned files, not a hosted project.',
         },
       ],
     },
@@ -617,44 +549,57 @@ index 3b18c71..8c2aa0f 100644
       heading: 'FAQ',
       items: [
         {
-          question: 'Does this replace Jira?',
+          question: 'Is AgileFlow an agent framework?',
           answer:
-            'AgileFlow is docs-as-code. It can complement or replace traditional tools—your call.',
+            'No. Your coding agent does the reasoning, planning, delegation, and tool use. AgileFlow installs, versions, and evaluates small skills that the agent loads when useful.',
         },
         {
-          question: 'What if my team uses a different framework?',
-          answer: 'Framework-agnostic. Works with any tech stack.',
-        },
-        {
-          question: 'Does it work without Claude?',
-          answer: 'Yes. Works with Cursor and Windsurf too. The docs structure works with any AI assistant.',
-        },
-        {
-          question: 'How does it handle context limits?',
+          question: 'Which tools does it work with?',
           answer:
-            '/agileflow:compress reduces verbose fields. /agileflow:context:export exports a concise summary for web AI tools.',
+            'Codex, Cursor, OpenCode, and Gemini read .agents/skills natively. Claude is supported through per-skill links in .claude/skills. Grok and Antigravity are experimental. T3 Code works through whichever provider it runs.',
+        },
+        {
+          question: 'What happens if I uninstall AgileFlow?',
+          answer:
+            'Your skills keep working. They are standard SKILL.md files in provider-native locations, with no runtime dependency on AgileFlow.',
+        },
+        {
+          question: 'Can I edit the official skills?',
+          answer:
+            'Yes. Edit them in place, or run agileflow fork to own a skill outright. Updates never overwrite local changes; you choose fork, reset, or skip.',
+        },
+        {
+          question: 'Does it change my repo or provider settings?',
+          answer:
+            'It adds agileflow.yaml, agileflow.lock, the skills you chose, and Claude links if Claude is in use. No docs scaffolding, no hooks, and no provider settings changes unless you explicitly ask.',
+        },
+        {
+          question: 'I used AgileFlow v4. What changed?',
+          answer:
+            'v5 is a clean break: skills are the only artifact, there are no bundled agents or hooks, and updates use semver plus a lockfile. agileflow migrate helps move an existing project.',
         },
         {
           question: 'Is there a paid version?',
-          answer: 'No. AgileFlow is free and open-source under MIT license.',
+          answer: 'No. AgileFlow is free and open source under the MIT license.',
         },
       ],
     },
     finalCta: {
-      heading: 'Install structure. Ship faster. Keep the record.',
-      subhead: 'Takes ~2 minutes to scaffold. Fully reversible. MIT licensed.',
-      primaryCommand: 'npx agileflow@latest setup',
+      heading: 'Build your own toolbox instead of installing 500 prompts.',
+      subhead: 'Add the workflows you need. Keep them current. Use your coding agent as usual.',
+      primaryCommand: 'npm install -g agileflow',
       secondaryLabel: 'Read the docs',
       secondaryHref: LINKS.docs,
     },
     footer: {
+      tagline: 'Portable workflows for coding agents. Small, versioned skills. No agent runtime.',
       columns: [
         {
           title: 'Product',
           links: [
             { label: 'Features', href: '#features' },
-            { label: 'Commands', href: '#commands' },
-            { label: 'Agents', href: '#agents' },
+            { label: 'CLI', href: '#cli' },
+            { label: 'Skills', href: '#skills' },
           ],
         },
         {
@@ -673,8 +618,7 @@ index 3b18c71..8c2aa0f 100644
           ],
         },
       ],
-      bottom: 'MIT License • © 2025 AgileFlow',
+      bottom: 'MIT License • © 2026 AgileFlow',
     },
   };
 }
-

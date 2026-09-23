@@ -16,12 +16,11 @@ export function Header() {
 
   const nav = useMemo<NavItem[]>(
     () => [
-      { label: 'Product', href: '#product' },
-      { label: 'How It Works', href: '#how-it-works' },
+      { label: 'Quick Start', href: '#quick-start' },
       { label: 'Features', href: '#features' },
-      { label: 'Commands', href: '#commands' },
-      { label: 'Agents', href: '#agents' },
-      { label: 'Testimonials', href: '#testimonials' },
+      { label: 'Providers', href: '#providers' },
+      { label: 'CLI', href: '#cli' },
+      { label: 'Skills', href: '#skills' },
       { label: 'Docs', href: LINKS.docs, kind: 'external' },
       { label: 'GitHub', href: LINKS.github, kind: 'external' },
     ],

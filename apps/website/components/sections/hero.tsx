@@ -8,15 +8,9 @@ import { LINKS } from '@/lib/links';
 
 interface HeroProps {
   content: LandingContent['hero'];
-  version: string;
-  stats: {
-    commands: number;
-    agents: number;
-    skills: number | string;
-  };
 }
 
-export function Hero({ content, version, stats }: HeroProps) {
+export function Hero({ content }: HeroProps) {
   return (
     <section id="product" className="scroll-mt-20 py-6 sm:py-10 md:py-12">
       <Container>
@@ -64,30 +58,19 @@ export function Hero({ content, version, stats }: HeroProps) {
 
             <Reveal className="mt-10">
               <dl className="grid gap-3 rounded-card border border-[var(--border-default)] bg-white/70 p-5 text-sm text-[var(--text-secondary)] shadow-tile">
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-3">
-                  <dt className="font-medium text-[var(--text-primary)]">Developer-native</dt>
-                  <dd className="sm:ml-auto sm:text-right">npm install • lives in your repo</dd>
-                </div>
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-3">
-                  <dt className="font-medium text-[var(--text-primary)]">Repeatable</dt>
-                  <dd className="sm:ml-auto sm:text-right">folders • templates • conventions</dd>
-                </div>
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-3">
-                  <dt className="font-medium text-[var(--text-primary)]">Scales</dt>
-                  <dd className="sm:ml-auto sm:text-right">solo → team → multi-agent</dd>
-                </div>
+                {content.facts.map((fact) => (
+                  <div key={fact.term} className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-3">
+                    <dt className="font-medium text-[var(--text-primary)]">{fact.term}</dt>
+                    <dd className="sm:ml-auto sm:text-right">{fact.detail}</dd>
+                  </div>
+                ))}
               </dl>
             </Reveal>
           </div>
 
           <div className="lg:col-span-6">
             <Reveal className="relative">
-              <AgileFlowTerminal
-                version={version}
-                commands={stats.commands}
-                agents={stats.agents}
-                skills={stats.skills}
-              />
+              <AgileFlowTerminal />
             </Reveal>
           </div>
         </div>

@@ -16,9 +16,9 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AgileFlow",
+  title: "AgileFlow - Portable workflows for coding agents",
   description:
-    "AgileFlow turns your repo into an AI-friendly agile system with commands, agents, ADRs, and docs-as-code — built for Claude Code, Cursor, Windsurf, and more.",
+    "AgileFlow is a portable skill manager, compatibility layer, and evaluation system for coding agents. Install a skill once and use it with Codex, Claude, Cursor, OpenCode, and Gemini. Small, versioned workflows. No agent runtime. No repository takeover.",
   metadataBase: new URL("https://agileflow.dev"),
   icons: {
     icon: "/banner.png",
@@ -26,9 +26,9 @@ export const metadata: Metadata = {
     apple: "/banner.png",
   },
   openGraph: {
-    title: "AgileFlow",
+    title: "AgileFlow - Portable workflows for coding agents",
     description:
-      "Agile delivery, in your repo—powered by AI. Scrum + Kanban + ADRs + docs-as-code.",
+      "Install a skill once. Use it with Codex, Claude, Cursor, OpenCode, Gemini, and the tools built on top of them.",
     type: "website",
     images: ["/banner.png"],
   },

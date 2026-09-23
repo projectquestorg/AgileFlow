@@ -22,7 +22,7 @@ apps/website
 
 Sanity check: the deployed homepage headline should be:
 
-> “Agile delivery, in your repo—powered by AI.”
+> “Portable workflows for coding agents.”
 
 If you see “AI-Driven Agile Development” and a purple accent, you deployed `apps/docs` instead.
 

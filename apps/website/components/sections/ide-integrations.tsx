@@ -20,12 +20,6 @@ const ideIcons: Record<string, React.ReactNode> = {
       <path d="M11.503.131 1.891 5.678a.84.84 0 0 0-.42.726v11.188c0 .3.162.575.42.724l9.609 5.55a1 1 0 0 0 .998 0l9.61-5.55a.84.84 0 0 0 .42-.724V6.404a.84.84 0 0 0-.42-.726L12.497.131a1.01 1.01 0 0 0-.996 0M2.657 6.338h18.55c.263 0 .43.287.297.515L12.23 22.918c-.062.107-.229.064-.229-.06V12.335a.59.59 0 0 0-.295-.51l-9.11-5.257c-.109-.063-.064-.23.061-.23" />
     </svg>
   ),
-  windsurf: (
-    // Official Windsurf logo from windsurf.com
-    <svg viewBox="0 0 1024 1024" fill="currentColor" className="h-5 w-5">
-      <path d="M897.246 286.869H889.819C850.735 286.808 819.017 318.46 819.017 357.539V515.589C819.017 547.15 792.93 572.716 761.882 572.716C743.436 572.716 725.02 563.433 714.093 547.85L552.673 317.304C539.28 298.16 517.486 286.747 493.895 286.747C457.094 286.747 423.976 318.034 423.976 356.657V515.619C423.976 547.181 398.103 572.746 366.842 572.746C348.335 572.746 329.949 563.463 319.021 547.881L138.395 289.882C134.316 284.038 125.154 286.93 125.154 294.052V431.892C125.154 438.862 127.285 445.619 131.272 451.34L309.037 705.2C319.539 720.204 335.033 731.344 352.9 735.392C397.616 745.557 438.77 711.135 438.77 667.278V508.406C438.77 476.845 464.339 451.279 495.904 451.279H495.995C515.02 451.279 532.857 460.562 543.785 476.145L705.235 706.661C718.659 725.835 739.327 737.218 763.983 737.218C801.606 737.218 833.841 705.9 833.841 667.308V508.376C833.841 476.815 859.41 451.249 890.975 451.249H897.276C901.233 451.249 904.43 448.053 904.43 444.097V294.021C904.43 290.065 901.233 286.869 897.276 286.869H897.246Z" />
-    </svg>
-  ),
   codex: (
     // Official OpenAI logo from simple-icons
     <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -34,12 +28,22 @@ const ideIcons: Record<string, React.ReactNode> = {
   ),
 };
 
+function ProviderIcon({ id, name }: { id: string; name: string }) {
+  const icon = ideIcons[id];
+  if (icon) return <>{icon}</>;
+  return (
+    <span aria-hidden="true" className="flex h-5 w-5 items-center justify-center font-mono text-xs font-semibold">
+      {name.slice(0, 1)}
+    </span>
+  );
+}
+
 export function IDEIntegrations({ data }: { data: LandingContent['ideIntegrations'] }) {
   const [activeIde, setActiveIde] = useState(data.ides[0].id);
   const activeData = data.ides.find((ide) => ide.id === activeIde) ?? data.ides[0];
 
   return (
-    <section aria-label="IDE integrations" className="py-20 sm:py-24 md:py-28">
+    <section id="providers" aria-label="Provider support" className="scroll-mt-24 py-20 sm:py-24 md:py-28">
       <Container>
         <div className="mx-auto max-w-3xl">
           <Reveal>
@@ -74,7 +78,7 @@ export function IDEIntegrations({ data }: { data: LandingContent['ideIntegration
                       />
                     )}
                     <span className="relative z-10 flex items-center gap-2">
-                      {ideIcons[ide.id]}
+                      <ProviderIcon id={ide.id} name={ide.name} />
                       <span className="hidden sm:inline">{ide.name}</span>
                     </span>
                   </button>
@@ -94,12 +98,12 @@ export function IDEIntegrations({ data }: { data: LandingContent['ideIntegration
                   <div className="surface rounded-card p-6 shadow-tile sm:p-8">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent)] text-white">
-                        {ideIcons[activeData.id]}
+                        <ProviderIcon id={activeData.id} name={activeData.name} />
                       </div>
                       <div>
                         <h3 className="font-semibold text-[var(--text-primary)]">{activeData.name}</h3>
                         {activeData.note && (
-                          <span className="text-xs text-[var(--text-tertiary)]">{activeData.note}</span>
+                          <span className="text-xs text-[var(--text-tertiary)]">Support: {activeData.note}</span>
                         )}
                       </div>
                     </div>
@@ -108,7 +112,7 @@ export function IDEIntegrations({ data }: { data: LandingContent['ideIntegration
                       {/* Config path */}
                       <div>
                         <div className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
-                          Config location
+                          Skills location
                         </div>
                         <div className="mt-2 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--bg-code)] px-3 py-2 font-mono text-sm text-[var(--text-secondary)]">
                           {activeData.configPath}
@@ -118,7 +122,7 @@ export function IDEIntegrations({ data }: { data: LandingContent['ideIntegration
                       {/* Setup command */}
                       <div>
                         <div className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
-                          Setup command
+                          Add a skill
                         </div>
                         <div className="mt-2 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--bg-code)] px-3 py-2 font-mono text-sm text-[var(--text-secondary)]">
                           <span className="text-[var(--accent)]">$</span> {activeData.setupCommand}
@@ -129,7 +133,7 @@ export function IDEIntegrations({ data }: { data: LandingContent['ideIntegration
                     {/* Features */}
                     <div className="mt-6">
                       <div className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
-                        Features
+                        How it works
                       </div>
                       <ul className="mt-3 grid gap-2 sm:grid-cols-2">
                         {activeData.features.map((feature) => (
@@ -151,6 +155,30 @@ export function IDEIntegrations({ data }: { data: LandingContent['ideIntegration
                   </div>
                 </motion.div>
               </AnimatePresence>
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.15}>
+            <div className="surface mt-6 overflow-hidden rounded-card shadow-tile">
+              <table className="w-full text-left text-sm">
+                <caption className="sr-only">Provider support levels</caption>
+                <thead>
+                  <tr className="border-b border-[var(--border-subtle)] text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th scope="col" className="px-5 py-3 font-medium">Provider</th>
+                    <th scope="col" className="px-5 py-3 font-medium">Support</th>
+                    <th scope="col" className="hidden px-5 py-3 font-medium sm:table-cell">How</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-subtle)]">
+                  {data.support.map((row) => (
+                    <tr key={row.provider}>
+                      <th scope="row" className="px-5 py-3 font-medium text-[var(--text-primary)]">{row.provider}</th>
+                      <td className="px-5 py-3 font-mono text-xs text-[var(--text-secondary)]">{row.level}</td>
+                      <td className="hidden px-5 py-3 text-[var(--text-secondary)] sm:table-cell">{row.detail}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </Reveal>
         </div>

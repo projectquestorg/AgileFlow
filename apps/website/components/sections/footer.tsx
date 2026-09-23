@@ -17,7 +17,7 @@ export function Footer({ content }: { content: LandingContent['footer'] }) {
               className="h-7 w-auto"
             />
             <p className="mt-3 max-w-[44ch] text-sm leading-6 text-[var(--text-secondary)]">
-              Open-source agile scaffolding for AI-driven development. Everything versioned. Nothing hidden.
+              {content.tagline}
             </p>
           </div>
 
