@@ -9,6 +9,7 @@ The identity is achromatic: black foundation, silver brand color, white.
 """
 import argparse
 import os
+import shutil
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -126,7 +127,8 @@ def main() -> None:
 
     # Repository
     save(square(mark, 512, 0.88), 'assets', 'logo.png')
-    save(card(mark, args.font, (1280, 400), 140, wordmark), 'assets', 'banner.png', mode='RGB')
+    # README banner: the metallic wordmark itself, transparent, no card or tagline.
+    shutil.copyfile(os.path.join(BRAND, 'agileflow-wordmark-source.png'), os.path.join(ROOT, 'assets', 'banner.png'))
     save(card(mark, args.font, (1280, 640), 180, wordmark), 'assets', 'social-preview.png', mode='RGB')
 
     # Sites: icons on a near-black tile so the metallic mark reads everywhere.

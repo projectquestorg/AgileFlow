@@ -27,7 +27,7 @@ Use `#A1A1AA` rather than `#71717A` for muted body text on `#09090B` so it keeps
 | `agileflow-mark-on-black.png` | Mark on a near-black tile (app icons, avatars) |
 | `agileflow-lockup-dark.png` | Mark + white wordmark, for dark backgrounds |
 | `agileflow-lockup-light.png` | Mark + near-black wordmark, for light backgrounds |
-| `agileflow-wordmark-source.png` | Metallic mark + wordmark lockup (README banner, social preview) |
+| `agileflow-wordmark-source.png` | Metallic mark + wordmark lockup; copied as-is to `../banner.png` (transparent), also used in the social preview |
 | `../banner.png`, `../social-preview.png` | README banner, GitHub social preview |
 
 The wordmark is set in Inter SemiBold. Keep clear space around the mark of at least a quarter of its height, and do not recolor, outline, or add effects to it.
