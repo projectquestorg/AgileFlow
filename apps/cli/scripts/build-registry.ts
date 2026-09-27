@@ -9,8 +9,10 @@ const result = await buildRegistry({
   skillsDir: path.join(repo, 'skills'),
   packsDir: path.join(repo, 'packs'),
   outDir: path.join(repo, 'registry'),
+  pinsFile: path.join(repo, 'packages/registry/src/official-pins.ts'),
   check,
 });
+for (const w of result.warnings) console.warn(`warning: ${w}`);
 for (const e of result.errors) console.error(`error: ${e}`);
 if (result.errors.length) process.exit(1);
 if (check) {

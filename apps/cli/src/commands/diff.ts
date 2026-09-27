@@ -5,6 +5,7 @@ import { EXIT, scopeFor, servicesFor } from '../runtime';
 export interface DiffOptions {
   global?: boolean;
   upstream?: boolean;
+  json?: boolean;
 }
 
 export async function runDiff(cli: Cli, id: string, options: DiffOptions): Promise<number> {
@@ -12,6 +13,10 @@ export async function runDiff(cli: Cli, id: string, options: DiffOptions): Promi
   const services = await servicesFor(cli.ctx, scope);
   const ws = await loadWorkspace(scope);
   const result = await diffSkill(services, ws, id, { upstream: options.upstream });
+  if (options.json) {
+    cli.out.json({ ok: true, skill: id, upstream: !!options.upstream, ...result });
+    return EXIT.OK;
+  }
   cli.out.heading(result.title);
   cli.out.line(result.identical ? 'No differences.' : result.patch.trimEnd());
   return EXIT.OK;

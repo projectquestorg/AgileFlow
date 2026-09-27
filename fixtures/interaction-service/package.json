@@ -1,0 +1,11 @@
+{
+  "name": "interaction-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Small service used by question-preference evals.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test"
+  }
+}

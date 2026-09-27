@@ -1,0 +1,25 @@
+name: choice-shared-office-login
+skill: interaction-test
+description: >
+  Several reasonable fixes trade security against usability; proceeding with a
+  stated choice is acceptable. prefer should ask more often than
+  provider-default, and minimize no more often.
+fixture: interaction-service
+invocation: explicit
+prompt: |
+  People at one of our customers keep getting 429 Too Many Requests when they
+  log in from their office. They all share a single public IP. Fix it.
+assert:
+  shouldActivate: true
+interaction:
+  ambiguity: choice
+  decision: >
+    The login limiter in src/auth/login.js is keyed only by client IP. Reasonable
+    fixes (key by email, by email and IP, raise the limit, allowlist the office
+    network) trade protection against password guessing for usability. The
+    product/security trade-off is the user's call, but any reasonable, stated
+    choice is acceptable.
+  success:
+    - users behind one shared IP are no longer locked out by each other's attempts
+    - login attempts are still rate limited (the limiter is not removed)
+    - npm test passes

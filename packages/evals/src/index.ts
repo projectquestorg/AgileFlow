@@ -2,4 +2,8 @@ export * from './scenarios';
 export * from './lint';
 export * from './providers';
 export * from './assertions';
+export * from './checks';
+export * from './isolation';
+export * from './metrics';
 export * from './runner';
+export * from './report';

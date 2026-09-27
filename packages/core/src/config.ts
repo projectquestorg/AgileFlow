@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import semver from 'semver';
 import YAML from 'yaml';
 import { z } from 'zod';
 import { isNotFound, writeFileAtomic } from './fs';
@@ -13,8 +14,25 @@ export const GLOBAL_LOCK_FILE = 'agileflow.lock';
 export const ActivationSchema = z.enum(['auto', 'manual']);
 export type Activation = z.infer<typeof ActivationSchema>;
 
-export const QuestionPreferenceSchema = z.enum(['provider-default', 'prefer', 'minimize']);
-export type QuestionPreference = z.infer<typeof QuestionPreferenceSchema>;
+export const InteractionPreferenceSchema = z.enum(['provider-default', 'prefer', 'minimize']);
+export type InteractionPreference = z.infer<typeof InteractionPreferenceSchema>;
+
+/**
+ * Git branch, tag, or commit. Refs reach `git` as arguments, so anything that
+ * could be read as an option (leading `-`), a revision expression, or a
+ * control character is rejected (git check-ref-format rules, simplified).
+ */
+export const GIT_REF_RE = /^(?!-)(?!.*\.\.)(?!.*\/\/)(?!.*@\{)(?!.*\.lock$)(?!.*\/$)(?!.*\.$)[A-Za-z0-9._/+-]{1,200}$/;
+/** A full git commit id (SHA-1 or SHA-256). */
+export const COMMIT_RE = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
+
+export function isSafeGitRef(ref: string): boolean {
+  return GIT_REF_RE.test(ref);
+}
+
+const GitRefSchema = z.string().refine(isSafeGitRef, {
+  message: 'must be a branch, tag, or commit (letters, digits, . _ / + -; not starting with -)',
+});
 
 const SkillIdSchema = z
   .string()
@@ -24,9 +42,13 @@ export const SkillSpecSchema = z
   .object({
     source: z.string().min(1),
     /** Semver range for registry sources. */
-    version: z.string().min(1).optional(),
+    version: z
+      .string()
+      .min(1)
+      .refine((v) => semver.validRange(v) !== null, { message: 'must be a semver version or range, e.g. ^1.2.0' })
+      .optional(),
     /** Branch, tag, or commit for git sources. */
-    ref: z.string().min(1).optional(),
+    ref: GitRefSchema.optional(),
     activation: ActivationSchema.optional(),
     enabled: z.boolean().optional(),
     provenance: z.object({ forkedFrom: z.string().min(1) }).strict().optional(),
@@ -38,20 +60,48 @@ export const ProviderSettingsSchema = z
   .object({
     enabled: z.union([z.literal('auto'), z.boolean()]).optional(),
     structuredQuestions: z.enum(['inherit', 'enabled', 'disabled']).optional(),
+    /** Custom providers: project-relative directory the agent reads skills from. */
+    skillsDir: z.string().min(1).optional(),
+    /** Custom providers: home-relative directory for personal skills. */
+    userSkillsDir: z.string().min(1).optional(),
+    /** Custom providers: name shown in `list` and `check`. */
+    displayName: z.string().min(1).optional(),
   })
   .strict();
 export type ProviderSettings = z.infer<typeof ProviderSettingsSchema>;
 
+/**
+ * AgileFlow Work (opt-in): where the Agile workspace lives. The folder layout
+ * under `root` is fixed by the Work spec and is not configurable.
+ */
+export const WorkConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    /** Workspace directory relative to the project root. */
+    root: z.string().min(1).default('docs/agile'),
+  })
+  .strict();
+export type WorkConfig = z.infer<typeof WorkConfigSchema>;
+
+/** Semver range of AgileFlow CLI versions a project requires, e.g. `>=5.1.0`. */
+const CliRangeSchema = z
+  .string()
+  .min(1)
+  .refine((v) => semver.validRange(v) !== null, { message: 'must be a semver range, e.g. >=5.1.0' });
+
 export const ProjectConfigSchema = z
   .object({
     version: z.literal(1),
+    /** AgileFlow CLI versions this project needs; older CLIs refuse to change it. */
+    agileflow: CliRangeSchema.optional(),
     registry: z.string().min(1).optional(),
     skills: z.record(SkillIdSchema, SkillSpecSchema).default({}),
     providers: z.record(z.string(), ProviderSettingsSchema).optional(),
     interaction: z
-      .object({ questionPreference: QuestionPreferenceSchema.default('provider-default') })
+      .object({ questionPreference: InteractionPreferenceSchema.default('provider-default') })
       .strict()
       .optional(),
+    work: WorkConfigSchema.optional(),
   })
   .strict();
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
@@ -61,7 +111,7 @@ export const GlobalConfigSchema = z
     version: z.literal(1),
     registry: z.string().min(1).optional(),
     defaults: z
-      .object({ questionPreference: QuestionPreferenceSchema.default('provider-default') })
+      .object({ questionPreference: InteractionPreferenceSchema.default('provider-default') })
       .strict()
       .optional(),
     providers: z.record(z.string(), ProviderSettingsSchema).optional(),
@@ -74,20 +124,29 @@ export const LockEntrySchema = z
   .object({
     source: z.string().min(1),
     version: z.string().min(1),
-    /** Git commit or registry download location the version resolved to. */
-    resolved: z.string().min(1).optional(),
-    /** Hash of the package as published (absent for locally owned skills). */
+    /** Git sources: the commit the ref resolved to. */
+    resolved: z.string().regex(COMMIT_RE, 'must be a full git commit id').optional(),
+    /** Git sources: the ref from agileflow.yaml that `resolved` came from. */
+    ref: GitRefSchema.optional(),
+    /** Hash of the source package as published (absent for locally owned skills). */
     integrity: z.string().min(1).optional(),
     /** Install location relative to the scope root (POSIX separators). */
     path: z.string().min(1),
-    /** Hash of the skill directory as AgileFlow materialized it. */
-    baseHash: z.string().min(1).optional(),
+    /**
+     * Hash of the rendered skill directory as AgileFlow wrote it: source plus
+     * render inputs (managed notice, interaction overlay, activation metadata).
+     * Same `integrity` with a different `renderedHash` means only the render
+     * inputs changed, and `sync` re-renders clean skills.
+     */
+    renderedHash: z.string().min(1).optional(),
     activation: ActivationSchema.default('auto'),
     /** `managed`: AgileFlow owns the content. `local`: the user owns it (forks, local skills). */
     ownership: z.enum(['managed', 'local']).default('managed'),
     enabled: z.literal(false).optional(),
   })
-  .strict();
+  // Fields written by a newer AgileFlow are kept, not rejected, so teammates
+  // on different CLI versions can share one lockfile.
+  .loose();
 export type LockEntry = z.infer<typeof LockEntrySchema>;
 
 export const LockfileSchema = z
@@ -95,7 +154,7 @@ export const LockfileSchema = z
     version: z.literal(1),
     resolved: z.record(SkillIdSchema, LockEntrySchema).default({}),
   })
-  .strict();
+  .loose();
 export type Lockfile = z.infer<typeof LockfileSchema>;
 
 export class ConfigError extends Error {
@@ -123,7 +182,21 @@ async function readYamlFile(file: string): Promise<unknown | undefined> {
   }
 }
 
+/** Highest file format version this CLI reads. */
+export const SUPPORTED_FORMAT_VERSION = 1;
+
+function assertSupportedVersion(raw: unknown, file: string): void {
+  const version = (raw as { version?: unknown } | null)?.version;
+  if (typeof version === 'number' && version > SUPPORTED_FORMAT_VERSION) {
+    throw new ConfigError(
+      `${path.basename(file)} uses format version ${version}, written by a newer AgileFlow. Upgrade the CLI: npm install -g agileflow@latest`,
+      file,
+    );
+  }
+}
+
 function parseWith<T>(schema: z.ZodType<T>, raw: unknown, file: string): T {
+  assertSupportedVersion(raw, file);
   const result = schema.safeParse(raw);
   if (!result.success) {
     throw new ConfigError(`${path.basename(file)} is invalid: ${formatZodError(result.error)}`, file);
@@ -157,6 +230,19 @@ function sortRecord<T>(record: Record<string, T>): Record<string, T> {
   return Object.fromEntries(Object.entries(record).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 }
 
+const KNOWN_LOCK_KEYS = new Set([
+  'source',
+  'version',
+  'resolved',
+  'ref',
+  'integrity',
+  'path',
+  'renderedHash',
+  'activation',
+  'ownership',
+  'enabled',
+]);
+
 export function serializeLockfile(lock: Lockfile): string {
   const resolved: Record<string, Record<string, unknown>> = {};
   for (const [id, entry] of Object.entries(sortRecord(lock.resolved))) {
@@ -166,15 +252,21 @@ export function serializeLockfile(lock: Lockfile): string {
       version: entry.version,
     };
     if (entry.resolved) ordered.resolved = entry.resolved;
+    if (entry.ref) ordered.ref = entry.ref;
     if (entry.integrity) ordered.integrity = entry.integrity;
     ordered.path = entry.path;
-    if (entry.baseHash) ordered.baseHash = entry.baseHash;
+    if (entry.renderedHash) ordered.renderedHash = entry.renderedHash;
     ordered.activation = entry.activation;
     ordered.ownership = entry.ownership;
     if (entry.enabled === false) ordered.enabled = false;
+    // Unknown fields from a newer CLI survive a rewrite by this one.
+    for (const [key, value] of Object.entries(entry)) {
+      if (!(key in ordered) && value !== undefined && !KNOWN_LOCK_KEYS.has(key)) ordered[key] = value;
+    }
     resolved[id] = ordered;
   }
-  return LOCK_HEADER + YAML.stringify({ version: 1, resolved }, { lineWidth: 0 });
+  const extra = Object.fromEntries(Object.entries(lock).filter(([k]) => k !== 'version' && k !== 'resolved'));
+  return LOCK_HEADER + YAML.stringify({ version: 1, ...extra, resolved }, { lineWidth: 0 });
 }
 
 export async function writeLockfile(file: string, lock: Lockfile): Promise<void> {
@@ -224,7 +316,7 @@ export function deleteIfEmpty(doc: YAML.Document, keyPath: string[]): void {
   if (YAML.isMap(node) && node.items.length === 0) doc.deleteIn(keyPath);
 }
 
-export function initialProjectConfig(questionPreference: QuestionPreference): string {
+export function initialProjectConfig(questionPreference: InteractionPreference): string {
   return (
     '# AgileFlow project configuration: which skills this repository uses.\n' +
     '# Edit freely, then run `agileflow update` (new versions) or `agileflow sync`.\n' +

@@ -1,0 +1,11 @@
+{
+  "name": "ops-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Small internal dashboard with nightly cron jobs, used as an eval sandbox.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test"
+  }
+}

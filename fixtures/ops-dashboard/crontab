@@ -1,0 +1,5 @@
+# Installed on the app host with `crontab crontab`. Times are UTC.
+# sync-billing must finish before expire-trials reads its snapshot.
+0 * * * *   cd /srv/ops-dashboard && node jobs/sync-billing.js
+15 * * * *  cd /srv/ops-dashboard && node jobs/expire-trials.js
+0 7 * * *   cd /srv/ops-dashboard && node jobs/send-digests.js

@@ -1,0 +1,115 @@
+{
+  "$id": "https://agileflow.dev/schemas/registry/version.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "integrity": {
+      "type": "string",
+      "pattern": "^sha256-[A-Za-z0-9+/]+=*$"
+    },
+    "url": {
+      "type": "string",
+      "minLength": 1
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "activation": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "manual"
+          ]
+        },
+        "files": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "scripts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requirements": {
+          "type": "object",
+          "properties": {
+            "commands": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "network": {
+              "type": "string",
+              "enum": [
+                "none",
+                "optional",
+                "required"
+              ]
+            }
+          },
+          "required": [
+            "commands",
+            "network"
+          ]
+        },
+        "license": {
+          "type": "string"
+        },
+        "compatibility": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "description",
+        "activation",
+        "files",
+        "references",
+        "scripts",
+        "requirements"
+      ]
+    },
+    "compatibility": {
+      "type": "object",
+      "properties": {
+        "agentSkills": {
+          "type": "boolean"
+        },
+        "bundleFormat": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "agentSkills",
+        "bundleFormat"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "version",
+    "integrity",
+    "url",
+    "metadata",
+    "compatibility"
+  ]
+}

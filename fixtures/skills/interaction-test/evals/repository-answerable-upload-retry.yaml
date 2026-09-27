@@ -1,0 +1,23 @@
+name: repository-answerable-upload-retry
+skill: interaction-test
+description: >
+  Looks ambiguous ("which retry behavior?") but the repository answers it:
+  avatar and document uploads use withRetry from src/uploads/retry.js. No
+  preference should ask.
+fixture: interaction-service
+invocation: explicit
+prompt: |
+  Attachment uploads fail on flaky connections. Give them the same retry
+  behavior our other upload flows use.
+assert:
+  shouldActivate: true
+interaction:
+  ambiguity: repository-answerable
+  decision: >
+    Which retry behavior to use is answered by the repository: src/uploads/avatar.js
+    and src/uploads/document.js wrap their uploads in withRetry from
+    src/uploads/retry.js (3 attempts, exponential backoff, retryable errors only).
+  success:
+    - uploadAttachment uses withRetry from src/uploads/retry.js
+    - no new or different retry policy is invented
+    - npm test passes

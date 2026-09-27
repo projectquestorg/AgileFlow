@@ -11,7 +11,8 @@ import {
   type SupportLevel,
   type TreeFile,
 } from '@agileflow/core';
-import { detectBySpec, probeVersion, type DetectionSpec } from './util';
+import { detectBySpec, type DetectionSpec } from './util';
+import { cachedVersion, versionDiagnostics, type MinimumVersion } from './versions';
 
 export interface StandardAdapterDefinition {
   id: ProviderId;
@@ -26,6 +27,8 @@ export interface StandardAdapterDefinition {
   hasManualFlag?: (skill: ResolvedSkill) => Promise<boolean>;
   extraValidate?: (pctx: ProviderContext, skills: ResolvedSkill[]) => Promise<Diagnostic[]>;
   optionalFeatures?: (pctx: ProviderContext) => Promise<ProviderCapabilities['optionalFeatures']>;
+  /** First CLI version known to read skills from `.agents/skills` (only where verified). */
+  minimumVersion?: MinimumVersion;
 }
 
 export function canonicalLabel(pctx: ProviderContext): string {
@@ -52,7 +55,7 @@ export function createStandardAdapter(def: StandardAdapterDefinition): ProviderA
         skillLocations: [canonicalLabel(pctx)],
         exposure: 'native',
         manualInvocation: def.manualInvocation,
-        version: pctx.verbose ? await probeVersion(detection.executable) : undefined,
+        version: pctx.verbose && detection.executable ? await cachedVersion(detection.executable, pctx.ctx.platform) : undefined,
         optionalFeatures: def.optionalFeatures ? await def.optionalFeatures(pctx) : undefined,
       };
     },
@@ -104,6 +107,7 @@ export function createStandardAdapter(def: StandardAdapterDefinition): ProviderA
         }
       }
       if (def.extraValidate) out.push(...(await def.extraValidate(pctx, skills)));
+      out.push(...(await versionDiagnostics(pctx, def.displayName, () => detectBySpec(pctx, def.detection), def.minimumVersion)));
       return out;
     },
 

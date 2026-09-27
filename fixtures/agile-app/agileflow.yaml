@@ -1,0 +1,5 @@
+version: 1
+skills: {}
+work:
+  enabled: true
+  root: docs/agile

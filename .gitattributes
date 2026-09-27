@@ -1,0 +1,9 @@
+# Skill packages and the registry are hashed byte-for-byte: never convert
+# their line endings on checkout (Windows core.autocrlf would change every
+# published integrity).
+skills/** -text
+packs/** -text
+registry/** -text
+fixtures/** -text
+schemas/** -text
+*.sh text eol=lf

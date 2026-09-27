@@ -37,9 +37,14 @@ export interface Transcript {
   explicitSkill?: string;
   /** Slash commands the provider registered (Claude init event). */
   slashCommands?: string[];
+  /** Provider's own result classification when it reports one (Claude: `success`, `error_max_turns`, ...). */
+  resultSubtype?: string;
   exitCode: number | null;
   durationMs: number;
+  /** The provider crashed, failed to start, or timed out: the run is an error, never scored. */
   error?: string;
+  /** Final state of what the run changed in the sandbox (full mode), for judges. */
+  changes?: string;
 }
 
 export interface EvalDriver {
@@ -101,7 +106,21 @@ function jsonLines(text: string): Array<Record<string, unknown>> {
   return out;
 }
 
+/** Error text for a failed provider process (timeout, spawn failure, non-zero exit). */
+export function processError(
+  res: { stderr: string; code: number | null; timedOut: boolean },
+  timeoutMs: number,
+  options: { allowNonZero?: boolean } = {},
+): string | undefined {
+  if (res.timedOut) return `timed out after ${Math.round(timeoutMs / 1000)}s`;
+  if (res.code === 0 || (options.allowNonZero && res.code !== null)) return undefined;
+  const detail = res.stderr.trim().split('\n').slice(-3).join(' ').slice(-500);
+  return res.code === null ? `could not run: ${detail || 'spawn failed'}` : `exited with code ${res.code}${detail ? `: ${detail}` : ''}`;
+}
+
 const skillPathRe = (id: string) => new RegExp(`skills[\\\\/]${id.replace(/[-]/g, '\\-')}[\\\\/]SKILL\\.md`);
+
+const withError = (error: string | undefined) => (error ? { error } : {});
 
 // ---------------------------------------------------------------------------
 // Claude Code
@@ -113,6 +132,7 @@ export function parseClaudeStream(stdout: string): Omit<Transcript, 'provider' |
   let finalText = '';
   let visibleSkills: string[] | null = null;
   let slashCommands: string[] | undefined;
+  let resultSubtype: string | undefined;
   for (const event of jsonLines(stdout)) {
     if (event.type === 'system' && event.subtype === 'init' && Array.isArray(event.skills)) {
       visibleSkills = event.skills as string[];
@@ -127,9 +147,19 @@ export function parseClaudeStream(stdout: string): Omit<Transcript, 'provider' |
     } else if (event.type === 'user' && typeof message?.content === 'string') {
       userMessages.push(message.content);
     }
-    if (event.type === 'result' && typeof event.result === 'string') finalText = event.result;
+    if (event.type === 'result') {
+      if (typeof event.result === 'string') finalText = event.result;
+      if (typeof event.subtype === 'string') resultSubtype = event.subtype;
+    }
   }
-  return { toolCalls, userMessages, finalText, visibleSkills, ...(slashCommands ? { slashCommands } : {}) };
+  return {
+    toolCalls,
+    userMessages,
+    finalText,
+    visibleSkills,
+    ...(slashCommands ? { slashCommands } : {}),
+    ...(resultSubtype ? { resultSubtype } : {}),
+  };
 }
 
 export const claudeDriver: EvalDriver = {
@@ -155,16 +185,31 @@ export const claudeDriver: EvalDriver = {
     ];
     // Activation runs must not change the sandbox; unapproved tools are denied in print mode.
     if (input.mode === 'activation') args.push('--disallowedTools', 'Edit', 'Write', 'NotebookEdit');
+    // Full runs may verify their work without stopping to ask for permission,
+    // so "the agent asked the user" measures real questions, not approvals.
+    if (input.mode === 'full') {
+      args.push(
+        '--allowedTools',
+        'Bash(npm test:*)',
+        'Bash(node --test:*)',
+        'Bash(git status:*)',
+        'Bash(git diff:*)',
+        'Bash(git log:*)',
+      );
+    }
     if (input.model) args.push('--model', input.model);
     const res = await runProcess('claude', args, { cwd: input.cwd, env: input.env, timeoutMs: input.timeoutMs });
+    const parsed = parseClaudeStream(res.stdout);
+    // Using up the turn budget is a finished run (scored), not a crash.
+    const error = processError(res, input.timeoutMs, { allowNonZero: parsed.resultSubtype === 'error_max_turns' });
     return {
       provider: 'claude',
       raw: res.stdout,
-      ...parseClaudeStream(res.stdout),
+      ...parsed,
       ...(input.invocation === 'explicit' ? { explicitSkill: input.skillId } : {}),
       exitCode: res.code,
       durationMs: res.durationMs,
-      ...(res.timedOut ? { error: 'timed out' } : res.code !== 0 ? { error: res.stderr.trim().slice(-500) } : {}),
+      ...(error ? { error } : {}),
     };
   },
   activated(t, id) {
@@ -223,7 +268,7 @@ export const codexDriver: EvalDriver = {
       ...parseCodexStream(res.stdout),
       exitCode: res.code,
       durationMs: res.durationMs,
-      ...(res.timedOut ? { error: 'timed out' } : res.code !== 0 ? { error: res.stderr.trim().slice(-500) } : {}),
+      ...withError(processError(res, input.timeoutMs)),
     };
   },
   activated(t, id) {
@@ -269,7 +314,7 @@ export const geminiDriver: EvalDriver = {
       ...parseGeminiStream(res.stdout),
       exitCode: res.code,
       durationMs: res.durationMs,
-      ...(res.timedOut ? { error: 'timed out' } : res.code !== 0 ? { error: res.stderr.trim().slice(-500) } : {}),
+      ...withError(processError(res, input.timeoutMs)),
     };
   },
   activated(t, id) {
@@ -318,7 +363,7 @@ export const opencodeDriver: EvalDriver = {
       ...parseOpenCodeStream(res.stdout),
       exitCode: res.code,
       durationMs: res.durationMs,
-      ...(res.timedOut ? { error: 'timed out' } : res.code !== 0 ? { error: res.stderr.trim().slice(-500) } : {}),
+      ...withError(processError(res, input.timeoutMs)),
     };
   },
   activated(t, id) {

@@ -1,7 +1,8 @@
 name: CI
 
-# Typecheck, tests, registry/schema freshness, the official skill release
-# gate, and a smoke test of the built CLI.
+# Typecheck, tests, registry/schema freshness, the append-only registry rule,
+# the official skill release gate, and smoke tests of the built CLI on Linux,
+# macOS, and Windows.
 on:
   push:
     branches: [main, v5]
@@ -15,32 +16,57 @@ on:
       - schemas/**
       - fixtures/**
       - package.json
+      - package-lock.json
       - tsconfig.json
       - vitest.config.ts
+      - action.yml
+      - .gitattributes
       - .github/workflows/ci.yml
+
+permissions:
+  contents: read
 
 jobs:
   test:
-    name: test (node ${{ matrix.node }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    name: test (${{ matrix.os }}, node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest]
         node: ['20', '22']
+        exclude:
+          - os: macos-latest
+            node: '20'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+          cache: npm
       # apps/docs has a pre-existing peer-dependency conflict.
-      - name: Install workspace dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Install workspace dependencies (from the lockfile)
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
       - name: Typecheck
         run: npm run typecheck
       - name: Unit and integration tests
         run: npx vitest run
-      - name: Registry is up to date with skills/ and packs/
+      - name: Registry is up to date with skills/ and packs/ (history verified)
         run: npm run registry:check
+      - name: Published registry versions are append-only
+        if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
+        run: |
+          base=$(git merge-base HEAD origin/main)
+          changed=$(git diff --name-only --diff-filter=DMR "$base" -- 'registry/packages/**' 'registry/v1/skills/*/*/[0-9]*.json')
+          if [ -n "$changed" ]; then
+            echo "Published registry files were modified or deleted:"
+            echo "$changed"
+            echo "Publish a new version instead (bump package.version in the skill's agileflow.skill.yaml)."
+            exit 1
+          fi
       - name: Schemas are up to date
         working-directory: apps/cli
         run: npx tsx scripts/build-schemas.ts --check
@@ -65,7 +91,11 @@ jobs:
           test ! -e docs
           test ! -e .agileflow
           node "$GITHUB_WORKSPACE/apps/cli/bin/agileflow.js" check
+          node "$GITHUB_WORKSPACE/apps/cli/bin/agileflow.js" verify
+          node "$GITHUB_WORKSPACE/apps/cli/bin/agileflow.js" list --json > list.json
+          node -e "JSON.parse(require('fs').readFileSync('list.json','utf8'))"
       - name: 'Published package: install from tarball, audit runtime deps, run it'
+        if: matrix.os == 'ubuntu-latest'
         env:
           AGILEFLOW_REGISTRY: ${{ github.workspace }}/registry
           AGILEFLOW_NO_UPDATE_NOTIFIER: '1'
@@ -80,3 +110,53 @@ jobs:
           mkdir project && cd project && git init -q
           ../node_modules/.bin/agileflow init --yes
           ../node_modules/.bin/agileflow check
+
+  windows:
+    # Windows has no symlink privilege by default, no executable bit, and Git
+    # checks text files out with CRLF (core.autocrlf=true). This job proves the
+    # built CLI works there: junction/mirror fallback, line-ending-insensitive
+    # ownership, and path handling.
+    name: windows smoke (node 22)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - run: git config --global core.autocrlf true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install workspace dependencies (from the lockfile)
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Core safety tests
+        run: npx vitest run packages/core/test/safety.test.ts packages/work/tests
+      - name: Registry is up to date (CRLF checkout must not change integrities)
+        run: npm run registry:check
+      - name: Build
+        run: npm run build:cli
+      - name: 'Smoke test: init, commit, fresh CRLF clone stays clean'
+        shell: bash
+        env:
+          AGILEFLOW_REGISTRY: ${{ github.workspace }}/registry
+          AGILEFLOW_NO_UPDATE_NOTIFIER: '1'
+        run: |
+          set -e
+          cli="node $GITHUB_WORKSPACE/apps/cli/bin/agileflow.js"
+          dir=$(mktemp -d)
+          cd "$dir"
+          git init -q
+          git config user.email ci@example.com
+          git config user.name ci
+          $cli init --yes
+          $cli check
+          git add -A
+          git commit -qm "agileflow"
+          clone=$(mktemp -d)
+          git clone -q "$dir" "$clone/repo"
+          cd "$clone/repo"
+          $cli check
+          $cli sync
+          $cli verify
+          test -z "$(git status --porcelain)"

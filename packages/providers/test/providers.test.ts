@@ -48,7 +48,7 @@ describe('TOML patching', () => {
 
   it('handles dotted keys, refuses inline tables, and reports state', () => {
     expect(setTomlValue('features.flag = false\n', 'features', 'flag', true).text).toBe('features.flag = true\n');
-    expect(() => setTomlValue('features = { flag = false }\n', 'features', 'flag', true)).toThrow(/inline table/);
+    expect(() => setTomlValue('features = { flag = false }\n', 'features', 'flag', true)).toThrow(/inline features table/);
     expect(readTomlValue('[features]\nflag = true\n', 'features', 'flag')).toEqual({ existed: true, value: true });
     expect(readTomlValue('', 'features', 'flag')).toEqual({ existed: false });
     expect(() => setTomlValue('this is = = not toml', 'features', 'flag', true)).toThrow();

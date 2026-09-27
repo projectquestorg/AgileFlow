@@ -1,0 +1,47 @@
+{
+  "$id": "https://agileflow.dev/schemas/work/decision.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "number",
+      "const": 1
+    },
+    "type": {
+      "type": "string",
+      "const": "decision"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^DEC-[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{8}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "proposed",
+        "accepted",
+        "superseded",
+        "rejected"
+      ]
+    },
+    "related": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(EPIC|STORY|DEC)-[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{8}$"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "type",
+    "id",
+    "title",
+    "status"
+  ],
+  "additionalProperties": false
+}

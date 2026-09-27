@@ -15,6 +15,8 @@ export interface Prompter {
   select<T extends string>(message: string, choices: Choice<T>[], initial?: T): Promise<T>;
   multiselect<T extends string>(message: string, choices: Choice<T>[], initial: T[], required?: boolean): Promise<T[]>;
   confirm(message: string, initial?: boolean): Promise<boolean>;
+  /** Free text; returns '' when skipped. */
+  text(message: string, placeholder?: string): Promise<string>;
 }
 
 export class CancelledError extends Error {
@@ -53,6 +55,9 @@ export const clackPrompter: Prompter = {
   async confirm(message, initial = true) {
     return unwrap(await clack.confirm({ message, initialValue: initial }));
   },
+  async text(message, placeholder) {
+    return String(unwrap(await clack.text({ message, placeholder })) ?? '');
+  },
 };
 
 /** Used with --yes / CI / no TTY: every question takes its default. */
@@ -66,6 +71,9 @@ export const defaultsPrompter: Prompter = {
   },
   async confirm(_message, initial = true) {
     return initial;
+  },
+  async text() {
+    return '';
   },
 };
 
@@ -89,6 +97,9 @@ export function scriptedPrompter(answers: unknown[]): Prompter & { asked: string
     },
     async confirm(message) {
       return next(message) as boolean;
+    },
+    async text(message) {
+      return String(next(message) ?? '');
     },
   };
 }

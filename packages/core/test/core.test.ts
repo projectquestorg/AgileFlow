@@ -118,7 +118,7 @@ describe('config and lockfile', () => {
     const lock = LockfileSchema.parse({
       version: 1,
       resolved: {
-        zeta: { source: '@agileflow/zeta', version: '1.0.0', integrity: 'sha256-a', path: '.agents/skills/zeta', baseHash: 'sha256-b' },
+        zeta: { source: '@agileflow/zeta', version: '1.0.0', integrity: 'sha256-a', path: '.agents/skills/zeta', renderedHash: 'sha256-b' },
         alpha: { source: './x', version: 'local', path: '.agents/skills/alpha', ownership: 'local' },
       },
     });
@@ -184,7 +184,7 @@ describe('sources and versions', () => {
 describe('rendering', () => {
   const pkg = [file('SKILL.md', SKILL), file('agileflow.skill.yaml', 'schema: 1\npackage:\n  name: "@agileflow/demo"\n  version: "1.0.0"\ncapabilities:\n  userInteraction: optional\n')];
   const render = (over: Partial<Parameters<typeof renderSkill>[1]> = {}) =>
-    renderSkill(pkg, { id: 'demo', managed: true, activation: 'auto', questionPreference: 'provider-default', adapters: allAdapters(), ...over });
+    renderSkill(pkg, { id: 'demo', managed: true, activation: 'auto', interactionPreference: 'provider-default', adapters: allAdapters(), ...over });
   const text = (files: TreeFile[], p = 'SKILL.md') => files.find((f) => f.path === p)!.content.toString();
 
   it('adds the managed notice after the frontmatter without touching frontmatter', () => {
@@ -203,23 +203,24 @@ describe('rendering', () => {
     const files = render({ activation: 'manual' });
     const fm = YAML.parse(splitFrontmatter(text(files)).frontmatter!);
     expect(fm['disable-model-invocation']).toBe(true);
-    expect(fm.metadata['opencode/autoinvoke']).toBe(false);
+    // OpenCode has no manual-only switch; nothing is written for it.
+    expect(fm.metadata?.['opencode/autoinvoke']).toBeUndefined();
     expect(YAML.parse(text(files, 'agents/openai.yaml'))).toEqual({ policy: { allow_implicit_invocation: false } });
   });
 
   it('merges into an existing agents/openai.yaml', () => {
     const withCodex = [...pkg, file('agents/openai.yaml', 'interface:\n  display_name: Demo\n')];
-    const out = renderSkill(withCodex, { id: 'demo', managed: false, activation: 'manual', questionPreference: 'provider-default', adapters: allAdapters() });
+    const out = renderSkill(withCodex, { id: 'demo', managed: false, activation: 'manual', interactionPreference: 'provider-default', adapters: allAdapters() });
     expect(YAML.parse(text(out, 'agents/openai.yaml'))).toEqual({
       interface: { display_name: 'Demo' },
       policy: { allow_implicit_invocation: false },
     });
   });
 
-  it('renames the frontmatter to match the install id and adds the question preference line', () => {
-    const out = text(renderSkill(pkg, { id: 'renamed', managed: false, activation: 'auto', questionPreference: 'minimize', adapters: [] }));
+  it('renames the frontmatter to match the install id and adds the interaction overlay', () => {
+    const out = text(renderSkill(pkg, { id: 'renamed', managed: false, activation: 'auto', interactionPreference: 'minimize', adapters: [] }));
     expect(out).toContain('name: renamed');
-    expect(out).toContain('Project question preference: make reasonable assumptions');
+    expect(out).toContain('Question preference for this project: make reasonable assumptions');
   });
 });
 

@@ -18,7 +18,8 @@
       "@agileflow/core": ["packages/core/src/index.ts"],
       "@agileflow/providers": ["packages/providers/src/index.ts"],
       "@agileflow/registry": ["packages/registry/src/index.ts"],
-      "@agileflow/evals": ["packages/evals/src/index.ts"]
+      "@agileflow/evals": ["packages/evals/src/index.ts"],
+      "@agileflow/work": ["packages/work/src/index.ts"]
     }
   },
   "include": [
@@ -27,6 +28,7 @@
     "apps/cli/test/**/*.ts",
     "packages/*/src/**/*.ts",
     "packages/*/test/**/*.ts",
+    "packages/*/tests/**/*.ts",
     "vitest.config.ts"
   ]
 }

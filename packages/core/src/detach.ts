@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { removePath, writeFileAtomic } from './fs';
+import { pathExists, removePath, writeFileAtomic } from './fs';
 import { exposeProviders } from './installer';
 import { MIRROR_MARKER, classifyEntry } from './links';
 import { inspectSkill } from './ownership';
@@ -8,7 +8,15 @@ import { stripManagedNotice } from './render';
 import { skillDir } from './scope';
 import { SKILL_FILE } from './skill';
 import { projectStateDir } from './state';
-import type { Services, Workspace } from './workspace';
+import { readGlobalConfig } from './config';
+import { setConfigValue, type Services, type Workspace } from './workspace';
+
+async function personalConfigHasSettings(file: string): Promise<boolean> {
+  const config = await readGlobalConfig(file).catch(() => null);
+  if (!config) return false;
+  const defaults = config.defaults?.questionPreference && config.defaults.questionPreference !== 'provider-default';
+  return !!(defaults || config.registry || (config.providers && Object.keys(config.providers).length));
+}
 
 export interface DetachReport {
   keptSkills: string[];
@@ -16,6 +24,38 @@ export interface DetachReport {
   keptModified: string[];
   removedFiles: string[];
   providerArtifacts: number;
+}
+
+export interface DetachPlan {
+  keepSkills: boolean;
+  /** With `keepSkills`: skills that stay as standalone Agent Skills. */
+  kept: string[];
+  /** Without `keepSkills`: unmodified skills whose directories will be deleted. */
+  remove: string[];
+  /** Without `keepSkills`: modified or locally owned skills that stay. */
+  keptModified: string[];
+  /** Config/lock files that will be removed. */
+  files: string[];
+}
+
+/** What `detachWorkspace` would do. Read-only; used to show and confirm the change first. */
+export async function planDetach(ws: Workspace, options: { keepSkills: boolean }): Promise<DetachPlan> {
+  const plan: DetachPlan = { keepSkills: options.keepSkills, kept: [], remove: [], keptModified: [], files: [] };
+  for (const id of Object.keys(ws.lock.resolved)) {
+    if (options.keepSkills) {
+      if (await pathExists(path.join(skillDir(ws.scope, id), SKILL_FILE))) plan.kept.push(id);
+      continue;
+    }
+    const entry = ws.lock.resolved[id]!;
+    const state = await inspectSkill(ws.scope, id, { ...entry, enabled: undefined });
+    if (state.status === 'clean') plan.remove.push(id);
+    else if (state.status === 'modified' || state.status === 'local') plan.keptModified.push(id);
+  }
+  const keepPersonalConfig = ws.scope.kind === 'global' && (await personalConfigHasSettings(ws.scope.configPath));
+  for (const file of keepPersonalConfig ? [ws.scope.lockPath] : [ws.scope.configPath, ws.scope.lockPath]) {
+    if (await pathExists(file)) plan.files.push(file);
+  }
+  return plan;
 }
 
 /**
@@ -59,6 +99,10 @@ export async function detachWorkspace(
         const state = await classifyEntry(change.path, skillDir(ws.scope, change.skillId));
         if (state.state === 'mirror') {
           await removePath(path.join(change.path, MIRROR_MARKER));
+          // The user-owned copy must not keep telling people to run `agileflow fork`.
+          const mirrored = path.join(change.path, SKILL_FILE);
+          const text = await fs.promises.readFile(mirrored, 'utf8').catch(() => null);
+          if (text !== null && stripManagedNotice(text) !== text) await writeFileAtomic(mirrored, stripManagedNotice(text));
           report.providerArtifacts++;
         }
       }
@@ -80,7 +124,13 @@ export async function detachWorkspace(
     report.providerArtifacts = exposure.results.filter((r) => r.outcome === 'done').length;
   }
 
-  for (const file of [ws.scope.configPath, ws.scope.lockPath]) {
+  // The personal config also holds defaults, provider settings, and the
+  // registry; only its skill list belongs to what is being detached.
+  const keepPersonalConfig = ws.scope.kind === 'global' && (await personalConfigHasSettings(ws.scope.configPath));
+  if (keepPersonalConfig) {
+    await setConfigValue(ws.scope, ['globalSkills'], {});
+  }
+  for (const file of keepPersonalConfig ? [ws.scope.lockPath] : [ws.scope.configPath, ws.scope.lockPath]) {
     try {
       await fs.promises.unlink(file);
       report.removedFiles.push(file);

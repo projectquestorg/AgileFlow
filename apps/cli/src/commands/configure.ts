@@ -1,3 +1,4 @@
+import path from 'node:path';
 import {
   editScopeConfig,
   globalScope,
@@ -6,7 +7,7 @@ import {
   setSkillSpecs,
   syncWorkspace,
   type Activation,
-  type QuestionPreference,
+  type InteractionPreference,
   type ScopeTarget,
 } from '@agileflow/core';
 import {
@@ -16,8 +17,10 @@ import {
   STRUCTURED_QUESTIONS_FEATURE,
 } from '@agileflow/providers';
 import type { Cli } from '../runtime';
-import { EXIT, requireProjectScope, scopeFor, servicesFor, UsageError } from '../runtime';
-import { printSyncReport } from './shared';
+import { EXIT, findProject, mutate, requireProjectScope, scopeFor, servicesFor, UsageError } from '../runtime';
+import { printSyncReport, syncReportJson } from './shared';
+import { readGlobalConfig, readProjectConfig, projectScope, pathExists } from '@agileflow/core';
+import { resolveRegistryLocation } from '@agileflow/registry';
 
 export interface ConfigureOptions {
   global?: boolean;
@@ -25,15 +28,71 @@ export interface ConfigureOptions {
   enable?: boolean;
   disable?: boolean;
   yes?: boolean;
+  json?: boolean;
 }
 
-const PREFERENCES: QuestionPreference[] = ['provider-default', 'prefer', 'minimize'];
+const PREFERENCES: InteractionPreference[] = ['provider-default', 'prefer', 'minimize'];
 
-async function applyAndSync(cli: Cli, scope: ScopeTarget): Promise<void> {
+async function applyAndSync(cli: Cli, scope: ScopeTarget, result: Record<string, unknown>): Promise<number> {
   const services = await servicesFor(cli.ctx, scope);
   const ws = await loadWorkspace(scope);
-  if (!ws.lockExists) return;
-  printSyncReport(cli, ws, await syncWorkspace(services, ws));
+  let sync = null;
+  if (ws.lockExists) {
+    sync = await syncWorkspace(services, ws, { mismatch: 'report' });
+    printSyncReport(cli, ws, sync);
+  }
+  if (cli.out.jsonMode) cli.out.json({ ok: true, ...result, sync: sync ? syncReportJson(sync) : null });
+  return sync?.events.some((e) => e.level === 'error') ? EXIT.ERROR : EXIT.OK;
+}
+
+/** `agileflow configure show`: the effective configuration, where each value comes from. */
+async function showConfig(cli: Cli, options: ConfigureOptions): Promise<number> {
+  const { ctx, out } = cli;
+  const personalScope = globalScope(ctx);
+  const personal = await readGlobalConfig(personalScope.configPath);
+  const root = options.global ? null : await findProject(ctx);
+  const project = root ? await readProjectConfig(projectScope(root).configPath) : null;
+  const registry = resolveRegistryLocation({
+    ctx,
+    registry: project?.registry ?? personal?.registry,
+    registryBase: project?.registry ? root! : path.dirname(personalScope.configPath),
+  });
+  const registrySource = ctx.env.AGILEFLOW_REGISTRY
+    ? 'AGILEFLOW_REGISTRY'
+    : project?.registry
+      ? 'agileflow.yaml'
+      : personal?.registry
+        ? 'personal config'
+        : 'default';
+  const data = {
+    ok: true,
+    project: root ? { root, config: projectScope(root).configPath, requires: project?.agileflow ?? null } : null,
+    personal: { config: personalScope.configPath, exists: await pathExists(personalScope.configPath) },
+    registry: { location: registry, from: registrySource },
+    questionPreference: project?.interaction?.questionPreference ?? personal?.defaults?.questionPreference ?? 'provider-default',
+    providers: { ...(personal?.providers ?? {}), ...(project?.providers ?? {}) },
+    skills: Object.keys(project?.skills ?? personal?.globalSkills ?? {}).length,
+    work: project?.work ?? null,
+    directories: { config: ctx.configDir, cache: ctx.cacheDir },
+    environment: Object.fromEntries(
+      Object.entries(ctx.env).filter(([k, v]) => k.startsWith('AGILEFLOW_') && v !== undefined),
+    ),
+  };
+  if (options.json || out.jsonMode) {
+    out.json(data);
+    return EXIT.OK;
+  }
+  out.heading('Effective configuration');
+  out.line(`  project:             ${data.project ? data.project.config : '(none here)'}`);
+  if (data.project?.requires) out.line(`  requires AgileFlow:  ${data.project.requires}`);
+  out.line(`  personal config:     ${data.personal.config}${data.personal.exists ? '' : ' (not created)'}`);
+  out.line(`  registry:            ${data.registry.location} (${data.registry.from})`);
+  out.line(`  question preference: ${data.questionPreference}`);
+  for (const [id, settings] of Object.entries(data.providers)) out.line(`  provider ${id}: ${JSON.stringify(settings)}`);
+  out.line(`  config directory:    ${data.directories.config}`);
+  out.line(`  cache directory:     ${data.directories.cache}`);
+  for (const [k, v] of Object.entries(data.environment)) out.line(`  env ${k}=${v}`);
+  return EXIT.OK;
 }
 
 // ---------------------------------------------------------------------------
@@ -50,6 +109,7 @@ async function codexQuestions(cli: Cli, action: string | undefined, options: Con
     out.line('Codex can expose request_user_input during normal (Default mode) work through an experimental feature.');
     out.line(`Current: ${current === null ? 'unknown (config unreadable)' : current ? 'enabled' : 'disabled'}`);
     out.line('AgileFlow does not need this feature to function.');
+    out.line('Note: Codex shows an "under-development features" warning at startup while it is enabled.');
     if (action === 'status' || !prompter.interactive) return EXIT.OK;
     const choice = await prompter.select(
       'Enable it?',
@@ -73,6 +133,7 @@ async function codexQuestions(cli: Cli, action: string | undefined, options: Con
         : 'AgileFlow has not changed this Codex setting, so there is nothing to restore. Your Codex configuration was left as is.',
     );
   } else {
+    if (enable) out.line('Codex will show an "under-development features" warning at startup while this is enabled.');
     out.line('Only this setting will change:');
     out.line(file);
     out.line('[features]');
@@ -111,7 +172,7 @@ async function questionPreference(cli: Cli, value: string | undefined, options: 
       'provider-default',
     );
   }
-  if (!PREFERENCES.includes(value as QuestionPreference)) {
+  if (!PREFERENCES.includes(value as InteractionPreference)) {
     throw new UsageError(`question preference must be one of: ${PREFERENCES.join(', ')}`);
   }
   if (scope.kind === 'global') {
@@ -121,8 +182,7 @@ async function questionPreference(cli: Cli, value: string | undefined, options: 
     await setConfigValue(scope, ['interaction', 'questionPreference'], value);
     cli.out.line(`Project question preference: ${value}`);
   }
-  await applyAndSync(cli, scope);
-  return EXIT.OK;
+  return applyAndSync(cli, scope, { topic: 'question-preference', scope: scope.kind, value });
 }
 
 async function configureSkill(cli: Cli, id: string | undefined, options: ConfigureOptions): Promise<number> {
@@ -168,8 +228,12 @@ async function configureSkill(cli: Cli, id: string | undefined, options: Configu
     cli.out.warn(`${id} is locally owned; AgileFlow does not rewrite it. Add or remove the manual-invocation flags in its SKILL.md yourself.`);
   }
   cli.out.line(`${id}: ${next.enabled === false ? 'disabled' : 'enabled'}, activation ${next.activation ?? ws.lock.resolved[id]?.activation ?? 'auto'}`);
-  await applyAndSync(cli, scope);
-  return EXIT.OK;
+  return applyAndSync(cli, scope, {
+    topic: 'skill',
+    skill: id,
+    enabled: next.enabled !== false,
+    activation: next.activation ?? ws.lock.resolved[id]?.activation ?? 'auto',
+  });
 }
 
 async function configureProvider(cli: Cli, id: string | undefined, value: string | undefined, options: ConfigureOptions): Promise<number> {
@@ -194,11 +258,10 @@ async function configureProvider(cli: Cli, id: string | undefined, value: string
     );
   }
   const map: Record<string, 'auto' | boolean> = { auto: 'auto', on: true, true: true, off: false, false: false };
-  if (!(value in map)) throw new UsageError('Provider setting must be auto, on, or off');
+  if (!Object.hasOwn(map, value)) throw new UsageError('Provider setting must be auto, on, or off');
   await setConfigValue(scope, ['providers', id, 'enabled'], map[value]);
   cli.out.line(`${id}: ${value}`);
-  await applyAndSync(cli, scope);
-  return EXIT.OK;
+  return applyAndSync(cli, scope, { topic: 'provider', provider: id, enabled: map[value] });
 }
 
 export async function runConfigure(cli: Cli, args: string[], options: ConfigureOptions): Promise<number> {
@@ -210,9 +273,11 @@ export async function runConfigure(cli: Cli, args: string[], options: ConfigureO
         'agileflow configure provider <claude|codex|cursor|opencode|gemini> <auto|on|off>',
         'agileflow configure codex-questions <enable|disable|status>',
         'agileflow configure question-preference <provider-default|prefer|minimize> [--global]',
+        'agileflow configure show [--json]',
       ]);
     }
     topic = await cli.prompter.select('What would you like to configure?', [
+      { value: 'show', label: 'Show', hint: 'effective configuration and where it comes from' },
       { value: 'skill', label: 'Skills', hint: 'enable, disable, automatic or manual invocation' },
       { value: 'provider', label: 'Providers', hint: 'provider compatibility links' },
       { value: 'codex-questions', label: 'Structured questions', hint: 'optional Codex feature' },
@@ -224,6 +289,14 @@ export async function runConfigure(cli: Cli, args: string[], options: ConfigureO
       topic = 'question-preference';
     }
   }
+  if (topic === 'show' || topic === 'get') return showConfig(cli, options);
+  const scopeToLock = topic === 'codex-questions' || topic === 'structured-questions' || options.global
+    ? globalScope(cli.ctx)
+    : ((await findProject(cli.ctx)) ? await requireProjectScope(cli.ctx) : globalScope(cli.ctx));
+  return mutate(cli, scopeToLock, () => dispatch(cli, topic!, a, b, options));
+}
+
+async function dispatch(cli: Cli, topic: string, a: string | undefined, b: string | undefined, options: ConfigureOptions): Promise<number> {
   switch (topic) {
     case 'codex-questions':
     case 'structured-questions':
@@ -238,7 +311,7 @@ export async function runConfigure(cli: Cli, args: string[], options: ConfigureO
       return configureProvider(cli, a, b, options);
     default:
       throw new UsageError(`Unknown configure topic "${topic}"`, [
-        'Topics: skill, provider, codex-questions, question-preference',
+        'Topics: show, skill, provider, codex-questions, question-preference',
       ]);
   }
 }

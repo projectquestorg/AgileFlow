@@ -15,7 +15,7 @@ import {
   writeLockfile,
   type Lockfile,
   type ProviderSettings,
-  type QuestionPreference,
+  type InteractionPreference,
   type SkillSpec,
 } from './config';
 import type { ScopeTarget } from './scope';
@@ -32,7 +32,7 @@ export interface Workspace {
   scope: ScopeTarget;
   configExists: boolean;
   specs: Record<string, SkillSpec>;
-  questionPreference: QuestionPreference;
+  questionPreference: InteractionPreference;
   providerSettings: Record<string, ProviderSettings>;
   registry: string | undefined;
   lock: Lockfile;
@@ -75,7 +75,7 @@ function skillsKey(scope: ScopeTarget): string {
 export async function editScopeConfig(
   scope: ScopeTarget,
   mutate: (doc: YAML.Document, skillsKey: string) => void,
-  options: { questionPreference?: QuestionPreference } = {},
+  options: { questionPreference?: InteractionPreference } = {},
 ): Promise<void> {
   if (scope.kind === 'project') {
     await editYamlConfig(
@@ -119,10 +119,6 @@ export async function setConfigValue(scope: ScopeTarget, keyPath: string[], valu
       doc.setIn(keyPath, value);
     }
   });
-}
-
-export function scopeSkillsKey(scope: ScopeTarget): string {
-  return skillsKey(scope);
 }
 
 export async function saveLock(ws: Workspace): Promise<void> {

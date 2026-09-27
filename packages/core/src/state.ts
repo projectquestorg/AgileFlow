@@ -20,13 +20,15 @@ const SyncStateSchema = z.object({
   root: z.string(),
   skills: z.record(
     z.string(),
-    z.object({ path: z.string(), baseHash: z.string().optional() }),
+    z.object({ path: z.string(), renderedHash: z.string().optional() }),
   ),
 });
 export type SyncState = z.infer<typeof SyncStateSchema>;
 
 export function projectStateDir(ctx: Context, scope: ScopeTarget): string {
-  const key = sha256Hex(path.resolve(scope.root)).slice(0, 16);
+  // Drive-letter and path case differ between Windows terminals; the key must not.
+  const resolved = path.resolve(scope.root);
+  const key = sha256Hex(ctx.platform === 'win32' ? resolved.toLowerCase() : resolved).slice(0, 16);
   return path.join(ctx.cacheDir, 'projects', `${scope.kind}-${key}`);
 }
 

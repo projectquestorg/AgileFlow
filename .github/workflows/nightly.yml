@@ -1,0 +1,87 @@
+name: Nightly
+
+# Catches drift nobody commits: provider CLIs change their skill loading,
+# the published registry must stay verifiable, and dependencies age.
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  published-registry:
+    name: published registry verifies
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - run: npm run build:cli
+      - name: Install from the live registry and verify every package
+        env:
+          AGILEFLOW_NO_UPDATE_NOTIFIER: '1'
+        run: |
+          set -e
+          dir=$(mktemp -d) && cd "$dir" && git init -q
+          node "$GITHUB_WORKSPACE/apps/cli/bin/agileflow.js" init --yes
+          node "$GITHUB_WORKSPACE/apps/cli/bin/agileflow.js" add @agileflow/github @agileflow/communication --yes
+          node "$GITHUB_WORKSPACE/apps/cli/bin/agileflow.js" verify --fail-on high
+      - name: Runtime dependency audit
+        run: npm audit --omit=dev --audit-level=high --workspace apps/cli
+
+  conformance:
+    # Real provider CLIs, no model calls where the provider allows it. Provider
+    # CLIs are installed from npm; model-backed checks need the API secrets and
+    # are skipped (not failed) when a secret is absent.
+    name: provider conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Install provider CLIs
+        run: npm install --global @openai/codex @anthropic-ai/claude-code @google/gemini-cli opencode-ai --no-fund --no-audit
+      - name: Conformance
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: npm run test:conformance
+
+  activation-evals:
+    # Behavioral regression gate for the official catalog (activation precision
+    # and recall). Needs a Claude API key; skipped without one.
+    name: activation evals (claude)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        if: env.ANTHROPIC_API_KEY != ''
+      - uses: actions/setup-node@v4
+        if: env.ANTHROPIC_API_KEY != ''
+        with:
+          node-version: '22'
+          cache: npm
+      - if: env.ANTHROPIC_API_KEY != ''
+        run: npm ci --legacy-peer-deps --no-audit --no-fund && npm install --global @anthropic-ai/claude-code --no-fund --no-audit
+      - name: Activation evals
+        if: env.ANTHROPIC_API_KEY != ''
+        working-directory: apps/cli
+        run: npx tsx src/index.ts eval --catalog ../../skills --provider claude --fixtures ../../fixtures --runs 2 --json --out eval-report.json
+      - uses: actions/upload-artifact@v4
+        if: always() && env.ANTHROPIC_API_KEY != ''
+        with:
+          name: eval-report
+          path: apps/cli/eval-report.json

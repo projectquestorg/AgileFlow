@@ -34,10 +34,6 @@
     "npm": ">=9.0.0"
   },
   "devDependencies": {
-    "@mermaid-js/mermaid-cli": "^11.12.0",
-    "eslint": "^9.39.2",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.4",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.2",
     "prettier": "^3.7.4",

@@ -1,0 +1,34 @@
+name: Attest registry
+
+# Every official skill bundle served from main gets a GitHub artifact
+# attestation (SLSA build provenance, signed with Sigstore). Users verify a
+# locked package with `agileflow verify --attestations`, which runs
+# `gh attestation verify <bundle> --repo projectquestorg/AgileFlow`.
+on:
+  push:
+    branches: [main]
+    paths:
+      - registry/packages/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  attest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+      - name: Registry is consistent before attesting
+        run: npm run registry:check
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: 'registry/packages/**/*.json'

@@ -1,15 +1,18 @@
 import {
   checkScope,
-  findProjectRoot,
   globalScope,
   pathExists,
   planMigration,
   projectScope,
+  readProjectConfig,
   type CheckReport,
   type ScopeTarget,
 } from '@agileflow/core';
+import path from 'node:path';
 import type { Cli } from '../runtime';
-import { EXIT, servicesFor } from '../runtime';
+import { EXIT, findProject, mutate, servicesFor } from '../runtime';
+import { syncReportJson } from './shared';
+import { workCheckSection } from './work';
 
 export interface CheckOptions {
   global?: boolean;
@@ -47,7 +50,7 @@ export async function runCheck(cli: Cli, options: CheckOptions): Promise<number>
   const { ctx, out } = cli;
   const scopes: ScopeTarget[] = [];
   if (!options.global) {
-    const root = await findProjectRoot(ctx.cwd);
+    const root = await findProject(ctx);
     if (root) scopes.push(projectScope(root));
   }
   const personal = globalScope(ctx);
@@ -64,10 +67,27 @@ export async function runCheck(cli: Cli, options: CheckOptions): Promise<number>
   const reports: CheckReport[] = [];
   for (const scope of scopes) {
     const services = await servicesFor(ctx, scope);
-    const report = await checkScope(services, scope, { fix: options.fix, verbose: options.verbose });
+    const run = () => checkScope(services, scope, { fix: options.fix, verbose: options.verbose });
+    const report = options.fix ? await mutate(cli, scope, run) : await run();
+    if (scope.kind === 'global' && (await pathExists(path.join(ctx.homeDir, 'agileflow.yaml')))) {
+      report.sections[0]!.diagnostics.push({
+        level: 'warn',
+        message: '~/agileflow.yaml is ignored: your home directory is not treated as a project',
+        detail: ['It would capture every repository below it. Use `agileflow add --global` for personal skills and delete ~/agileflow.yaml and ~/agileflow.lock.'],
+      });
+    }
     const registry = (services.fetcher as { registry?: { base: string } }).registry?.base;
     if (registry) {
       report.sections[0]!.diagnostics.push({ level: 'info', message: `registry: ${registry}`, verboseOnly: true });
+      const fromRepo = scope.kind === 'project' && !ctx.env.AGILEFLOW_REGISTRY && (await readProjectConfig(scope.configPath).catch(() => null))?.registry;
+      if (fromRepo) {
+        // A cloned repository chooses where its skills come from; say so.
+        report.sections[0]!.diagnostics.push({
+          level: 'info',
+          message: `skills in this project come from ${registry} (registry: in agileflow.yaml)`,
+          detail: ['Official @agileflow packages are still verified against the integrities pinned in your CLI.'],
+        });
+      }
     }
     if (scope.kind === 'project') {
       const legacy = await planMigration(scope.root, ctx.homeDir);
@@ -77,6 +97,13 @@ export async function runCheck(cli: Cli, options: CheckOptions): Promise<number>
           message: 'AgileFlow v4 files detected',
           detail: [...legacy.findings.slice(0, 6), 'Run `agileflow migrate v4 --preview` to review a safe cleanup.'],
         });
+      }
+    }
+    if (scope.kind === 'project') {
+      const work = await workCheckSection(scope);
+      if (work) {
+        report.sections.push(work);
+        if (work.diagnostics.some((d) => d.level === 'error')) report.healthy = false;
       }
     }
     reports.push(report);
@@ -89,6 +116,7 @@ export async function runCheck(cli: Cli, options: CheckOptions): Promise<number>
         root: r.scope.root,
         healthy: r.healthy,
         sections: r.sections,
+        fixed: r.fixed ? syncReportJson(r.fixed) : null,
       })),
     );
     return reports.every((r) => r.healthy) ? EXIT.OK : EXIT.ERROR;
@@ -100,6 +128,8 @@ export async function runCheck(cli: Cli, options: CheckOptions): Promise<number>
     const title = reports.length > 1 ? (report.scope.kind === 'project' ? 'Project' : 'Personal') : null;
     problems += printReport(cli, report, !!options.verbose, title);
   });
-  out.line(problems ? `Result: ${problems} problem${problems === 1 ? '' : 's'} found` : 'Result: healthy');
+  const warnings = reports.flatMap((r) => r.sections.flatMap((s) => s.diagnostics)).filter((d) => d.level === 'warn').length;
+  const withWarnings = warnings ? ` with ${warnings} warning${warnings === 1 ? '' : 's'}` : '';
+  out.line(problems ? `Result: ${problems} problem${problems === 1 ? '' : 's'} found` : `Result: healthy${withWarnings}`);
   return problems ? EXIT.ERROR : EXIT.OK;
 }

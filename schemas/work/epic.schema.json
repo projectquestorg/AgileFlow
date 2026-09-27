@@ -1,0 +1,61 @@
+{
+  "$id": "https://agileflow.dev/schemas/work/epic.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "number",
+      "const": 1
+    },
+    "type": {
+      "type": "string",
+      "const": "epic"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^EPIC-[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{8}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "proposed",
+        "active",
+        "done",
+        "cancelled"
+      ]
+    },
+    "horizon": {
+      "type": "string",
+      "enum": [
+        "now",
+        "next",
+        "later"
+      ]
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "p0",
+        "p1",
+        "p2",
+        "p3"
+      ]
+    },
+    "legacy_id": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "schema",
+    "type",
+    "id",
+    "title",
+    "status"
+  ],
+  "additionalProperties": false
+}

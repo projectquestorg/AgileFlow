@@ -37,6 +37,16 @@ describe('built CLI', () => {
     expect(run('--version').stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);
     const unknown = run('plugins', 'list');
     expect(unknown.status).toBe(1);
+
+    // Agile Work through the bundle (packages/work is bundled into dist/cli.js).
+    const work = run('work', 'init', '--yes');
+    expect(work.status, work.stderr).toBe(0);
+    expect(fs.existsSync(path.join(project, '.agents/skills/working-story/SKILL.md'))).toBe(true);
+    const epic = JSON.parse(run('work', 'new', 'epic', '--title', 'Social authentication', '--json').stdout);
+    const story = JSON.parse(run('work', 'new', 'story', '--epic', epic.id.slice(5, 9), '--title', 'Add Google sign-in', '--status', 'ready', '--json').stdout);
+    expect(run('work', 'status', story.id.slice(6, 10), 'in-progress').stdout).toContain('ready -> in-progress');
+    expect(run('work', 'board').stdout).toContain(story.id);
+    expect(run('check').stdout).toContain('Agile Work');
     fs.rmSync(root, { recursive: true, force: true });
   });
 });

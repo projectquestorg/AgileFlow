@@ -16,17 +16,19 @@ import {
   type Services,
 } from '@agileflow/core';
 import type { Cli } from '../runtime';
-import { EXIT, projectScopeForCreate, relSkillsDir, servicesFor, splitList, UsageError } from '../runtime';
+import { EXIT, mutate, projectScopeForCreate, relSkillsDir, servicesFor, splitList, UsageError } from '../runtime';
 import { installRequests, printSyncReport } from './shared';
+import { offerWorkDuringInit } from './work';
 
 export interface InitOptions {
   yes?: boolean;
   global?: boolean;
   skills?: string;
+  json?: boolean;
 }
 
 /** Skills preselected in interactive init, and used by `init --yes` when the core pack is unavailable. */
-export const CORE_SKILLS = ['diagnosing-bugs', 'checking-blast-radius', 'verifying-changes', 'reviewing-changes'];
+export const CORE_SKILLS = ['diagnosing-bugs', 'checking-blast-radius', 'verifying-changes', 'reviewing-changes', 'resolving-conflicts'];
 const RECOMMENDED = ['diagnosing-bugs', 'checking-blast-radius', 'verifying-changes'];
 const GITHUB_RECOMMENDED = ['filing-pr', 'babysitting-pr'];
 
@@ -77,6 +79,7 @@ export async function runInit(cli: Cli, options: InitOptions): Promise<number> {
   let scope: ScopeTarget = options.global ? globalScope(ctx) : await projectScopeForCreate(ctx);
 
   if (await pathExists(scope.configPath)) {
+    if (options.json) out.json({ ok: true, alreadySetUp: true, config: scope.configPath });
     out.line(`AgileFlow is already set up (${path.relative(ctx.cwd, scope.configPath) || scope.configPath}).`);
     out.line('Add skills with `agileflow add <skill>`, restore files with `agileflow sync`, or get new versions with `agileflow update`.');
     return EXIT.OK;
@@ -145,18 +148,26 @@ export async function runInit(cli: Cli, options: InitOptions): Promise<number> {
   // typo never leaves a half-initialized project behind.
   if (requests.length) await prepareAdd(services, await loadWorkspace(scope), requests);
 
-  // New projects start from the user's personal default question preference.
-  const personal = await readGlobalConfig(globalScope(ctx).configPath).catch(() => null);
-  await editScopeConfig(scope, () => undefined, {
-    questionPreference: personal?.defaults?.questionPreference ?? 'provider-default',
-  });
-  const ws = await loadWorkspace(scope);
-  requests = requests.filter((r) => !ws.specs[r.id]);
-  if (requests.length) {
-    await installRequests(cli, services, ws, requests, { yes: true, quiet: true });
-  } else {
+  const target = scope;
+  const installed = await mutate(cli, target, async () => {
+    // New projects start from the user's personal default question preference.
+    const personal = await readGlobalConfig(globalScope(ctx).configPath).catch(() => null);
+    await editScopeConfig(target, () => undefined, {
+      questionPreference: personal?.defaults?.questionPreference ?? 'provider-default',
+    });
+    const ws = await loadWorkspace(target);
+    requests = requests.filter((r) => !ws.specs[r.id]);
+    if (requests.length) {
+      const result = await installRequests(cli, services, ws, requests, { yes: true, quiet: true });
+      return result.prepared.map((p) => ({ id: p.id, version: p.pkg.version, source: p.spec.source }));
+    }
     await saveLock(ws);
     printSyncReport(cli, ws, await syncWorkspace(services, ws));
+    return [];
+  });
+  if (options.json) {
+    out.json({ ok: true, scope: scope.kind, root: scope.root, config: scope.configPath, installed, repo: facts });
+    return EXIT.OK;
   }
 
   out.line();
@@ -167,6 +178,10 @@ export async function runInit(cli: Cli, options: InitOptions): Promise<number> {
     out.line('Existing project instruction files:');
     for (const f of facts.instructionFiles) out.line(`  ${f.present ? '[found]  ' : '[absent] '}${f.name}`);
     out.line('AgileFlow will leave them unchanged.');
+  }
+  if (!options.yes && options.skills === undefined) {
+    out.line();
+    await offerWorkDuringInit(cli, scope);
   }
   out.line();
   out.line('Next: open Codex, Claude, Cursor, OpenCode, or Gemini as usual. The skills load when relevant.');

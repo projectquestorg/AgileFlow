@@ -8,6 +8,9 @@
 .agents/skills/diagnosing-bugs/
 .agents/skills/diagnosing-bugs/agileflow.skill.yaml
 .agents/skills/diagnosing-bugs/SKILL.md
+.agents/skills/resolving-conflicts/
+.agents/skills/resolving-conflicts/agileflow.skill.yaml
+.agents/skills/resolving-conflicts/SKILL.md
 .agents/skills/reviewing-changes/
 .agents/skills/reviewing-changes/agileflow.skill.yaml
 .agents/skills/reviewing-changes/SKILL.md
@@ -18,6 +21,7 @@
 .claude/skills/
 .claude/skills/checking-blast-radius -> ../../.agents/skills/checking-blast-radius
 .claude/skills/diagnosing-bugs -> ../../.agents/skills/diagnosing-bugs
+.claude/skills/resolving-conflicts -> ../../.agents/skills/resolving-conflicts
 .claude/skills/reviewing-changes -> ../../.agents/skills/reviewing-changes
 .claude/skills/verifying-changes -> ../../.agents/skills/verifying-changes
 agileflow.lock

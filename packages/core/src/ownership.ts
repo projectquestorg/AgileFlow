@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { LockEntry } from './config';
-import { isNotFound, readTree, type TreeFile } from './fs';
-import { hashTree } from './hash';
+import { isNotFound, listUnhashedEntries, readTree, type TreeFile } from './fs';
+import { hashTree, matchesRenderedHash } from './hash';
 import type { ScopeTarget } from './scope';
 import { skillDir } from './scope';
 import { SKILL_FILE } from './skill';
@@ -23,6 +23,8 @@ export interface SkillState {
   status: SkillStatus;
   files: TreeFile[] | null;
   currentHash: string | null;
+  /** Entries hashing cannot see (symlinks, nested .git, empty dirs); they make a skill "modified". */
+  unhashed?: string[];
 }
 
 export async function readSkillTree(scope: ScopeTarget, id: string): Promise<TreeFile[] | null> {
@@ -41,7 +43,11 @@ export async function inspectSkill(scope: ScopeTarget, id: string, entry: LockEn
   if (entry.enabled === false) return { status: 'disabled', files, currentHash };
   if (!files) return { status: 'missing', files, currentHash };
   if (entry.ownership === 'local') return { status: 'local', files, currentHash };
-  return { status: currentHash === entry.baseHash ? 'clean' : 'modified', files, currentHash };
+  if (!matchesRenderedHash(files, entry.renderedHash)) return { status: 'modified', files, currentHash };
+  const unhashed = await listUnhashedEntries(skillDir(scope, id));
+  return unhashed.length
+    ? { status: 'modified', files, currentHash, unhashed }
+    : { status: 'clean', files, currentHash };
 }
 
 /** Directories in `.agents/skills` that look like skills (contain SKILL.md). */

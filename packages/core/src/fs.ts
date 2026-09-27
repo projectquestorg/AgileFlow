@@ -12,6 +12,9 @@ export interface TreeFile {
 
 /** Names never considered part of a skill tree. */
 const IGNORED_NAMES = new Set(['.git', '.DS_Store', 'Thumbs.db', 'node_modules']);
+const CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
+/** Operating-system litter that is safe to discard with a skill directory. */
+const OS_LITTER = new Set(['.DS_Store', 'Thumbs.db']);
 
 export function toPosix(p: string): string {
   return p.split(path.sep).join('/');
@@ -48,13 +51,54 @@ function tmpName(target: string, tag: string): string {
   );
 }
 
-/** Write a file atomically (temp file + rename). Creates parent directories. */
+const RETRYABLE_RENAME = new Set(['EPERM', 'EBUSY', 'EACCES']);
+
+/**
+ * `rename` with short retries for Windows, where antivirus scanners and
+ * indexers briefly hold handles (EPERM/EBUSY). Elsewhere it fails fast.
+ */
+export async function renameWithRetry(from: string, to: string, attempts = 6): Promise<void> {
+  for (let i = 0; ; i++) {
+    try {
+      await fs.promises.rename(from, to);
+      return;
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code ?? '';
+      if (process.platform !== 'win32' || !RETRYABLE_RENAME.has(code) || i >= attempts - 1) throw err;
+      await new Promise((resolve) => setTimeout(resolve, 20 * 2 ** i));
+    }
+  }
+}
+
+/**
+ * Write a file atomically (temp file + rename). Creates parent directories.
+ *
+ * An existing target keeps what the user arranged: a symlink is written
+ * through (its target is replaced, the link stays), and the file mode is
+ * preserved (a 0600 config stays 0600).
+ */
 export async function writeFileAtomic(target: string, content: string | Buffer): Promise<void> {
-  await fs.promises.mkdir(path.dirname(target), { recursive: true });
-  const tmp = tmpName(target, 'tmp');
+  let real = target;
+  let mode: number | undefined;
   try {
-    await fs.promises.writeFile(tmp, content);
-    await fs.promises.rename(tmp, target);
+    real = await fs.promises.realpath(target);
+    mode = (await fs.promises.stat(real)).mode & 0o7777;
+  } catch (err) {
+    if (!isNotFound(err)) throw err;
+    // A dangling symlink: write to where it points so the link stays intact.
+    try {
+      const link = await fs.promises.readlink(target);
+      real = path.resolve(path.dirname(target), link);
+    } catch {
+      real = target;
+    }
+  }
+  await fs.promises.mkdir(path.dirname(real), { recursive: true });
+  const tmp = tmpName(real, 'tmp');
+  try {
+    await fs.promises.writeFile(tmp, content, mode === undefined ? undefined : { mode });
+    if (mode !== undefined) await fs.promises.chmod(tmp, mode);
+    await renameWithRetry(tmp, real);
   } catch (err) {
     await fs.promises.rm(tmp, { force: true });
     throw err;
@@ -73,7 +117,9 @@ export async function readTree(
   async function walk(abs: string, rel: string): Promise<void> {
     const entries = await fs.promises.readdir(abs, { withFileTypes: true });
     for (const entry of entries) {
-      if (IGNORED_NAMES.has(entry.name)) continue;
+      // Control characters in a name would make tree hashes ambiguous; such
+      // entries are never part of a package (listUnhashedEntries reports them).
+      if (IGNORED_NAMES.has(entry.name) || CONTROL_CHARS.test(entry.name)) continue;
       const childAbs = path.join(abs, entry.name);
       const childRel = rel ? `${rel}/${entry.name}` : entry.name;
       if (options.exclude?.(childRel)) continue;
@@ -95,9 +141,45 @@ export async function readTree(
   return out;
 }
 
+/**
+ * Entries inside `dir` that `readTree` does not hash: symlinks, special
+ * files, nested `.git`/`node_modules`, and empty directories. They are
+ * invisible to ownership hashes, so a directory containing any is treated
+ * as user-modified rather than silently deleted on replacement.
+ */
+export async function listUnhashedEntries(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  async function walk(abs: string, rel: string): Promise<number> {
+    let entries: fs.Dirent[];
+    try {
+      entries = await fs.promises.readdir(abs, { withFileTypes: true });
+    } catch (err) {
+      if (isNotFound(err)) return 0;
+      throw err;
+    }
+    let kept = 0;
+    for (const entry of entries) {
+      const childRel = rel ? `${rel}/${entry.name}` : entry.name;
+      if (OS_LITTER.has(entry.name)) continue;
+      kept++;
+      if (IGNORED_NAMES.has(entry.name) || CONTROL_CHARS.test(entry.name)) out.push(JSON.stringify(childRel).slice(1, -1));
+      else if (entry.isDirectory()) {
+        if ((await walk(path.join(abs, entry.name), childRel)) === 0) out.push(`${childRel}/`);
+      } else if (!entry.isFile()) out.push(childRel);
+    }
+    return kept;
+  }
+  await walk(dir, '');
+  return out.sort();
+}
+
 /** Reject paths that would escape the tree root. */
 export function assertSafeRelativePath(rel: string): void {
-  if (!rel || rel.includes('\0')) throw new Error(`Invalid path in skill package: ${JSON.stringify(rel)}`);
+  // Control characters would make tree hashes ambiguous; `:` is an NTFS
+  // alternate data stream on Windows. Skills never need either.
+  if (!rel || /[\u0000-\u001f\u007f:]/.test(rel)) {
+    throw new Error(`Invalid path in skill package: ${JSON.stringify(rel)}`);
+  }
   const normalized = path.posix.normalize(rel);
   if (
     normalized.startsWith('../') ||
@@ -136,10 +218,10 @@ export async function replaceDirAtomic(target: string, files: TreeFile[]): Promi
   let movedOld = false;
   try {
     if (await pathExists(target)) {
-      await fs.promises.rename(target, backup);
+      await renameWithRetry(target, backup);
       movedOld = true;
     }
-    await fs.promises.rename(staging, target);
+    await renameWithRetry(staging, target);
   } catch (err) {
     if (movedOld && !(await pathExists(target))) {
       await fs.promises.rename(backup, target).catch(() => undefined);

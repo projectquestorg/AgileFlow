@@ -1,0 +1,11 @@
+/* Chart colors predate the design tokens. */
+.chart {
+  background: #ffffff;
+  border: 1px solid #e1e4e8;
+  height: 200px;
+}
+
+.chart__bar {
+  background: #2f6fde;
+  color: #1b1d21;
+}

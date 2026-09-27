@@ -14,6 +14,14 @@
     "description": {
       "type": "string"
     },
+    "kind": {
+      "default": "standard",
+      "type": "string",
+      "enum": [
+        "standard",
+        "adversarial"
+      ]
+    },
     "prompt": {
       "type": "string",
       "minLength": 1
@@ -32,6 +40,17 @@
     "setup": {
       "type": "string"
     },
+    "bin": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]*$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "assert": {
       "type": "object",
       "properties": {
@@ -44,12 +63,130 @@
       ],
       "additionalProperties": false
     },
+    "neighbor": {
+      "type": "string",
+      "minLength": 1
+    },
     "rubric": {
       "type": "array",
       "items": {
-        "type": "string",
-        "minLength": 1
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "object",
+            "properties": {
+              "criterion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "command": {
+                "type": "string",
+                "minLength": 1
+              },
+              "noCommand": {
+                "type": "string",
+                "minLength": 1
+              },
+              "output": {
+                "type": "string",
+                "minLength": 1
+              },
+              "noOutput": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fileChanged": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fileUnchanged": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fileContains": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "pattern": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "path",
+                  "pattern"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
       }
+    },
+    "forbid": {
+      "type": "object",
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "output": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "interaction": {
+      "type": "object",
+      "properties": {
+        "ambiguity": {
+          "type": "string",
+          "enum": [
+            "choice",
+            "missing-information",
+            "repository-answerable"
+          ]
+        },
+        "decision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "success": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "ambiguity",
+        "decision",
+        "success"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [

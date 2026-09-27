@@ -22,6 +22,7 @@ await build({
     '@agileflow/providers': here('../../../packages/providers/src/index.ts'),
     '@agileflow/registry': here('../../../packages/registry/src/index.ts'),
     '@agileflow/evals': here('../../../packages/evals/src/index.ts'),
+    '@agileflow/work': here('../../../packages/work/src/index.ts'),
   },
   logLevel: 'info',
 });

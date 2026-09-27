@@ -12,8 +12,9 @@ AgileFlow v5: portable workflows for coding agents. A clean break from v4.
 - Skill manager built on standard Agent Skills: canonical `.agents/skills`,
   `agileflow.yaml` (intent) and `agileflow.lock` (exact versions, package
   integrity, installed base hash).
-- Commands: `init`, `add`, `remove`, `list`, `sync`, `update`, `check`,
-  `configure`, `fork`, `diff`, `migrate`, `eval`.
+- Commands: `init`, `search`, `info`, `add`, `remove`, `list`, `sync`,
+  `update`, `check`, `verify`, `configure`, `work`, `fork`, `diff`, `create`,
+  `history`, `registry`, `migrate`, `eval`, `completion`, `self-update`.
 - Static skill registry with semver resolution, integrity verification, an
   offline package cache, packs, and git/path sources.
 - Provider adapters: Codex, Cursor, OpenCode, Gemini (native `.agents/skills`),
@@ -22,367 +23,211 @@ AgileFlow v5: portable workflows for coding agents. A clean break from v4.
 - Update conflict handling: locally modified skills are never overwritten
   (fork, reset, skip, diff); `update --non-interactive` exits 3.
 - Optional, reversible Codex structured-questions setting with exact restore.
-- Nine official skills with evals, and an eval runner for activation and
+- Fourteen official skills in four packs with evals, and an eval runner for activation and
   behavioral rubric tests against real provider CLIs.
 - `migrate v4`: removes only provably AgileFlow-owned hooks, mirrors, and
   runtime files, with preview and backup; never deletes docs.
+- **AgileFlow Work** (opt-in): product, roadmap, epics, stories, and decisions
+  as Markdown in one directory (`docs/agile` by default) with five fixed
+  categories. `agileflow work init|new|list|show|status|board`, all with
+  `--json`. Collision-resistant IDs (`STORY-3Q7MX2PK`, 8 random Crockford
+  Base32 characters) with unambiguous prefixes (`agileflow work show 3Q7M`).
+  Boards, epic progress, and relationships are derived from frontmatter; no
+  status file, board file, index, or counter is written. Status changes patch
+  only the `status:` line. `agileflow check` validates the workspace (duplicate
+  IDs, unknown epics, dependencies, and decision references, dependency cycles,
+  done epics with unfinished stories, done stories with unchecked acceptance
+  criteria). `agileflow init` offers it; `work init` adopts a compatible
+  existing workspace after confirmation and never overwrites files.
+- `@agileflow/agile` pack with four skills: `creating-epics`,
+  `writing-stories`, `working-story`, and `reviewing-story`.
+- JSON Schemas for Work artifacts in `schemas/work/`.
+
+### Changed
+
+- `filing-pr` 1.1.0 includes the AgileFlow story ID and a brief
+  acceptance-criteria summary when the work is tied to a story, and moves the
+  story to `in-review`; `babysitting-pr` 1.1.0 keeps the story `in-review` until
+  merge and final verification.
+- `agileflow check` reports warnings in its result line ("healthy with 1 warning").
+- Full-mode eval judges also see the final sandbox changes (status, diffs, new
+  file contents), not only truncated tool inputs.
+- `interaction.questionPreference` is a render overlay with exact semantics:
+  `prefer` asks when multiple reasonable choices would materially change the
+  result, after resolving what the repository answers (structured question
+  tool when available, plain text otherwise); `minimize` assumes, continues,
+  and states consequential assumptions. The skill's `userInteraction`
+  contract wins: `none` gets no overlay, and `required` skills still ask what
+  their workflow needs under `minimize`.
+- `diagnosing-bugs` 1.0.1 declares decision points; `interviewing-requirements`
+  1.0.1 no longer reads `agileflow.yaml` itself; `simplifying-explanations`
+  1.0.1 declares `userInteraction: none`.
+- The lockfile field `baseHash` is now `renderedHash`, next to `integrity`
+  (the source package). A skill with local modifications reports when a new
+  preference was not applied, and `agileflow diff` no longer attributes a
+  preference change to your edits.
+- `agileflow eval --question-preference provider-default|prefer|minimize|all`
+  runs scenarios under a preference; `all` compares the three. Scenarios with
+  an `interaction` block (`choice`, `missing-information`,
+  `repository-answerable`) check the expected asking behavior, and in full
+  mode a judge records whether questions were material or answerable from the
+  repository, whether assumptions were reasonable, and whether the task
+  succeeded. A synthetic `fixtures/skills/interaction-test` skill isolates
+  question behavior from real skill guidance.
+
+### Added (hardening and ecosystem, 2026-09)
+
+- `agileflow search <query>`: the official catalog (works offline from the
+  cached index) and the public skills.sh directory, with the exact `add`
+  argument for each result.
+- GitHub and skills.sh sources: `agileflow add owner/repo`,
+  `owner/repo/skill`, `owner/repo@ref`, `github:owner/repo`, and
+  `https://github.com/o/r/tree/<ref>/<path>`; `add --ref`. Git sources fetch
+  only the needed subdirectory and lock the commit and the requested ref.
+- `agileflow info <target>`: versions, license, compatibility,
+  `allowed-tools`, files, requirements, a content risk scan, and optionally
+  `SKILL.md`, before installing.
+- `agileflow verify [--attestations] [--fail-on high|medium]`: re-verifies
+  every locked package against the lockfile and the integrities pinned into
+  the CLI, checks installed files, scans content, and verifies GitHub
+  (Sigstore) build attestations of official bundles with `gh`.
+- `agileflow create <name>`: scaffolds a skill (SKILL.md with a "Done when"
+  section, sidecar, eval scenarios from `--trigger`/`--not-trigger`) that
+  passes the release-gate lint.
+- `agileflow history`: local log of what changed where, and which
+  third-party content was approved.
+- `agileflow completion bash|zsh|fish`, `agileflow self-update [--to <v>]`
+  (rollback with an exact version), `agileflow configure show`, and the
+  aliases `doctor` (`check`), `install` (`add`), and `config` (`configure`).
+- `agileflow registry build|check --scope <org>`: build a private team
+  registry (organization-wide skill index) with the official format and
+  append-only rules.
+- `agileflow verify --sbom`: a CycloneDX 1.5 bill of materials of the locked
+  skills (version, source, commit, license, verification results).
+- `--json` on every command (one JSON document on stdout; errors as
+  `{"ok": false, "error": {...}}`), `--dry-run` plans for `add`, `remove`,
+  `sync`, and `update`, and global `--offline`, `--debug`, `--no-color`.
+- Content scanning for untrusted skills (pipe-to-shell, destructive commands,
+  credential access, exfiltration, prompt-injection phrasing, hidden Unicode
+  and HTML comments, encoded payloads, broad `allowed-tools`, undeclared
+  network use), shown by `add`, `update`, `info`, and `verify`.
+- Custom providers from configuration: `providers.<id>.skillsDir` /
+  `userSkillsDir` link skills into any agent's skill directory.
+- `agileflow:` in `agileflow.yaml`: the CLI version range a project needs;
+  older CLIs refuse to change it.
+- Registry: `v1/manifest.json` (append-only record of every published
+  version), JSON Schemas for registry documents in `schemas/registry/`,
+  official integrities pinned into each CLI release.
+- Evals: activation precision, recall, and F1 per skill and provider;
+  Wilson 95% intervals for `--runs > 1`; side-by-side provider comparison;
+  deterministic rubric checks; `kind: adversarial` scenarios with `forbid`
+  rules; `--judge-model`; isolated HOME per run (`--no-isolate` to opt out);
+  `--allow-setup` for third-party setup scripts; JSON reports with
+  `schemaVersion`; scenario `bin:` stand-in commands (for example a scripted
+  `gh`, so `babysitting-pr` evals are scored against a realistic pull request)
+  and `neighbor:` negatives that measure trigger conflicts between skills.
+- Agile Work: `work list --ready` and per-story readiness in JSON for agent
+  orchestrators, `work import v4` (idempotent, never touches the v4 files),
+  and a warning when the workspace directory is ignored by Git.
+- New official skill `recording-decisions` (agile pack); `resolving-conflicts`
+  moved to the core pack. Agile skill descriptions say what, when, and what
+  not; `reviewing-changes`, `verifying-changes`, and `checking-blast-radius`
+  triggers no longer overlap; skills that never ask state their assumptions;
+  `filing-pr` hands over the drafted PR when `gh` is unavailable and
+  `babysitting-pr` falls back to bounded polling. Eval fixtures can now
+  satisfy every rubric (extended `monorepo`, new `ops-dashboard`).
+- A reusable GitHub Action (`uses: projectquestorg/AgileFlow@<ref>`) that runs
+  `check`, `verify`, and optionally the lint for skills you author.
+
+### Security
+
+- Git refs and commits from `agileflow.yaml`/`agileflow.lock` are validated
+  and passed after `--end-of-options`: a cloned repository can no longer make
+  `sync` or `update` run commands through a crafted ref.
+- Registries must use HTTPS (loopback and `AGILEFLOW_ALLOW_INSECURE=1`
+  excepted); redirects cannot downgrade; git is limited to https, ssh, and
+  file transports; git never prompts (ssh `BatchMode`) and times out.
+- Registry documents are schema-validated and cross-checked (names, versions,
+  bundle headers); bundle URLs must stay inside the registry; cache paths are
+  derived only from validated names.
+- Third-party content needs `--yes` when not interactive; `update` shows
+  third-party diffs and findings and skips unapproved changes (exit 3).
+- Config writes keep file permissions (a `0600` Codex config stays `0600`)
+  and write through symlinks instead of replacing them.
+- `eval` runs providers with an isolated HOME and does not run third-party
+  scenario setup scripts without `--allow-setup`.
+- CI publishes with npm provenance after checking the tag matches the version
+  and is on `main`; every official registry bundle gets a GitHub build
+  attestation.
+
+### Fixed
+
+- `update` no longer installs over a hand-written skill directory, no longer
+  fails after partially applying when a skipped skill's config changed, and
+  reports exit 3 as documented.
+- Multi-skill writes are journaled: a failure or crash part-way leaves every
+  skill either updated and recorded or untouched (no false "modified"
+  skills, no orphan directories), and the next command finishes or rolls
+  back an interrupted write.
+- Concurrent commands on one project no longer lose each other's updates
+  (advisory scope lock).
+- Skills checked out with CRLF line endings or without exec bits (Windows,
+  `core.autocrlf`) are no longer reported as modified; git checkouts are
+  byte-identical on every OS.
+- Files AgileFlow cannot hash (symlinks, nested `.git`, `node_modules`, empty
+  directories) inside a managed skill mark it modified instead of being
+  deleted on the next update.
+- `sync` no longer rewrites committed skills just because a teammate uses a
+  different AgileFlow version; `update` refreshes them.
+- Git `ref` changes in `agileflow.yaml` are detected by `sync` and `check`.
+- `add` of a skill still in the lock no longer overwrites local edits;
+  duplicate ids in one request are refused.
+- `remove` keeps the records `sync` needs to clean up skills a teammate
+  removed.
+- The home directory is never treated as a project.
+- `check` no longer downloads packages (it verifies the cache; `verify`
+  downloads), and a personal config without skills no longer makes `check`
+  fail in every project.
+- Lockfiles written by a newer AgileFlow keep their extra fields; a newer
+  format version stops with an upgrade message.
+- Path sources whose files changed report a warning (run `update`), not an
+  integrity error.
+- `remove --all --global` keeps personal defaults, provider settings, and the
+  registry setting, strips the managed notice from mirrors, and restores the
+  Codex setting AgileFlow changed (when nobody edited it since).
+- OpenCode manual-only activation is reported as semantic (OpenCode has no
+  switch); `CLAUDE_CONFIG_DIR` and `CODEX_HOME` are honored; Claude links work
+  when `.claude` is a symlink; stale Windows junctions and Git-degraded
+  symlinks are repaired; Codex TOML edits never produce a duplicate
+  `[features]` table.
+- `migrate v4` also cleans a user-level v4 install (`migrate v4 --global`),
+  warns about Codex `approval_policy = "never"` / `danger-full-access`,
+  preserves `config.toml` comments, validates `--skills` before changing
+  anything, and asks before `--detach`.
+- Agile Work: status edits handle quoted keys, flow mappings, CRLF, and BOMs;
+  duplicate and ambiguous IDs are reported; deep dependency chains no longer
+  overflow; large workspaces scan in linear time; titles are sanitized in
+  terminal output.
+
+### Changed (hardening)
+
+- Commands load lazily; startup is about 0.14 s. `sync` and `update` fetch
+  packages in parallel (bounded) and show progress on a terminal.
+- The lockfile records `ref` for git sources, and `renderedHash` is
+  line-ending and exec-bit insensitive (older exact hashes are still
+  accepted).
+- CI runs on Linux, macOS, and Windows (CRLF clone smoke test), installs from
+  the lockfile, and rejects changes to published registry files; a nightly
+  workflow checks the live registry, provider conformance, and activation
+  evals.
 
 ### Removed
 
 - v4 plugins, agents, hook runtime and `hook` command, `setup`, `launch`,
-  `learn`, `plugins`, `skills`, `status`, and `doctor` (now `check`; the old
-  name still runs `check` during the transition), docs scaffolding, story and
-  epic state, skill learnings, `AGENTS.md`/`CLAUDE.md` generation, and all
+  `learn`, `plugins`, `skills`, and `status` (`doctor` is an alias of `check`), the eleven-folder docs scaffolding, the central
+  story/epic status JSON, skill learnings, `AGENTS.md`/`CLAUDE.md` generation, and all
   provider sandbox/approval changes.
 
-## [4.0.0-alpha.3] — 2026-04-20
+## Earlier versions
 
-Flow audit fixes for the alpha.2 wizard + install path. Wiring/persistence
-came back PASS; this patch closes the test gap and fixes the safety +
-feedback gaps the audit surfaced.
-
-### Fixed
-
-- **P0 test gap** (`tests/unit/config/writer.test.js`): the per-field
-  round-trip block tests every other config field but skipped
-  `behaviors`. A future PR that drops the `behaviors:` line from
-  `writer.js`'s payload would have shipped silently. Added explicit
-  mixed-shape round-trip test (not all-true, not all-false) so the
-  serializer-loader pair is contractually pinned.
-- **P1 damage-control silent fail-open**
-  (`damage-control-bash.js`/`-edit.js`/`-write.js`): when
-  `damage-control-patterns.yaml` is missing or unreadable, all three
-  hooks used to `process.exit(0)` silently — guards disabled, no
-  signal to the user. Now emit a stderr WARNING with the error code
-  and the path. Repeated warnings on every Bash/Edit/Write are
-  intentional: they signal "fix this or disable the preset". Hooks
-  still fail-open (the contract is "block dangerous things, don't
-  block legit work just because we can't read our own config").
-- **P1 missing behaviors visibility**:
-  - `setup --yes` console output now prints `behaviors enabled: ...`
-    after the plugin list, gated on `caps.hooks` so non-Claude-Code
-    IDEs don't see a noisy line. Listed-as-CSV in the order: any
-    `loadContext, babysitDefault, damageControl, preCompactState`
-    that are `true`.
-  - Interactive `prompts.outro` now includes `behaviors active: ...`
-    or `behaviors active: (none — no hooks will run; re-run setup to
-enable)`. A user who deselected all four behaviors no longer
-    finishes the wizard celebrating "X plugins enabled" while
-    actually getting zero hooks.
-  - `agileflow update` console output mirrors the same pattern.
-  - Install spinner message changed from `Installing N plugin(s)` to
-    `Installing N plugin(s) — writing hooks, skills, mirrors` so
-    first-time users have a clearer mental model of what `.agileflow/`
-    will contain.
-- **P2 fresh-project context-loader / pre-compact-state**: when
-  `docs/09-agents/status.json` is absent (brand new project), both
-  hooks used to silently omit the stories section. Now emit
-  `(no story tracker yet — docs/09-agents/status.json not found)` so
-  Claude knows the section was reached, not skipped due to error. Also
-  surfaces `(none in progress, none ready)` when status.json exists
-  but is empty.
-
-### Tests
-
-- 305 passing (+1 from alpha.2's 304).
-
-## [4.0.0-alpha.2] — 2026-04-20
-
-Curated behavior presets — first hooks ship, but never as a free-for-all.
-
-### Added
-
-- **Behavior presets in `agileflow.config.json`** (`behaviors: { loadContext, babysitDefault, damageControl, preCompactState }`). Each preset maps 1:N to hooks declared in plugin manifests via a new `behavior: <key>` field. Disabling a preset excludes its hooks from the generated `.agileflow/hook-manifest.yaml` — the script literally does not run.
-- **Wizard step**: `pickBehaviors()` (`src/cli/wizard/behaviors-picker.js`) — Clack multiselect with all four presets pre-checked. Only shown for IDEs that support hooks (claude-code today; cursor/windsurf/codex skip it).
-- **Six behavior-gated hooks in the `core` plugin**:
-  - `context-loader` (SessionStart, gated by `loadContext`) — lean v4 replacement for v3's 79KB welcome banner. Prints stories, dirty files, and recent commits.
-  - `babysit-mentor-injector` (SessionStart, gated by `babysitDefault`) — HARD mode mentor injection. Claude defaults to the `/agileflow:babysit` mentor pattern without explicit invocation.
-  - `damage-control-bash` / `-edit` / `-write` (PreToolUse, gated by `damageControl`, `skipOnError: false`) — pattern-driven safety net (`damage-control-patterns.yaml`). Blocks `rm -rf /`, `dd to /dev/sda`, fork bombs, writes to `.env`/`.ssh/`, and similar.
-  - `pre-compact-state` (PreCompact, gated by `preCompactState`) — dumps active stories, current command, and dirty git state so they survive Claude's compaction summary.
-- **Schema + loader + writer updates**: `behaviors` is now a first-class config section. `mergeConfig` deep-merges across one level so partial user overrides don't wipe defaults.
-- **Aggregator behavior gating**: `buildHookManifest(orderedPlugins, behaviors)` filters hooks where `behaviors[entry.behavior] === false`. Missing keys treated as enabled (preserves intent of partial configs).
-- **15 new tests** covering behaviors filtering in the aggregator, behaviors-picker pure helpers, and the install-time integration test that asserts the manifest reflects the toggle map. Total: **304 passing** (+15 from alpha.1).
-
-### Changed
-
-- `installPlugins(options)` accepts a `behaviors` option threaded through to `writeAggregatedManifest`.
-- `agileflow setup` now includes a behaviors step after personalization for hook-capable IDEs.
-- `agileflow update` re-reads `behaviors` from the saved config so manual edits to `agileflow.config.json` propagate without re-running the wizard.
-- `defaultConfig()` ships with all four behaviors enabled. Users opt **out** at the wizard, never opt in.
-
-### Why curated, not free configuration
-
-Per user feedback in alpha.1: "I don't want it to be super customizable. Users would be able to customize pretty much anything." Free hook configuration (declare any event + any matcher + any script) is technically possible via the `hooks:` map, but the wizard surface is restricted to four presets. This keeps the install path predictable and prevents the v3-era anti-pattern of every plugin author shipping their own SessionStart welcome banner.
-
-## [4.0.0-alpha.1] — Unreleased
-
-v4 Phase 1 skeleton. Not yet publishable.
-
-### Added
-
-- Monorepo workspace `apps/cli/` with `name: agileflow`, `version: 4.0.0-alpha.1`.
-- Unified user config surface at `agileflow.config.json` (JSON Schema + Ajv loader).
-- Default config factory with `core` plugin always enabled.
-- CLI entry at `bin/agileflow.js` with `commander`-based dispatch (`status`, `setup`, `doctor` stubs).
-- Vitest test infrastructure with `tests/unit/config/loader.test.js` (8 passing tests).
-- `@clack/prompts` as the TUI library for the setup wizard — matches the skills.sh/vercel-labs/skills UX (clean step indicators, multiselect, search). Replaces the Ink 5 direction from the original plan.
-
-### Phase 2a — Setup wizard
-
-- Plugin registry (`src/runtime/plugins/registry.js`) — discovers `plugin.yaml` manifests under `content/plugins/*`, sorts required-first, enforces unique ids.
-- Config writer (`src/runtime/config/writer.js`) — serializes user-facing fields to `agileflow.config.json` with schema pointer, stable 2-space formatting.
-- Clack wizard (`src/cli/wizard/plugin-picker.js`, `src/cli/wizard/personalization.js`) — multiselect plugin picker (core always on) + 3 enum selects (tone, ask_level, verbosity). Cancellation cleanly exits.
-- Stub plugin manifests for `core` / `ads` / `seo` / `audit` / `council` in `content/plugins/*/plugin.yaml` (content bodies land in Phase 4).
-- Non-interactive path: `agileflow setup --yes --plugins core,seo,audit` writes config without prompts.
-- 14 new tests (`plugins/registry.test.js`, `config/writer.test.js`); total suite: 22 passing.
-
-### Phase 2a — hardening (flow audit fixes)
-
-Flow audit (wiring / errors / persistence / feedback) ran against Phase 2a and flagged 3 P0 + 5 P1 gaps. All addressed:
-
-- **writeConfig now atomic**: temp file (`.agileflow.config.json.tmp-<pid>`) + rename. Same-directory rename is atomic on POSIX and same-volume Windows. Readers always see either old or new content — never a truncated half-write. Temp file is cleaned up on failure.
-- **writeConfig errors surface as friendly messages**: EPERM / ENOSPC / EACCES no longer leak stack traces. Interactive path shows `prompts.log.error` + recovery hint; non-interactive path writes to stderr with exit 1.
-- **Plugin discovery errors handled in interactive path**: malformed `plugin.yaml` or duplicate ids no longer crash before the wizard starts. Wizard shows "Failed to load plugins: {msg}" and exits.
-- **Unknown `--plugins` ids now error loudly**: `agileflow setup --yes --plugins core,typo` exits 1 with the typo listed and all available plugin ids printed.
-- **Custom plugin entries preserved on wizard rerun**: user-added entries in `plugins.mycustom` survive every wizard invocation (interactive and `--yes`). Extracted `buildPluginsMap()` pure helper to unit-test this guarantee.
-- **Cancellation semantics fixed**: Ctrl+C / Esc in any prompt now says "Setup cancelled. No changes made." and exits 1 (was exit 0). CI can now distinguish user abort from success.
-- **Round-trip tests expanded per schema field**: hooks, ide.primary, language, plugin settings sub-objects, and personalization each tested independently. A writer-forgets-a-field regression can't hide behind the loader's default-merge.
-- **Test suite grew 22 → 40 passing** across 5 test files.
-
-### Phase 2a — logic audit fixes
-
-Logic audit (5 analyzers: edge / flow / invariant / race / type) on the hardened Phase 2a code. Verdicts: **CLEAN** (control flow), **HOLDS** (invariants), **ACCEPTABLE** (edge + race), **LOOSE** (type). 4 P1 fixes applied:
-
-- **`registry.js`**: `depends` is now strictly validated. A plugin author writing `depends: core` (string, common YAML authoring mistake) used to be silently coerced to `[]`; now it throws a clear error. Empty/absent `depends` still defaults to `[]`.
-- **`plugin-picker.js::buildPluginsMap`**: added `!Array.isArray(entry)` guard for the custom-plugin preservation branch. Arrays pass `typeof === 'object'` but would break any downstream code reading `entry.enabled` as a property.
-- **`plugin-picker.js::buildPluginsMap`**: discovered plugins now preserve their `settings` sub-object across wizard reruns. Previously the picker would strip `plugins.seo.settings.crawlDepth` every time it ran; now settings travel with the plugin entry (including when enable=false).
-- **`loader.js`**: eliminated the `existsSync`→`readFileSync` TOCTOU window. We now read directly and treat `ENOENT` as "no config → defaults"; any other read error surfaces as before. Simpler code, no race.
-- Test suite grew **40 → 46 passing**.
-
-### Phase 2b slice 1 — Sync engine port
-
-Ported the v3 SHA256-based safe-update engine from `installer.js:349-455` into `apps/cli/src/runtime/installer/`. Each scenario has dedicated test coverage.
-
-- **`src/lib/hash.js`** — `sha256Hex(Buffer|string)` (UTF-8 deterministic) and `sha256File(path)` helpers.
-- **`src/runtime/installer/file-index.js`** — read/write `_cfg/files.json` (schema v1); atomic writes (temp+rename); rejects arrays-masquerading-as-objects at both levels.
-- **`src/runtime/installer/stash.js`** — writes conflicting upstream content to `_cfg/updates/<timestamp>/<relativePath>` for manual merge.
-- **`src/runtime/installer/sync-engine.js`** — `syncFile({ content, dest, relativePath, fileIndex, cfgDir, timestamp, force, ops })` handles the 5-scenario decision tree: CREATED, UPDATED (via force), UPDATED (via baseline match), UNCHANGED (3 variants — baseline noop, protected auto-converge, unknown auto-adopt), PRESERVED (stash+keep-user, for protected-mismatch and locally-modified cases). Works for both text content (strings) and binary (Buffers).
-- **27 new tests** covering every branch of the decision tree plus index round-trips and deterministic hashing. Suite: **46 → 73 passing**.
-
-### Phase 2b slice 2 — Plugin resolver + strict validator
-
-- **`src/runtime/plugins/resolver.js`** — `resolvePlugins(discovered, userSelected)` computes the transitive closure (auto-enabling dependencies of user-selected plugins), produces a topologically-sorted install order, and detects cycles via DFS three-color marking with full cycle-path reporting (e.g. `a -> b -> c -> a`). `cannotDisable` plugins (currently just `core`) are always included.
-- **`src/runtime/plugins/validator.js`** — strict per-plugin validation:
-  - `id` matches `^[a-z0-9][a-z0-9-]{0,63}$` (kebab-case)
-  - `version` is valid semver including pre-release / build-metadata tags
-  - `description` is non-empty and ≥ 16 chars (warning under that)
-  - `enabledByDefault` and `cannotDisable` are real booleans (not coerced strings)
-  - `cannotDisable: true` implies `enabledByDefault: true`
-  - `depends` entries are valid plugin ids; self-dependency rejected; duplicates flagged as warnings
-  - `provides` is an object with array-typed sub-keys; unknown keys flagged as warnings
-  - `validatePluginSet()` adds cross-plugin checks (duplicate ids, unresolved depends)
-  - `hasErrors(issues)` for gating commits / CI
-- **37 new tests** (resolver: 12, validator: 25) covering diamond dependencies, 3-node cycles, semver edge cases, kebab-case rejections, and cross-plugin invariants. Suite: **73 → 110 passing**.
-- All 5 bundled plugin manifests pass strict validation with zero issues.
-
-### Phase 2b slice 4 — End-to-end install orchestrator + integration tests
-
-- **`src/runtime/installer/install.js`** — `installPlugins({ discovered, userSelected, agileflowDir, cliVersion, force })` wires every layer: strict-validate → resolve transitive deps + topo sort → read or seed file index → walk each plugin's source dir → `syncFile` every file under `<agileflowDir>/plugins/<id>/...` → remove directories of plugins no longer enabled (and prune their index entries) → atomically write the index. Throws on validation errors (zero partial install) and dependency cycles.
-- **`removeDisabledPlugins`** — only blasts directories whose ids are in the discovered set. Unknown user-placed dirs under `<agileflowDir>/plugins/` are left alone.
-- **`FileOpsCounters`** gained a `removed` field for plugin-level removal accounting.
-- **`tests/integration/install-plugins.test.js`** (7 tests) covers:
-  - First install with selected opt-ins → `core` first in topo order, file index records every file, disabled plugins absent.
-  - Idempotency: second run reports zero writes, all `unchanged`.
-  - User-modified file → `preserved` + stash written under `_cfg/updates/<timestamp>/<relativePath>` containing the upstream version.
-  - Disabled plugin removal → directory rm'd + index entries pruned.
-  - User-placed unknown directory under `plugins/` is preserved.
-  - Validation errors abort with a flat report, zero filesystem side effects.
-  - Cycle detection trips before any writes.
-- Suite: **110 → 117 passing** (1 unit test updated for the new `removed` counter; 7 new integration tests).
-- **Phase 2b "done when" criteria all met**: SHA256 round-trip passes, disabled-plugin removal works, integration test installs into a scratch dir end-to-end. The content injector port (slice 3) is deferred to Phase 4 — it's only needed once skills/commands with `<!-- {{TOKEN}} -->` placeholders ship.
-
-### Phase 2b — logic audit fixes
-
-Logic audit (5 analyzers: edge / flow / invariant / race / type) on Phase 2b runtime. Verdicts: **HOLDS** (invariants), **CLEAN** (control flow), **SAFE** (race for CLI), **RISKY** (edge — path traversal flagged), **ACCEPTABLE** (type). 5 P0/P1 fixes applied:
-
-- **`writeStash` path-traversal guard**: rejects absolute paths up front (`/etc/passwd` would otherwise be silently joined as a relative segment) AND verifies the resolved stash path is inside the resolved updates root. Defensive against malicious or buggy `relativePath` values escaping `_cfg/updates/<timestamp>/`.
-- **`installPlugins` try/finally around sync + remove**: the file index is now written even when `installOnePlugin` throws mid-loop. Previously a transient EACCES/ENOSPC could leave on-disk files without index entries → next run would misclassify them as user-modified and stash them. Integration test confirms partial-install case persists the index.
-- **Atomic `syncFile` writes**: `writeContent` ports the temp+rename pattern from `writeFileIndex`. Mid-write crashes can no longer leave a truncated dest file. Temp filename is `<dest>.tmp-<pid>-<random>` to avoid collisions in same-process concurrent installs.
-- **Resolver rejects unknown `userSelected` ids loudly**: `resolvePlugins(discovered, ['typo'])` now throws with a clear message listing available plugin ids. Direct callers (CI / programmatic install) get the same protection the wizard already had via `pluginsFromCsv`.
-- **`sha256Hex` null guard**: throws a `TypeError` with a clear message instead of the cryptic Buffer-internal error when called with `null`/`undefined`.
-- **Random suffix on temp filenames** in `writeFileIndex` (PID alone could collide in same-process concurrent calls — rare but possible in tests).
-- **14 new tests**: stash path-traversal (4), atomic writes (2), resolver unknown ids (2), null hash inputs (2), partial-install index persistence (1), plus existing test fixed for absolute-path rejection. Suite: **117 → 131 passing**.
-
-### Phase 2c — Wire installer into CLI (setup + update)
-
-- **`agileflow setup` now triggers an actual install**: after writing `agileflow.config.json`, both the interactive and `--yes` paths call `installPlugins()`. The interactive path shows a Clack spinner ("Installing N plugin(s)") with a per-counter summary on completion. The `--yes` path prints a single-line counter summary.
-- **New `agileflow update` command**: re-runs `installPlugins()` against the currently-enabled plugin set in the config, no prompts. Use cases: applying manual edits to `agileflow.config.json`, picking up new bundled plugin content without re-prompting, CI sync. Supports `--force` to overwrite local modifications instead of preserving them.
-- **Verified end-to-end**: `agileflow setup --yes --plugins core,seo,audit` in a scratch dir writes config, installs 3 `plugin.yaml` files into `.agileflow/plugins/{core,audit,seo}/`, and produces a valid SHA256-indexed `_cfg/files.json`. Subsequent `agileflow update` reports 3 unchanged (idempotent).
-
-### Phase 3 slice A — Hook meta-orchestrator core
-
-The fix for v3's cascading SessionStart failures lands. Six thin Claude Code dispatchers delegate to a single orchestrator that reads a project-side manifest, topologically orders hooks by `runAfter`, runs them with per-hook timeout + skipOnError semantics, and writes a JSONL log to `.agileflow/logs/hook-execution.jsonl`.
-
-- **`src/runtime/hooks/manifest-loader.js`** — reads/normalizes `.agileflow/hook-manifest.yaml` (schema v1). Strict validation: rejects unknown events, non-array `runAfter`, negative `timeout`, non-boolean `enabled`/`skipOnError`, duplicate ids. Six valid Claude Code events recognized: `SessionStart`, `PreCompact`, `Stop`, `PreToolUse:{Bash,Edit,Write}`. Returns null for missing manifest.
-- **`src/runtime/hooks/chain.js`** — `orderChain(hooks)` topologically sorts by `runAfter` via DFS three-color marking; cycles throw with the full path (`a -> b -> c -> a`); unresolved `runAfter` targets throw with the offending hook id; declaration order preserved within topo layers.
-- **`src/runtime/hooks/logger.js`** — `appendHookLog(logPath, entry)` writes one JSON object per line. `truncate()` caps stdout/stderr at 4 KB per stream with a `…[truncated]` marker. Drops `undefined` keys for compact lines. Auto-creates the log directory.
-- **`src/runtime/hooks/orchestrator.js`** — `runEvent({ event, agileflowDir, stdin, overrides, runHook? })` orchestrates a chain: load manifest → filter to event → apply user `overrides` from `agileflow.config.json.hooks` → topo sort → run each hook (via injectable `runHook`, defaulting to a child-process spawner with AbortController-enforced timeouts) → log every step → continue on `skipOnError: true` failures, abort with exit 1 on `skipOnError: false` failures. Default child-process runner picks the interpreter by extension (`.js`→node, `.sh`→bash, else direct), forwards stdin, captures stdout/stderr/exitCode/timedOut, sets `AGILEFLOW_DIR` env.
-- **`bin/hooks/{session-start,pre-bash,pre-edit,pre-write,pre-compact,stop}.js`** — six executable thin dispatchers (~30 lines each). Each forwards stdin to `runEvent` and exits with the chain's resolved code. `pre-compact` and `stop` always exit 0 even on chain failure (these events must never block). All catch top-level errors and fail open.
-- **`HOOK_LOG`** schema: `{ timestamp, event, hookId, status: 'ok'|'error'|'timeout'|'skipped', exitCode, durationMs, stdout?, stderr?, skippedByOnError? }`.
-- **44+ new tests across 4 files**: manifest schema (15), chain ordering + cycles (9), JSONL logger + truncation (8), orchestrator with stubbed runHook (12) including timeout, skipOnError, runAfter ordering, override application, multi-hook logging. Suite: **131 → 184 passing**.
-- **End-to-end smoke verified**: a manifest with `welcome` (ok) and `flaky` (exits 1, skipOnError: true) runs both in topo order, logs each, and the dispatcher exits 0 — the exact v3 cascade-failure case that previously broke session start now degrades gracefully.
-
-### Phase 3 schema fix — align with Claude Code hooks reference
-
-A read of the official Claude Code hooks docs revealed our event schema was wrong on two counts: incomplete (6 of 28 real events) and synthetic (`PreToolUse:Bash` is not a real event — it's `PreToolUse` + a separate `matcher: "Bash"` config field). Fixed before slices B/C build on the schema.
-
-- **`VALID_EVENTS` expanded to all 28 events** in the Claude Code reference: `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `UserPromptExpansion`, `PreToolUse`, `PermissionRequest`, `PermissionDenied`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch`, `PreCompact`, `PostCompact`, `Stop`, `StopFailure`, `SubagentStart`, `SubagentStop`, `TaskCreated`, `TaskCompleted`, `TeammateIdle`, `InstructionsLoaded`, `ConfigChange`, `CwdChanged`, `FileChanged`, `WorktreeCreate`, `WorktreeRemove`, `Notification`, `Elicitation`, `ElicitationResult`.
-- **`matcher` is now a separate optional field** on hook manifest entries, only valid on tool-related events (`PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionRequest`, `PermissionDenied`). Manifest schema rejects matcher on non-tool events with a clear error.
-- **`matcherMatches(pattern, actual)`** helper implements Claude Code's matcher semantics: empty/`*` → match-all; alphanumeric+`_`+`|` → exact-or-pipe-list (`Bash`, `Edit|Write`); anything else → JS regex (`^Notebook`, `mcp__memory__.*`); invalid regex returns false instead of throwing.
-- **Orchestrator's `runEvent` accepts a `matcher` parameter**: hooks with a manifest matcher only fire when their pattern accepts the runtime-supplied matcher; hooks without a manifest matcher fire for every value.
-- **PreToolUse dispatchers** (`pre-bash.js`, `pre-edit.js`, `pre-write.js`) hardcode their respective matcher (`Bash`, `Edit`, `Write`) and pass it to `runEvent`. They register in `.claude/settings.json` (slice C) as `PreToolUse` hooks with the matching `matcher` field, so Claude Code routes correctly.
-- **21 new tests** for the schema + matcher routing: 9 manifest-loader (matcher field validation, expanded event list), 5 orchestrator (matcher filtering across exact / pipe-list / regex / no-matcher), 7 `matcherMatches` cases. Suite: **184 → 205 passing**.
-- **End-to-end re-verified**: a manifest with `welcome` (SessionStart, no matcher), `dc-bash` (PreToolUse, matcher: Bash), and `dc-edit` (PreToolUse, matcher: Edit) routes correctly. SessionStart fires welcome only; `pre-bash.js` invoking the orchestrator with `matcher: 'Bash'` fires only `dc-bash`, filtering out `dc-edit`.
-
-### IDE / CLI awareness — install gates by target
-
-Different agentic IDEs / CLIs support different feature subsets. Hooks are Claude Code only (the entire orchestrator we just shipped is Claude-Code-specific). Cursor / Windsurf / Codex don't have an equivalent hook API. The installer now picks an IDE up front and gates feature install on its capabilities.
-
-- **`src/runtime/ide/capabilities.js`** declares an `IDE_CAPABILITIES` map for the four supported targets: `claude-code` (full feature set), `cursor` (commands + MCP), `windsurf` (commands), `codex` (very limited). Each entry lists `hooks` / `skills` / `commands` / `agents` / `mcp` booleans plus a `settingsFile` path.
-- **`src/cli/wizard/ide-picker.js`** adds a Clack `select` prompt asking which IDE the user is targeting. Default is Claude Code. Selecting a non-full target prints a warning listing which features won't be installed (`cursor: hooks, skills, agents won't be installed (not supported by this IDE)`).
-- **`agileflow setup --yes --ide <id>`** flag for the non-interactive path. Unknown IDE ids are rejected with the supported list. Default is `claude-code`.
-- **Status output** now shows the IDE selection: `ide: claude-code (hooks=on, skills=on)`.
-- **Future install gating**: the IDE choice is captured in `agileflow.config.json` at `ide.primary`; subsequent slices (Phase 3 slice C / Phase 4 install gating) consult `capabilitiesFor(ide).hooks` etc. before writing IDE-specific files.
-
-### v4 direction lock — skills-only (no slash commands)
-
-User directive 2026-04-26: AgileFlow ships **skills only**. No slash commands at all in the runtime. (Distinction: `npx agileflow setup` and friends are CLI subcommands and stay — the directive applies to in-IDE `/agileflow:*` slash commands.)
-
-- **Plugin manifest `provides.commands`**: schema retained for backward compat but bundled plugins all ship `commands: []`. Phase 4 content authoring must NOT create command `.md` files.
-- **Plan §C overlap table** in the internal v4 plan is now wholly "retire in favor of skill" — every former "Kept" command becomes "Retired".
-- **Skill design implication**: with no slash command for deterministic invocation, every skill must use the v2 frontmatter `triggers.keywords` + `priority` + `exclude` fields rigorously so Claude reliably picks the right skill.
-- **IDE capability map**: the `commands: true/false` field stays informational. AgileFlow itself ships no commands regardless.
-
-### Phase 3 slice B — Hook manifest aggregation at install (IDE-gated)
-
-The install pipeline now produces a working `.agileflow/hook-manifest.yaml` automatically when the target IDE supports hooks. The 6 dispatchers + orchestrator from slice A finally have something to read.
-
-- **`src/runtime/hooks/aggregator.js`** — `buildHookManifest(orderedPlugins)` walks each plugin's `provides.hooks` array, rewrites script paths from plugin-relative (`hooks/welcome.js`) to project-root-relative (`.agileflow/plugins/core/hooks/welcome.js`), and produces a `{ version: 1, hooks: [...] }` object. Defensive: skips invalid entries silently. Pure / no I/O.
-- **`writeAggregatedManifest(plugins, agileflowDir)`** — atomically writes the YAML manifest with a `# Auto-generated …` header so users know not to hand-edit. Temp+rename pattern matching the rest of the runtime; cleans up the temp file on rename failure.
-- **`removeAggregatedManifest(agileflowDir)`** — removes a stale manifest cleanly when the user switches to a non-hook IDE.
-- **`installPlugins` now takes an `ide` parameter** and calls `writeAggregatedManifest` only when `capabilitiesFor(ide).hooks === true`. Switching from claude-code to cursor automatically removes the previously-written manifest. Result object grows a `hookManifestPath` field (path or null).
-- **`setup` and `update` commands** thread `ide` through from `agileflow.config.json.ide.primary`. The bundled core plugin gained a stub `session-welcome.js` hook so aggregation has real content to test against.
-- **17 new tests across aggregator + integration**: pure aggregator unit tests (build, atomic write, header comment, cleanup on failure, remove), 3 integration tests (manifest written for claude-code, NOT written for cursor, stale manifest removed on IDE switch). Suite: **213 → 227 passing across 18 files**.
-- **End-to-end verified**: `agileflow setup --yes --plugins core --ide claude-code` writes hook-manifest.yaml with `session-welcome` registered for SessionStart; switching to `--ide cursor` removes the manifest. The orchestrator (slice A) reads the same file at runtime; the loop is closed.
-
-### Phase 3 slice C — Claude Code settings.json registration
-
-The final piece. When `ide=claude-code`, the installer registers our 6 hook entry points in `.claude/settings.json` so Claude Code actually invokes our orchestrator. The orchestrator → manifest loader → chain executor → dispatcher loop now closes against a real Claude Code session.
-
-- **`src/runtime/ide/claude-code-settings.js`** — read/merge/write of `.claude/settings.json`. Critical correctness property: NEVER clobbers the user's other settings.json content (permissions, env, non-managed hooks). AgileFlow-owned entries are identified by the literal `agileflow hook` substring in their command and replaced atomically; everything else is preserved.
-- **`src/cli/commands/hook.js`** + new `agileflow hook <event> [--matcher <name>]` CLI subcommand: a unified hook dispatcher that resolves through the npm bin entry. Settings.json registers `npx --no-install agileflow hook <Event>` so the path works regardless of how the package is installed (local node_modules, global, npx).
-- **6 registrations across 4 events**: 1 SessionStart + 3 PreToolUse (Bash / Edit / Write matchers) + 1 PreCompact + 1 Stop. Each entry uses `type: command`, `timeout: 30` (seconds, per Claude Code docs), and the unified `agileflow hook ...` invocation.
-- **`installPlugins`** now calls `writeClaudeCodeSettings(projectRoot)` when `ide=claude-code` and `removeClaudeCodeSettings(projectRoot)` otherwise. Switching IDEs cleans up stale entries; if AgileFlow was the only owner, the settings.json file is removed entirely.
-- **24 new tests** for the settings.json writer (entry detection, merge, unmerge, file lifecycle, malformed input handling, idempotency, atomicity) plus 2 integration tests for ide-gated registration. Suite: **227 → 251 passing across 19 files**.
-- **End-to-end verified**: `agileflow setup --yes --ide claude-code` writes `.claude/settings.json` with all 6 entries; `npx agileflow hook SessionStart` invokes the orchestrator; switching to `--ide cursor` deletes the settings file. **Phase 3 is functionally complete** — a fresh Claude Code session in a v4-installed project now actually invokes our hooks.
-
-The 6 standalone dispatchers under `bin/hooks/*.js` are now legacy. The unified `agileflow hook` subcommand replaces them for production use; they're kept as direct-invocation aliases (useful for testing without npx). A future cleanup can prune them.
-
-### Phase 4 first slice — agileflow-story-writer skill
-
-The first real user-visible content lands in v4. After install, a Claude Code session in the user's project will discover `agileflow-story-writer` and activate it on prompts about features / user stories / acceptance criteria.
-
-- **`content/plugins/core/skills/agileflow-story-writer/SKILL.md`** — ported from v3 to the v4 frontmatter v2 schema:
-  - `description` follows the `Use when...` policy
-  - explicit `triggers.keywords` (`user story`, `as a user, i want`, `feature request`, `implement this`, etc.)
-  - `triggers.exclude` keywords damp false activations on `bedtime story` / `tell me a story`
-  - `triggers.priority: 50` for collision resolution
-  - `learns.enabled: true` with `_learnings/story-writer.yaml` for self-improvement
-  - `<!-- {{PERSONALIZATION_BLOCK}} -->` placeholder for future personalization injection (Phase 5)
-  - Body kept ≤ 200 lines per the §G validator policy
-- **`content/plugins/core/plugin.yaml`** updated to declare the skill in `provides.skills`.
-- **`src/runtime/ide/claude-code-skills.js`** — mirror logic that copies enabled plugin skills from `.agileflow/plugins/<id>/skills/<skill>/` into `.claude/skills/<skill>/` (Claude Code's canonical discovery location). Pruning is conservative: only `agileflow-*` prefixed dirs are removed when orphaned, leaving third-party skill dirs alone. Copy (not symlink) for Windows portability.
-- **`installPlugins`** now mirrors skills when `ide=claude-code` AND `capabilities.skills`, and unmirrors them on switch-away. Result object gains `skillsMirrored` and `skillsPruned` arrays.
-- **10 new tests across mirror module + 2 integration tests**: collect-skills, mirror to fresh dir, replace stale content, prune orphans, leave third-party alone, unmirror, ENOENT-safe; integration: install puts skill in `.claude/skills/`, IDE switch removes it. Suite: **251 → 261 passing across 20 files**.
-- **End-to-end verified**: `agileflow setup --yes --plugins core --ide claude-code` lands `agileflow-story-writer` at `.claude/skills/agileflow-story-writer/SKILL.md` with the v4 frontmatter intact. Switching to `--ide cursor` removes it.
-
-### Phase 3+4 logic-audit fixes
-
-5 logic analyzers (edge / flow / invariant / race / type) on Phase 3 and Phase 4 code surfaced 7 actionable findings. All addressed before more skills land.
-
-- **`mirrorClaudeCodeSkills`** — wrapped per-skill copy in try/catch. ENOENT (missing source dir) is now reported as `result.skipped` and the install continues; other errors still propagate. `copyDir` was also reordered to read source before creating dest, so a missing source no longer leaves an empty mirror dir behind.
-- **`installPlugins` validate-before-write**: step 7 now builds the hook manifest in memory and runs it through `normalizeManifest` BEFORE writing. A plugin contributing an invalid hook (unknown event, missing matcher on a non-tool event, etc.) now errors at install time with `Hook manifest validation failed: ...` instead of silently registering hook dispatchers in `.claude/settings.json` against an unparseable manifest.
-- **`mergeManagedHooks` / `unmanageHooks`** — added `!Array.isArray(existing.hooks)` guard so an array-shaped `hooks: []` in user settings.json doesn't get spread into an object with numeric keys (which would corrupt the file). Treats it as missing and rebuilds clean.
-- **`agileflow hook` subcommand** — validates the event name against `VALID_EVENTS` and requires `--matcher` for tool-related events. Misspellings (`SesionStart`) and missing matchers now exit 1 with a clear error and the list of valid events. Previously these silently no-op'd the entire hook chain.
-- **`removeClaudeCodeSettings`** — no longer swallows arbitrary read errors. ENOENT and SyntaxError are still tolerated by the inner `readExisting` (treated as empty), but EACCES / EIO now propagate so we don't lie about removing entries from an unreadable file.
-- **`InstallResult` JSDoc** — extended typedef from 7 to 12 properties to match the actual return shape (`hookManifestPath`, `settingsPath`, `skillsMirrored`, `skillsPruned`, `skillsSkipped`, `ide`).
-- **`collectPluginSkills`** — rejects entries with empty-string `id` or `dir`. An empty `dir: ""` would previously path-join to the plugin root and produce wrong copies.
-- **5 new tests** + 2 modified for new return shapes: array-shaped hooks treated correctly, empty-string skill specs filtered, missing-source mirror reports skipped without crashing, validate-before-write rejects malformed manifest before settings.json is touched. Suite: **261 → 266 passing**.
-
-End-to-end verified: `npx agileflow hook SesionStart` (typo) prints `unknown event "SesionStart"` with the full valid list and exits 1; `npx agileflow hook PreToolUse` (no `--matcher`) prints `event "PreToolUse" requires --matcher` and exits 1; the valid case still exits 0.
-
-### Phase 4 — Core scope content-complete (4 skills)
-
-The Core plugin now ships every skill its name promised: Epic, Story, Status, Babysit. After install on `claude-code`, a fresh Claude Code session discovers and activates all four through their explicit triggers.
-
-- **`agileflow-epic-planner`** — ported from v3. Breaks large features into milestoned epics with success metrics, dependencies, and risks. Triggers on `epic`, `initiative`, `multi-month project`, `break this down`, `phased rollout`. Excludes `epic fail` / `epic novel` / `mythological epic`. Writes `docs/05-epics/EP-####-<slug>.md`. Self-improving learnings enabled.
-- **`agileflow-story-writer`** — already shipped in the previous slice. v2.0.0, learns enabled.
-- **`agileflow-status-updater`** — NEW for v4 (no v3 source). Applies status mutations (story `ready` → `in_progress` → `review` → `complete` / `blocked`; epic `PLANNING` → `ACTIVE` → `COMPLETED` / `ON_HOLD`) from natural-language progress updates. Strict transition table; diff-first / YES-NO confirmation; mutates `docs/09-agents/status.json` + the relevant story / epic file frontmatter. Triggers on `mark this story`, `i finished`, `i'm blocked on`, `move to in progress`. Excludes `status quo` / `status report`.
-- **`agileflow-babysit-mentor`** — NEW for v4, the v3 `/agileflow:babysit` command reincarnated as a skill. End-to-end mentor pattern: pick → plan → delegate → verify → commit. Codifies the 6 operating rules (smart `AskUserQuestion`, plan mode, expert delegation, task tracking, logic audit, flow audit). Triggers on `walk me through`, `help me ship this`, `mentor mode`, `babysit`. Excludes `babysit my kid`. Self-improving learnings enabled.
-- **`content/plugins/core/plugin.yaml`** updated to declare all 4 skills.
-- **End-to-end verified**: `agileflow setup --yes --plugins core --ide claude-code` lands all 4 skills under `.claude/skills/`. Each carries v4 frontmatter v2 (name, version, category, description with "Use when…", explicit triggers with priority + exclude). Suite still **266 passing** (skills are content, not new code paths — covered by existing integration tests).
-
-**Phase 4 Core scope**: complete. Phase 5 (skill validator + CI + alpha.1 publish) is next. Other plugins (`audit`, `ads`, `seo`, `council`, etc.) populate after the validator is wired so they ship through a quality gate.
-
-### Phase 4 — Core gains a 5th skill: agileflow-adr
-
-- **`agileflow-adr`** — ported from v3 to v4 frontmatter v2. Captures architectural / technical decisions as MADR-format ADRs in `docs/03-decisions/`. Triggers on `architecture decision`, `which database`, `rest vs graphql`, `sql vs nosql`, `which framework`, `record this decision`, `trade-off between`, `adr for`. Excludes `decision tree` (algorithmic) and `decisive moment`. Self-improving learnings enabled. Bundled directly in Core because architectural decisions surface constantly during implementation; making the user remember to enable a separate plugin is friction at exactly the wrong moment.
-- **`content/plugins/core/plugin.yaml`** updated to declare 5 skills.
-- **End-to-end verified**: `agileflow setup --yes --plugins core --ide claude-code` lands all 5 skills under `.claude/skills/`. 7 files created (5 × SKILL.md + plugin.yaml + session-welcome.js). Suite still 266 passing.
-
-### Phase 5 slice 1 — Skill validator + `agileflow doctor`
-
-The skills-only direction makes activation triggers load-bearing. Typos in descriptions, missing required fields, and (worst) keyword collisions across skills silently degrade reliability. The validator catches all of those before alpha.1 ships.
-
-- **`src/runtime/skills/validator.js`** — per-skill checks: YAML frontmatter parses; required fields present (`name`, `version`, `category`, `description`, `triggers`); `description` starts with `Use when …` (forces activation-trigger framing); `triggers.keywords` is non-empty array of strings; `triggers.priority` is integer in [0, 100]; `triggers.exclude` (if present) is array of strings; `version` is valid semver; SKILL.md body ≤ 400 lines; if `learns.enabled === true`, the `_learnings/<id>.yaml` file should exist (warning, not error — created on first correction); skills-only policy: warn if `provides.command` is set.
-- **Cross-skill collision detection** — `(keyword, priority)` pairs must be unique across the loaded skill set. Case-insensitive; trims whitespace. Two skills sharing `('story', 50)` will both be flagged with the offending keyword and priority and the colliding ids listed.
-- **`validateSkillsAtRoot(dir)`** — walks every immediate-child directory looking for `SKILL.md`, runs per-skill validation, then cross-skill collision detection across the loaded set. Failed-load errors are captured as issues per skill, not as fatal exceptions, so one broken SKILL.md doesn't blow up a doctor pass.
-- **`agileflow doctor`** — replaces the Phase 1 stub with a real validator that runs four sections in order: plugin manifests (validatePluginSet), skills (validateSkillsAtRoot for every bundled plugin + cross-plugin collision), aggregated hook manifest (the same validate-before-write check installPlugins does), installed hook manifest (if `.agileflow/hook-manifest.yaml` exists in cwd). Each section prints `ok` or a list of `ERROR`/`WARN` lines with the skill/plugin id. Exit 0 on green, exit 1 if any errors.
-- **Doctor output against bundled content**: `Plugin manifests: ok`, `Skills: 4 warnings (missing _learnings files — created on first correction)`, `Hook manifest (aggregated): ok`, `Hook manifest (installed): ok`. All 5 Core skills pass strict validation.
-- **20 new tests** across `validator.test.js`: per-field validation, semver, body-length, collision detection (positive case, no-collision case, different priorities, case-insensitive), the validateSkillsAtRoot loader (missing dir → empty, broken skill → captured issue, multi-skill → cross-check). Suite: **266 → 286 passing across 21 files**.
-
-### Phase 5 slices 2 + 3 — CI + publish setup
-
-The path from "green test suite" to "user can `npm i agileflow@alpha`" closes here.
-
-- **`.github/workflows/v4-ci.yml`** — runs on push or PR that touches `apps/cli/**` on the `v4` branch. Steps: `npm install --legacy-peer-deps` (works around the v3 apps/docs peer-dep conflict), `npx vitest run` in `apps/cli/`, `node bin/agileflow.js doctor`, plus two scratch-dir smoke tests (`setup --yes --ide claude-code` lands `.claude/{settings.json,skills/agileflow-story-writer/SKILL.md}` + `hook-manifest.yaml` + file index; `setup --yes --ide cursor` correctly does NOT write any of those).
-- **`.github/workflows/v4-publish.yml`** — triggered by tags matching `agileflow-v4.*`. Re-runs tests + doctor, verifies the tag version matches `apps/cli/package.json`, and publishes with `npm publish --access public --tag alpha`. Uses the `NPM_TOKEN` secret. Tag prefix `agileflow-v4-` keeps v4 tags distinct from any v3 tags that may still land on `main`.
-- **`apps/cli/package.json`** gained:
-  - `prepublishOnly` script that runs `vitest run && node bin/agileflow.js doctor` so a red doctor blocks `npm publish` locally too.
-  - `doctor` script (alias for `node bin/agileflow.js doctor`).
-- **`apps/cli/LICENSE`** copied from repo root so the published tarball is self-contained per the `files: [..., "LICENSE", ...]` declaration.
-- **`apps/cli/PUBLISHING.md`** — quick-reference for shipping a release. Covers prerequisites, versioning convention (`4.0.0-alpha.N` → `4.0.0-beta.N` → `4.0.0-rc.N` → `4.0.0`), local dry-run, CI tag-push flow, manual emergency flow, alpha → latest promotion, and rollback (`npm deprecate` / `npm unpublish`).
-- **Verified `npm pack --dry-run`** from `apps/cli/`: ships 52 files (bin/, src/, content/, README.md, LICENSE, CHANGELOG.md) — 65 KB tarball, 210 KB unpacked. Tests + vitest config + node_modules excluded.
-
-**To ship `4.0.0-alpha.1` now**:
-
-```bash
-cd apps/cli && npm version 4.0.0-alpha.1 --no-git-tag-version
-git commit -am "release(v4): 4.0.0-alpha.1"
-git tag agileflow-v4.0.0-alpha.1
-git push origin v4 agileflow-v4.0.0-alpha.1
-# .github/workflows/v4-publish.yml does the rest.
-```
-
-### Not yet implemented
-
-- Plugin registry & loader (Phase 2).
-- Installer sync engine (Phase 2 — ported from v3 `installer.js:349-455`).
-- Content placeholder injector (Phase 2).
-- Hook meta-orchestrator + 6 dispatchers (Phase 3).
-- Core plugin content — Epic, Story, Status, Babysit (Phase 4).
-- Skill validator, personalization injector, CI, npm publish (Phase 5).
-
-### Removed from v3
-
-- `packages/cli/` renamed to `agileflow-v3-legacy` on the `v4` branch (workspace collision prevention). v3 continues to ship from `main`.
+AgileFlow 5 is a clean break. The changelog for v4 and earlier lives on the [`v4` branch](https://github.com/projectquestorg/AgileFlow/blob/v4/apps/cli/CHANGELOG.md).

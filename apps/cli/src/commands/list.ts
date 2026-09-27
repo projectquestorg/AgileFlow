@@ -1,6 +1,5 @@
 import {
   describeSource,
-  findProjectRoot,
   globalScope,
   inspectSkill,
   listUnmanagedSkills,
@@ -11,7 +10,7 @@ import {
   type Services,
 } from '@agileflow/core';
 import type { Cli } from '../runtime';
-import { EXIT, relSkillsDir, servicesFor } from '../runtime';
+import { EXIT, findProject, relSkillsDir, servicesFor } from '../runtime';
 import { table } from '../ui/tables';
 
 export interface ListOptions {
@@ -73,7 +72,7 @@ export async function runList(cli: Cli, options: ListOptions): Promise<number> {
   const { ctx, out } = cli;
   const scopes: Array<{ label: string; scope: ScopeTarget }> = [];
   if (!options.global) {
-    const root = await findProjectRoot(ctx.cwd);
+    const root = await findProject(ctx);
     if (root) scopes.push({ label: 'Project skills', scope: projectScope(root) });
   }
   const personal = globalScope(ctx);

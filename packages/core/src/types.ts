@@ -27,7 +27,7 @@ export interface FetchedPackage {
   /** Source string as recorded in config/lock. */
   source: string;
   version: string;
-  /** Git commit or registry download URL. */
+  /** Git sources: the commit the ref resolved to. */
   resolved?: string;
   files: TreeFile[];
   /** hashTree(files). */
@@ -56,14 +56,17 @@ export interface DiscoveredSkill {
 export interface PackageFetcher {
   /** Newest version allowed by `spec` (network for registry/git sources). */
   resolve(id: string, spec: SkillSpec, root: string): Promise<FetchedPackage>;
-  /** Exact content recorded in the lockfile (cache first; verifies integrity). */
-  fetchLocked(id: string, entry: LockEntry, root: string): Promise<FetchedPackage>;
+  /**
+   * Exact content recorded in the lockfile (cache first; verifies integrity).
+   * `cacheOnly` never touches the network (throws a `NotCachedError` instead).
+   */
+  fetchLocked(id: string, entry: LockEntry, root: string, options?: { cacheOnly?: boolean }): Promise<FetchedPackage>;
   /** Pack lookup; null when no such pack exists. */
   getPack(name: string): Promise<PackDefinition | null>;
   /** True when the registry knows a skill package with this name. */
   hasSkill(name: string): Promise<boolean>;
-  /** Skills available at a git/path source (for multi-skill repositories). */
-  discover(source: string, root: string): Promise<DiscoveredSkill[]>;
+  /** Skills available at a git/path source (for multi-skill repositories), at `ref` for git. */
+  discover(source: string, root: string, ref?: string): Promise<DiscoveredSkill[]>;
   /** Registry catalog for interactive pickers. */
   listSkills(): Promise<Array<{ name: string; description: string; latest: string }>>;
 }
@@ -72,7 +75,14 @@ export interface PackageFetcher {
 // Providers
 // ---------------------------------------------------------------------------
 
-export type ProviderId = 'claude' | 'codex' | 'cursor' | 'opencode' | 'gemini';
+/** Providers with a dedicated adapter. */
+export type BuiltinProviderId = 'claude' | 'codex' | 'cursor' | 'opencode' | 'gemini';
+export const BUILTIN_PROVIDER_IDS: readonly BuiltinProviderId[] = ['codex', 'claude', 'cursor', 'opencode', 'gemini'];
+/**
+ * Built-in ids plus custom link providers declared in config
+ * (`providers.<id>.skillsDir`), so any string.
+ */
+export type ProviderId = string;
 export type SupportLevel = 'native' | 'adapted' | 'experimental' | 'unsupported';
 
 export interface ProviderContext {
@@ -97,6 +107,7 @@ export interface ProviderCapabilities {
   exposure: 'native' | 'linked';
   /** `hard`: provider enforces manual-only; `semantic`: only the description does. */
   manualInvocation: 'hard' | 'semantic';
+  /** First line of `<cli> --version` (verbose inspection only, when the CLI is on PATH). */
   version?: string;
   optionalFeatures?: Array<{ id: string; label: string; enabled: boolean | null }>;
 }
@@ -121,6 +132,8 @@ export interface FeatureChange {
   before: unknown;
   after: unknown;
   changed: boolean;
+  /** Why nothing changed when that is not obvious (e.g. the user edited the value since). */
+  note?: string;
 }
 
 export interface ProviderAdapter {

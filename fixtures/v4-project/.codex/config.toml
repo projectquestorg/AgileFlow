@@ -1,3 +1,5 @@
+# Team Codex settings. Comments like this one must survive the migration.
+model = "gpt-5-codex" # pinned for CI parity
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
 
@@ -46,7 +48,11 @@ command = "npx agileflow hook Stop"
 timeout = 30
 statusMessage = "Saving AgileFlow state"
 
+# Desktop notification when Codex waits for input.
 [[hooks.Notification]]
 [[hooks.Notification.hooks]]
 type = "command"
 command = "notify-send codex"
+
+[profiles.review]
+approval_policy = "on-request" # a profile value, not v4's

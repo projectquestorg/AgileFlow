@@ -1,0 +1,50 @@
+name: AgileFlow
+description: Verify a repository's Agent Skills in CI - lockfile integrity, installed files, provider visibility, content risks, and optionally the skill release gate.
+branding:
+  icon: check-circle
+  color: gray-dark
+inputs:
+  version:
+    description: AgileFlow CLI version or dist-tag to run (for example 5.0.0 or next)
+    default: next
+  working-directory:
+    description: Project directory containing agileflow.yaml
+    default: .
+  fail-on:
+    description: Fail when skill content scanning finds issues of this severity (high, medium, or none)
+    default: high
+  lint:
+    description: Directory of skills you author (for example skills); runs the release-gate lint on them
+    default: ''
+  attestations:
+    description: Also verify GitHub build attestations of official skill bundles (needs gh and GH_TOKEN)
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Check the skill setup (offline)
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        AGILEFLOW_NON_INTERACTIVE: '1'
+        AGILEFLOW_NO_UPDATE_NOTIFIER: '1'
+      run: npx --yes "agileflow@${{ inputs.version }}" check
+    - name: Verify locked packages and scan their content
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        AGILEFLOW_NON_INTERACTIVE: '1'
+        AGILEFLOW_NO_UPDATE_NOTIFIER: '1'
+      run: |
+        args=()
+        if [ "${{ inputs.fail-on }}" != "none" ]; then args+=(--fail-on "${{ inputs.fail-on }}"); fi
+        if [ "${{ inputs.attestations }}" = "true" ]; then args+=(--attestations); fi
+        npx --yes "agileflow@${{ inputs.version }}" verify "${args[@]}"
+    - name: Release-gate lint for authored skills
+      if: inputs.lint != ''
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        AGILEFLOW_NON_INTERACTIVE: '1'
+        AGILEFLOW_NO_UPDATE_NOTIFIER: '1'
+      run: npx --yes "agileflow@${{ inputs.version }}" eval --lint --catalog "${{ inputs.lint }}"

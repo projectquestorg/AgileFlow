@@ -1,0 +1,15 @@
+/* Design tokens. Components should use these instead of raw colors. */
+:root {
+  --color-bg: #ffffff;
+  --color-surface: #f4f5f7;
+  --color-text: #1b1d21;
+  --color-muted: #5f6570;
+  --color-accent: #2f6fde;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: system-ui, sans-serif;
+  margin: 2rem;
+}

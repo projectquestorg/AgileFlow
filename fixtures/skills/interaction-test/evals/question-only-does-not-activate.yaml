@@ -1,0 +1,8 @@
+name: question-only-does-not-activate
+skill: interaction-test
+description: A question about the code, not a change request; the manual skill must not activate.
+fixture: interaction-service
+prompt: |
+  What does withRetry in src/uploads/retry.js do?
+assert:
+  shouldActivate: false

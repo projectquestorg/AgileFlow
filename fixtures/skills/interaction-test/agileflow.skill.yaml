@@ -1,0 +1,17 @@
+# Eval fixture: a deliberately neutral skill (no interaction guidance of its own)
+# so question-preference evals measure the overlay, not a real skill.
+schema: 1
+package:
+  name: "@fixtures/interaction-test"
+  version: "1.0.0"
+activation:
+  mode: manual
+requirements:
+  commands: [node, npm]
+  network: none
+capabilities:
+  modifiesFiles: yes
+  longRunning: false
+  userInteraction: optional
+compatibility:
+  agentSkills: true

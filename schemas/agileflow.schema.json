@@ -7,6 +7,10 @@
       "type": "number",
       "const": 1
     },
+    "agileflow": {
+      "type": "string",
+      "minLength": 1
+    },
     "registry": {
       "type": "string",
       "minLength": 1
@@ -30,8 +34,7 @@
             "minLength": 1
           },
           "ref": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "activation": {
             "type": "string",
@@ -89,6 +92,18 @@
               "enabled",
               "disabled"
             ]
+          },
+          "skillsDir": {
+            "type": "string",
+            "minLength": 1
+          },
+          "userSkillsDir": {
+            "type": "string",
+            "minLength": 1
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1
           }
         },
         "additionalProperties": false
@@ -105,6 +120,21 @@
             "prefer",
             "minimize"
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "work": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        },
+        "root": {
+          "default": "docs/agile",
+          "type": "string",
+          "minLength": 1
         }
       },
       "additionalProperties": false

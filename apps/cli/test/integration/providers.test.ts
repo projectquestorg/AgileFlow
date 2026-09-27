@@ -8,22 +8,28 @@ import { createSandbox, exists, isSymlink, read, type Sandbox } from '../helpers
 let sb: Sandbox;
 afterEach(() => sb?.cleanup());
 
+function lockedIds(s: Sandbox): string[] {
+  return Object.keys(YAML.parse(read(path.join(s.project, 'agileflow.lock'))).resolved);
+}
+
 function frontmatter(file: string): Record<string, unknown> {
   const m = /^---\n([\s\S]*?)\n---/.exec(read(file));
   return YAML.parse(m![1]!);
 }
 
 describe('manual invocation translation', () => {
-  it('manual skills get Claude/Cursor, OpenCode, and Codex flags; Gemini is reported as semantic', async () => {
+  it('manual skills get Claude/Cursor and Codex flags; OpenCode and Gemini are reported as semantic', async () => {
     sb = await createSandbox({ fixture: 'clean-node' });
     sb.installProvider('claude');
     sb.installProvider('codex');
     sb.installProvider('gemini');
+    sb.installProvider('opencode');
     await sb.af(['init', '--skills', 'interviewing-requirements,diagnosing-bugs']);
     const dir = path.join(sb.project, '.agents/skills/interviewing-requirements');
     const fm = frontmatter(path.join(dir, 'SKILL.md'));
     expect(fm['disable-model-invocation']).toBe(true);
-    expect(fm.metadata).toEqual({ 'opencode/autoinvoke': false });
+    // OpenCode has no manual-only switch; AgileFlow writes no OpenCode metadata.
+    expect(fm.metadata).toBeUndefined();
     expect(YAML.parse(read(path.join(dir, 'agents/openai.yaml')))).toEqual({ policy: { allow_implicit_invocation: false } });
     const auto = frontmatter(path.join(sb.project, '.agents/skills/diagnosing-bugs/SKILL.md'));
     expect(auto['disable-model-invocation']).toBeUndefined();
@@ -32,6 +38,7 @@ describe('manual invocation translation', () => {
     const check = await sb.af(['check']);
     expect(check.code).toBe(0);
     expect(check.stdout).toContain('Gemini manual-only enforcement: semantic');
+    expect(check.stdout).toContain('OpenCode manual-only enforcement: semantic');
     expect(check.stdout).not.toContain('may invoke manual skills automatically');
   });
 
@@ -63,28 +70,95 @@ describe('manual invocation translation', () => {
 });
 
 describe('question preference', () => {
-  it('adds one line to interactive skills only, and none by default', async () => {
+  const PREFER = 'Question preference for this project: when multiple reasonable choices';
+  const MINIMIZE = 'Question preference for this project: make reasonable assumptions and continue';
+  const skill = (sb: Sandbox, id: string) => read(path.join(sb.project, '.agents/skills', id, 'SKILL.md'));
+
+  it('provider-default, prefer, and minimize render differently into skills with decision points only', async () => {
     sb = await createSandbox({ fixture: 'clean-node' });
-    await sb.af(['init', '--skills', 'interviewing-requirements,diagnosing-bugs']);
-    const interview = path.join(sb.project, '.agents/skills/interviewing-requirements/SKILL.md');
-    const debug = path.join(sb.project, '.agents/skills/diagnosing-bugs/SKILL.md');
-    const debugBefore = read(debug);
-    expect(read(interview)).not.toContain('Project question preference');
+    await sb.af(['init', '--skills', 'diagnosing-bugs,filing-pr,verifying-changes,interviewing-requirements']);
+    const baseline = {
+      debug: skill(sb, 'diagnosing-bugs'),
+      pr: skill(sb, 'filing-pr'),
+      verify: skill(sb, 'verifying-changes'),
+    };
+    expect(YAML.parse(read(path.join(sb.project, 'agileflow.yaml'))).interaction.questionPreference).toBe('provider-default');
+    for (const text of Object.values(baseline)) expect(text).not.toContain('Question preference');
+
     expect((await sb.af(['configure', 'question-preference', 'prefer'])).code).toBe(0);
-    expect(read(interview)).toContain('Project question preference: when a decision would materially change the result');
-    expect(read(debug)).toBe(debugBefore);
-    await sb.af(['configure', 'question-preference', 'minimize']);
-    expect(read(interview)).toContain('ask only when blocked');
-    await sb.af(['configure', 'question-preference', 'provider-default']);
-    expect(read(interview)).not.toContain('Project question preference');
+    expect(skill(sb, 'diagnosing-bugs')).toContain(PREFER);
+    expect(skill(sb, 'filing-pr')).toContain(PREFER);
+    expect(skill(sb, 'verifying-changes')).toBe(baseline.verify); // report-only skill: unchanged
+
+    expect((await sb.af(['configure', 'question-preference', 'minimize'])).code).toBe(0);
+    expect(skill(sb, 'diagnosing-bugs')).toContain(MINIMIZE);
+    expect(skill(sb, 'diagnosing-bugs')).not.toContain(PREFER);
+
+    expect((await sb.af(['configure', 'question-preference', 'provider-default'])).code).toBe(0);
+    expect(skill(sb, 'diagnosing-bugs')).toBe(baseline.debug);
+    expect(skill(sb, 'filing-pr')).toBe(baseline.pr);
+    expect((await sb.af(['check'])).code).toBe(0);
     expect((await sb.af(['configure', 'question-preference', 'always'])).code).toBe(1);
   });
 
-  it('new projects take the personal default', async () => {
+  it('keeps interviewing-requirements manual under prefer and never makes skills read agileflow.yaml', async () => {
     sb = await createSandbox({ fixture: 'clean-node' });
-    await sb.af(['configure', 'question-preference', 'minimize', '--global']);
-    await sb.af(['init', '--skills', '']);
-    expect(YAML.parse(read(path.join(sb.project, 'agileflow.yaml'))).interaction.questionPreference).toBe('minimize');
+    await sb.af(['init', '--skills', 'interviewing-requirements']);
+    await sb.af(['configure', 'question-preference', 'prefer']);
+    const text = skill(sb, 'interviewing-requirements');
+    expect(frontmatter(path.join(sb.project, '.agents/skills/interviewing-requirements/SKILL.md'))['disable-model-invocation']).toBe(true);
+    expect(read(path.join(sb.project, '.agents/skills/interviewing-requirements/agents/openai.yaml'))).toContain('allow_implicit_invocation: false');
+    expect(YAML.parse(read(path.join(sb.project, 'agileflow.lock'))).resolved['interviewing-requirements'].activation).toBe('manual');
+    expect(text).not.toContain('agileflow.yaml');
+  });
+
+  it('a modified skill is not re-rendered when the preference changes', async () => {
+    sb = await createSandbox({ fixture: 'clean-node' });
+    await sb.af(['init', '--skills', 'diagnosing-bugs']);
+    fs.appendFileSync(path.join(sb.project, '.agents/skills/diagnosing-bugs/SKILL.md'), 'team note\n');
+    const res = await sb.af(['configure', 'question-preference', 'prefer']);
+    expect(res.stderr).toContain('diagnosing-bugs: local modifications');
+    expect(res.stderr).toContain('question preference change not applied because the skill has local modifications');
+    expect(skill(sb, 'diagnosing-bugs')).not.toContain(PREFER);
+    // The installed base is rendered with the preference it was installed under,
+    // so the diff shows only the user's edit, not the preference change.
+    const diff = await sb.af(['diff', 'diagnosing-bugs']);
+    expect(diff.stdout).toContain('+team note');
+    expect(diff.stdout).not.toContain('Question preference');
+  });
+
+  it('only the render inputs changed: sync re-renders from the same source package', async () => {
+    sb = await createSandbox({ fixture: 'clean-node' });
+    await sb.af(['init', '--skills', 'diagnosing-bugs']);
+    const lock = () => YAML.parse(read(path.join(sb.project, 'agileflow.lock'))).resolved['diagnosing-bugs'];
+    const before = lock();
+    await sb.af(['configure', 'question-preference', 'minimize']);
+    const after = lock();
+    expect(after.version).toBe(before.version);
+    expect(after.integrity).toBe(before.integrity); // same source
+    expect(after.renderedHash).not.toBe(before.renderedHash); // different rendering
+    expect((await sb.af(['check'])).code).toBe(0);
+  });
+
+  it('a required-interaction skill keeps its questions under minimize', async () => {
+    sb = await createSandbox({ fixture: 'clean-node' });
+    await sb.af(['init', '--skills', 'interviewing-requirements,simplifying-explanations']);
+    const plain = skill(sb, 'simplifying-explanations');
+    await sb.af(['configure', 'question-preference', 'minimize']);
+    const text = skill(sb, 'interviewing-requirements');
+    expect(text).toContain('ask the questions this workflow requires');
+    expect(text).not.toContain(MINIMIZE);
+    expect(skill(sb, 'simplifying-explanations')).toBe(plain); // userInteraction: none
+  });
+
+  it('the personal default is set once and applies to new projects and personal skills', async () => {
+    sb = await createSandbox({ fixture: 'clean-node' });
+    expect((await sb.af(['configure', 'question-preference', 'prefer', '--global'])).code).toBe(0);
+    await sb.af(['init', '--skills', 'diagnosing-bugs']);
+    expect(YAML.parse(read(path.join(sb.project, 'agileflow.yaml'))).interaction.questionPreference).toBe('prefer');
+    expect(skill(sb, 'diagnosing-bugs')).toContain(PREFER);
+    await sb.af(['add', 'filing-pr', '--global', '--yes']);
+    expect(read(path.join(sb.home, '.agents/skills/filing-pr/SKILL.md'))).toContain(PREFER);
   });
 });
 
@@ -208,7 +282,7 @@ describe('Claude adapter', () => {
     expect(isSymlink(path.join(sb.project, '.agents/skills/diagnosing-bugs'))).toBe(false);
     const check = await sb.af(['check', '--verbose']);
     expect(check.code).toBe(0);
-    expect(check.stdout).toContain('directory link: 4');
+    expect(check.stdout).toContain(`directory link: ${lockedIds(sb).length}`);
     await sb.af(['remove', 'diagnosing-bugs']);
     expect(exists(path.join(sb.project, '.agents/skills/verifying-changes/SKILL.md'))).toBe(true);
   });
@@ -220,7 +294,7 @@ describe('Claude adapter', () => {
     await sb.af(['init', '--yes']);
     const marker = JSON.parse(read(path.join(sb.project, '.claude/skills/diagnosing-bugs/.agileflow-mirror.json')));
     expect(marker).toMatchObject({ generatedBy: 'agileflow', provider: 'claude', source: '.agents/skills/diagnosing-bugs' });
-    expect((await sb.af(['check', '--verbose'])).stdout).toContain('mirror: 4');
+    expect((await sb.af(['check', '--verbose'])).stdout).toContain(`mirror: ${lockedIds(sb).length}`);
     await sb.af(['remove', 'diagnosing-bugs']);
     expect(exists(path.join(sb.project, '.claude/skills/diagnosing-bugs'))).toBe(false);
     await sb.af(['remove', '--all', '--yes']);

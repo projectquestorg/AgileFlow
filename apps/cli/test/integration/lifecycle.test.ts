@@ -2,12 +2,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import YAML from 'yaml';
-import { createSandbox, exists, FIXTURES_DIR, isSymlink, read, snapshotFiles, tree, type Sandbox } from '../helpers';
+import { createSandbox, exists, FIXTURES_DIR, isSymlink, read, SKILLS_DIR, snapshotFiles, tree, type Sandbox } from '../helpers';
+
+/** Published version of diagnosing-bugs in the catalog these tests install. */
+const DB = YAML.parse(fs.readFileSync(path.join(SKILLS_DIR, 'diagnosing-bugs', 'agileflow.skill.yaml'), 'utf8')).package.version as string;
 
 let sb: Sandbox;
 afterEach(() => sb?.cleanup());
 
-const CORE = ['checking-blast-radius', 'diagnosing-bugs', 'reviewing-changes', 'verifying-changes'];
+const CORE = ['checking-blast-radius', 'diagnosing-bugs', 'resolving-conflicts', 'reviewing-changes', 'verifying-changes'];
 
 describe('init', () => {
   it('creates only agileflow.yaml, agileflow.lock, .agents/skills and Claude links (golden tree)', async () => {
@@ -68,9 +71,9 @@ describe('init', () => {
     expect(read(path.join(sb.project, 'agileflow.yaml'))).not.toContain('skills: {');
     const lock = YAML.parse(read(path.join(sb.project, 'agileflow.lock')));
     const entry = lock.resolved['diagnosing-bugs'];
-    expect(entry).toMatchObject({ version: '1.0.0', path: '.agents/skills/diagnosing-bugs', ownership: 'managed' });
+    expect(entry).toMatchObject({ version: DB, path: '.agents/skills/diagnosing-bugs', ownership: 'managed' });
     expect(entry.integrity).toMatch(/^sha256-/);
-    expect(entry.baseHash).toMatch(/^sha256-/);
+    expect(entry.renderedHash).toMatch(/^sha256-/);
   });
 
   it('installs selected skills with --skills and reports an already-initialized project', async () => {
@@ -101,7 +104,6 @@ describe('add and remove', () => {
     expect(fs.readdirSync(path.join(sb.project, '.agents', 'skills')).sort()).toEqual([
       'babysitting-pr',
       'filing-pr',
-      'resolving-conflicts',
     ]);
   });
 
@@ -267,10 +269,15 @@ describe('check', () => {
   it('reports invalid configuration clearly', async () => {
     sb = await createSandbox({ fixture: 'clean-node' });
     await sb.af(['init', '--yes']);
-    fs.writeFileSync(path.join(sb.project, 'agileflow.yaml'), 'version: 2\nskills: []\n');
+    fs.writeFileSync(path.join(sb.project, 'agileflow.yaml'), 'version: 1\nskills: []\n');
     const res = await sb.af(['check']);
     expect(res.code).toBe(1);
     expect(res.stdout).toContain('agileflow.yaml is invalid');
+    // A file from a newer AgileFlow says so instead of listing schema errors.
+    fs.writeFileSync(path.join(sb.project, 'agileflow.yaml'), 'version: 2\nskills: {}\n');
+    const newer = await sb.af(['check']);
+    expect(newer.code).toBe(1);
+    expect(newer.stdout).toContain('written by a newer AgileFlow');
   });
 
   it('flags modified skills, duplicate names, and invalid unmanaged skills without failing on them', async () => {
@@ -300,8 +307,8 @@ describe('list and shims', () => {
     sb.installProvider('codex');
     await sb.af(['init', '--skills', 'diagnosing-bugs,interviewing-requirements']);
     const res = await sb.af(['list']);
-    expect(res.stdout).toMatch(/diagnosing-bugs\s+1\.0\.0\s+auto\s+official\s+clean/);
-    expect(res.stdout).toMatch(/interviewing-requirements\s+1\.0\.0\s+manual\s+official\s+clean/);
+    expect(res.stdout).toMatch(new RegExp(`diagnosing-bugs\\s+${DB.replace(/\./g, '\\.')}\\s+auto\\s+official\\s+clean`));
+    expect(res.stdout).toMatch(/interviewing-requirements\s+1\.0\.2\s+manual\s+official\s+clean/);
     expect(res.stdout).toContain('Not managed by AgileFlow (left untouched): my-team-release, strange-custom-tool');
     expect(res.stdout).toMatch(/Codex\s+native \.agents\/skills\n/);
     expect(res.stdout).toMatch(/Claude\s+linked \.claude\/skills \(not detected\)/);
@@ -309,11 +316,12 @@ describe('list and shims', () => {
     expect(json.project.rows).toHaveLength(2);
   });
 
-  it('`doctor` runs check; the removed `hook` command points stale v4 hooks at migrate (exit 1, never 2)', async () => {
+  it('`doctor` is an alias of check; the removed `hook` command points stale v4 hooks at migrate (exit 1, never 2)', async () => {
     sb = await createSandbox({ fixture: 'clean-node' });
     await sb.af(['init', '--yes']);
     const doctor = await sb.af(['doctor']);
-    expect(doctor.stdout).toContain('`agileflow doctor` was renamed to `agileflow check` in v5.');
+    expect(doctor.stdout).toContain('Configuration');
+    expect(doctor.stdout).toContain('Result: healthy');
     expect(doctor.code).toBe(0);
     const hook = await sb.af(['hook', 'PreToolUse', '--matcher', 'Bash']);
     expect(hook.code).toBe(1);
@@ -362,8 +370,10 @@ describe('unknown user skills', () => {
     ];
     await sb.publish('diagnosing-bugs', '1.1.0', (t) => `${t}\nnew\n`);
     for (const step of steps) {
-      if (step[0] === 'sync') await sb.af(['update', '--yes']);
-      await sb.af(step);
+      if (step[0] === 'sync') expect((await sb.af(['update', '--yes'])).code, 'update --yes').toBe(0);
+      const res = await sb.af(step);
+      // Every step must succeed; a failing step would make "nothing changed" meaningless.
+      expect(res.code, `${step.join(' ')}: ${res.stderr}`).toBe(0);
       expect(snapshotFiles(sb.project, userFiles), step.join(' ')).toEqual(before);
     }
   });
@@ -375,7 +385,7 @@ describe('interactive flows', () => {
     sb = await createSandbox({ fixture: 'clean-node' });
     fs.appendFileSync(path.join(sb.project, '.git/config'), '[remote "origin"]\n\turl = git@github.com:acme/app.git\n');
     let offered: string[] = [];
-    const prompter = scriptedPrompter(['project', ['diagnosing-bugs', 'babysitting-pr']]);
+    const prompter = scriptedPrompter(['project', ['diagnosing-bugs', 'babysitting-pr'], 'no']);
     const original = prompter.multiselect.bind(prompter);
     prompter.multiselect = async (message, choices, initial, required) => {
       offered = initial as string[];
@@ -387,6 +397,9 @@ describe('interactive flows', () => {
     expect(res.stdout).toContain('GitHub');
     expect(offered).toEqual(['diagnosing-bugs', 'checking-blast-radius', 'verifying-changes', 'filing-pr', 'babysitting-pr']);
     expect(fs.readdirSync(path.join(sb.project, '.agents/skills')).sort()).toEqual(['babysitting-pr', 'diagnosing-bugs']);
+    // Work is opt-in: declined, so no Agile workspace appears.
+    expect(prompter.asked).toContain('Enable AgileFlow Work?');
+    expect(exists(path.join(sb.project, 'docs'))).toBe(false);
   });
 
   it('init can set up personal skills instead', async () => {

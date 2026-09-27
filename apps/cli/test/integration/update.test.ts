@@ -3,7 +3,10 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import YAML from 'yaml';
 import { scriptedPrompter } from '../../src/ui/prompts';
-import { createSandbox, exists, isSymlink, read, type Sandbox } from '../helpers';
+import { createSandbox, exists, isSymlink, read, SKILLS_DIR, type Sandbox } from '../helpers';
+
+/** Published version of diagnosing-bugs in the catalog these tests install. */
+const DB = YAML.parse(fs.readFileSync(path.join(SKILLS_DIR, 'diagnosing-bugs', 'agileflow.skill.yaml'), 'utf8')).package.version as string;
 
 let sb: Sandbox;
 afterEach(() => sb?.cleanup());
@@ -24,7 +27,7 @@ describe('update', () => {
     sb = await initWithUpdate();
     const res = await sb.af(['update', '--yes']);
     expect(res.code).toBe(0);
-    expect(res.stdout).toContain('diagnosing-bugs  1.0.0 -> 1.1.0');
+    expect(res.stdout).toContain(`diagnosing-bugs  ${DB} -> 1.1.0`);
     expect(res.stdout).toContain('All managed skills are clean.');
     expect(read(skillFile(sb, 'diagnosing-bugs'))).toContain('(v1.1)');
     expect(lockOf(sb).resolved['diagnosing-bugs'].version).toBe('1.1.0');
@@ -45,7 +48,7 @@ describe('update', () => {
     expect(res.stdout).toContain('agileflow fork diagnosing-bugs');
     expect(res.stdout).toContain('agileflow update --reset diagnosing-bugs');
     expect(read(skillFile(sb, 'diagnosing-bugs'))).toBe(before);
-    expect(lockOf(sb).resolved['diagnosing-bugs'].version).toBe('1.0.0');
+    expect(lockOf(sb).resolved['diagnosing-bugs'].version).toBe(DB);
     expect(exists(path.join(sb.project, '.agileflow'))).toBe(false);
   });
 
@@ -68,7 +71,7 @@ describe('update', () => {
     expect(res.stdout).toContain('+Our team rule.');
     expect(res.stdout).toContain('+Establish evidence before changing code. (v1.1)');
     expect(read(skillFile(sb, 'diagnosing-bugs'))).toContain('Our team rule.');
-    expect(lockOf(sb).resolved['diagnosing-bugs'].version).toBe('1.0.0');
+    expect(lockOf(sb).resolved['diagnosing-bugs'].version).toBe(DB);
   });
 
   it('interactive: Reset installs the new version', async () => {
@@ -92,7 +95,7 @@ describe('update', () => {
     const cfg = YAML.parse(read(path.join(sb.project, 'agileflow.yaml')));
     expect(cfg.skills['diagnosing-bugs']).toEqual({
       source: '.agents/skills/diagnosing-bugs',
-      provenance: { forkedFrom: '@agileflow/diagnosing-bugs@1.0.0' },
+      provenance: { forkedFrom: `@agileflow/diagnosing-bugs@${DB}` },
     });
   });
 
@@ -149,7 +152,7 @@ describe('fork and diff', () => {
     const res = await sb.af(['fork', 'diagnosing-bugs']);
     expect(res.code).toBe(0);
     expect(res.stdout).toContain('diagnosing-bugs is now locally owned.');
-    expect(res.stdout).toContain('@agileflow/diagnosing-bugs@1.0.0');
+    expect(res.stdout).toContain(`@agileflow/diagnosing-bugs@${DB}`);
     expect(res.stdout).toContain('AgileFlow will no longer overwrite this skill during updates.');
     fs.appendFileSync(skillFile(sb, 'diagnosing-bugs'), '\nMine now.\n');
 
@@ -158,7 +161,7 @@ describe('fork and diff', () => {
     expect(upd.code).toBe(0);
     expect(read(skillFile(sb, 'diagnosing-bugs'))).toContain('Mine now.');
     expect(read(skillFile(sb, 'diagnosing-bugs'))).not.toContain('Upstream addition.');
-    expect(upd.stdout).toContain('Your fork diagnosing-bugs originated from @agileflow/diagnosing-bugs@1.0.0.');
+    expect(upd.stdout).toContain(`Your fork diagnosing-bugs originated from @agileflow/diagnosing-bugs@${DB}.`);
     expect(upd.stdout).toContain('Upstream is now 1.1.0.');
     expect(upd.stdout).toContain('agileflow diff diagnosing-bugs --upstream');
 
@@ -168,7 +171,7 @@ describe('fork and diff', () => {
     expect(diff.stdout).toContain('-Mine now.');
 
     expect((await sb.af(['check'])).code).toBe(0);
-    expect((await sb.af(['list'])).stdout).toMatch(/diagnosing-bugs\s+local\s+auto\s+fork of @agileflow\/diagnosing-bugs@1\.0\.0\s+local/);
+    expect((await sb.af(['list'])).stdout).toMatch(new RegExp(`diagnosing-bugs\\s+local\\s+auto\\s+fork of @agileflow/diagnosing-bugs@${DB.replace(/\./g, '\\.')}\\s+local`));
     const removed = await sb.af(['remove', 'diagnosing-bugs']);
     expect(removed.stdout).toContain('are yours and were kept');
     expect(read(skillFile(sb, 'diagnosing-bugs'))).toContain('Mine now.');
@@ -180,7 +183,7 @@ describe('fork and diff', () => {
     expect((await sb.af(['diff', 'verifying-changes'])).stdout).toContain('No differences.');
     fs.appendFileSync(skillFile(sb, 'verifying-changes'), 'local tweak\n');
     const diff = await sb.af(['diff', 'verifying-changes']);
-    expect(diff.stdout).toContain('--- verifying-changes@1.0.0 (installed)/SKILL.md');
+    expect(diff.stdout).toContain('--- verifying-changes@1.0.1 (installed)/SKILL.md');
     expect(diff.stdout).toContain('+local tweak');
   });
 });

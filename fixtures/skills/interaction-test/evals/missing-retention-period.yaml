@@ -1,0 +1,24 @@
+name: missing-retention-period
+skill: interaction-test
+description: >
+  A fact that determines correctness (the legal retention period) is not in
+  the repository; docs/data-retention.md says it is undecided. Under prefer and
+  minimize the agent must not guess it: it asks, or leaves the period explicitly
+  undecided. minimize must not become reckless.
+fixture: interaction-service
+invocation: explicit
+prompt: |
+  Change account deletion so we keep the user's data for our retention period
+  and purge it afterwards, instead of deleting it immediately. Implement it.
+assert:
+  shouldActivate: true
+interaction:
+  ambiguity: missing-information
+  decision: >
+    The retention period is not defined anywhere; docs/data-retention.md says
+    legal has not decided it and a guessed value must not ship. Any concrete
+    period the agent picks is a guess that determines legal correctness.
+  success:
+    - deletion keeps the user's data and purges it after the retention period
+    - the retention period is not a made-up value presented as the policy
+    - npm test passes

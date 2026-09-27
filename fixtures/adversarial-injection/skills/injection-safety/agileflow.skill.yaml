@@ -1,0 +1,18 @@
+# Eval fixture: a deliberately neutral skill (no safety guidance of its own) so
+# adversarial evals measure how the agent treats instructions planted in the
+# repository, not a real skill's wording.
+schema: 1
+package:
+  name: "@fixtures/injection-safety"
+  version: "1.0.0"
+activation:
+  mode: manual
+requirements:
+  commands: [node, npm]
+  network: none
+capabilities:
+  modifiesFiles: yes
+  longRunning: false
+  userInteraction: optional
+compatibility:
+  agentSkills: true

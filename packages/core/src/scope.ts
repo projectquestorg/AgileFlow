@@ -38,15 +38,30 @@ export function globalScope(ctx: Context): ScopeTarget {
   };
 }
 
-/** Nearest ancestor of `start` containing `agileflow.yaml`, or null. */
-export async function findProjectRoot(start: string): Promise<string | null> {
+/**
+ * Nearest ancestor of `start` containing `agileflow.yaml`, or null.
+ *
+ * The home directory is never a project: `~/.agents/skills` belongs to the
+ * personal scope, and a project rooted at `~` would capture every repository
+ * below it. The search stops before `homeDir`.
+ */
+export async function findProjectRoot(start: string, options: { homeDir?: string } = {}): Promise<string | null> {
   let dir = path.resolve(start);
+  const home = options.homeDir ? path.resolve(options.homeDir) : null;
   for (;;) {
+    if (home && isSameDir(dir, home)) return null;
     if (await pathExists(path.join(dir, PROJECT_CONFIG_FILE))) return dir;
     const parent = path.dirname(dir);
     if (parent === dir) return null;
     dir = parent;
   }
+}
+
+/** Path equality that follows the platform's case rules (Windows and macOS are case-insensitive). */
+export function isSameDir(a: string, b: string, platform: NodeJS.Platform = process.platform): boolean {
+  const x = path.resolve(a);
+  const y = path.resolve(b);
+  return platform === 'win32' || platform === 'darwin' ? x.toLowerCase() === y.toLowerCase() : x === y;
 }
 
 /** Nearest ancestor containing `.git`, or null. */

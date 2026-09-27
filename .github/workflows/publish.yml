@@ -1,6 +1,8 @@
 name: Publish to npm
 
 # Triggered by tags created with scripts/release.sh (e.g. v5.0.0, v5.1.0-alpha.1).
+# Publishes with npm provenance (SLSA build provenance signed through Sigstore),
+# so `npm audit signatures` can verify the package came from this workflow.
 on:
   push:
     tags:
@@ -9,18 +11,33 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
-      - name: Install workspace dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Tag matches the package version and is on main
+        run: |
+          version=$(node -p "require('./apps/cli/package.json').version")
+          root=$(node -p "require('./package.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ] || [ "$version" != "$root" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match apps/cli ($version) and root ($root) package versions"
+            exit 1
+          fi
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Tag $GITHUB_REF_NAME is not on main; the skill registry is served from main"
+            exit 1
+          fi
+      - name: Install workspace dependencies (from the lockfile, no install scripts)
+        run: npm ci --legacy-peer-deps --no-audit --no-fund --ignore-scripts
       - name: Release gate (typecheck, tests, registry, skills)
         run: npm run release-gate
       - name: Build

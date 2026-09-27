@@ -17,6 +17,8 @@ export function isPathSource(source: string): boolean {
   return (
     source.startsWith('./') ||
     source.startsWith('../') ||
+    source.startsWith('.\\') ||
+    source.startsWith('..\\') ||
     source === '.' ||
     source.startsWith('/') ||
     source.startsWith('~/') ||
@@ -41,13 +43,17 @@ export function parseSource(source: string): SourceRef {
     const hash = rest.indexOf('#');
     const url = hash === -1 ? rest : rest.slice(0, hash);
     const subpath = hash === -1 ? null : rest.slice(hash + 1).replace(/^\/+|\/+$/g, '') || null;
-    // A leading dash would be parsed by git as an option.
-    if (!url || url.startsWith('-')) throw new Error(`Invalid git source: ${source}`);
+    assertSafeGitUrl(url, source);
+    if (subpath && (subpath.split('/').includes('..') || /[\u0000-\u001f\u007f\\:]/.test(subpath))) {
+      throw new Error(`Invalid path inside git source: ${source}`);
+    }
     return { kind: 'git', url, subpath };
   }
   if (isScopedName(trimmed)) return { kind: 'registry', name: trimmed };
   if (isPathSource(trimmed)) {
-    return { kind: 'path', path: trimmed.startsWith('file:') ? trimmed.slice(5) : trimmed };
+    const p = trimmed.startsWith('file:') ? trimmed.slice(5) : trimmed;
+    // `.\skills\foo` from a Windows shell means the same as `./skills/foo`.
+    return { kind: 'path', path: /^\.\.?\\/.test(p) ? p.replace(/\\/g, '/') : p };
   }
   if (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(trimmed)) {
     return { kind: 'registry', name: `${DEFAULT_SCOPE}/${trimmed}` };
@@ -55,6 +61,59 @@ export function parseSource(source: string): SourceRef {
   throw new Error(
     `Unrecognized skill source "${source}". Use @scope/name, git+<url>[#path], or a ./relative path.`,
   );
+}
+
+/**
+ * Git URLs reach `git` as arguments: a leading dash would be read as an
+ * option, and whitespace or control characters have no business in a URL.
+ */
+export function assertSafeGitUrl(url: string, source = url): void {
+  if (!url || url.startsWith('-') || /[\s\u0000-\u001f\u007f]/.test(url)) {
+    throw new Error(`Invalid git source: ${source}`);
+  }
+  const scheme = /^([a-z][a-z0-9+.-]*):\/\//i.exec(url)?.[1]?.toLowerCase();
+  const scpLike = !scheme && /^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+:[^/]/.test(url);
+  if (!scpLike && !['https', 'http', 'ssh', 'git', 'file'].includes(scheme ?? '')) {
+    throw new Error(`Unsupported git URL scheme in ${source}: use https://, ssh://, git@host:path, or file://`);
+  }
+}
+
+/** A GitHub repository reference written as `owner/repo[/skill][@ref]` or `github:owner/repo`. */
+export interface GitHubShorthand {
+  owner: string;
+  repo: string;
+  /** Skill name inside the repository (skills.sh ids are `owner/repo/skill`). */
+  skill: string | null;
+  ref: string | null;
+}
+
+const GITHUB_SHORTHAND_RE =
+  /^(?:github:)?([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))\/([A-Za-z0-9._-]+?)(?:\.git)?(?:\/([a-z0-9]+(?:-[a-z0-9]+)*))?(?:@([A-Za-z0-9._/+-]+))?$/;
+const GITHUB_URL_RE =
+  /^https:\/\/github\.com\/([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))\/([A-Za-z0-9._-]+?)(?:\.git)?\/?(?:tree\/([A-Za-z0-9._+-]+)(?:\/(.+?))?)?\/?$/;
+
+export function parseGitHubShorthand(value: string): GitHubShorthand | null {
+  const m = GITHUB_SHORTHAND_RE.exec(value.trim());
+  if (!m) return null;
+  const [, owner, repo, skill, ref] = m;
+  if (repo === '.' || repo === '..') return null;
+  return { owner: owner!, repo: repo!, skill: skill ?? null, ref: ref ?? null };
+}
+
+/** `https://github.com/o/r`, `.../tree/<ref>/<path>` as a git source + ref. */
+export function parseGitHubUrl(value: string): { source: string; ref: string | null } | null {
+  const m = GITHUB_URL_RE.exec(value.trim());
+  if (!m) return null;
+  const [, owner, repo, ref, subpath] = m;
+  const clean = subpath?.replace(/^\/+|\/+$/g, '');
+  return {
+    source: `git+https://github.com/${owner}/${repo}.git${clean ? `#${clean}` : ''}`,
+    ref: ref ?? null,
+  };
+}
+
+export function gitHubSource(owner: string, repo: string): string {
+  return `git+https://github.com/${owner}/${repo}.git`;
 }
 
 /** Expand `~` and resolve a path source against the scope root. */
@@ -75,17 +134,36 @@ export interface AddTarget {
   /** Semver range when the argument pinned one (`name@^1`). */
   range: string | null;
   ref: SourceRef;
+  /** Git branch, tag, or commit when the argument named one (`owner/repo@v1`). */
+  gitRef?: string | null;
+  /** Only this skill from a multi-skill source (`owner/repo/skill`). */
+  skill?: string | null;
 }
 
 /**
  * Parse an `agileflow add` argument:
  * `diagnosing-bugs`, `diagnosing-bugs@^1`, `@agileflow/github`,
- * `@agileflow/filing-pr@1.2.0`, `git+https://...`, `./skills/mine`.
+ * `@agileflow/filing-pr@1.2.0`, `git+https://...`, `./skills/mine`,
+ * `owner/repo`, `owner/repo/skill`, `owner/repo@ref`, `github:owner/repo`,
+ * `https://github.com/owner/repo[/tree/<ref>/<path>]`.
+ *
+ * `a/b` is ambiguous between a relative path and a GitHub repository; pass
+ * `localPathExists` (does `./a/b` exist?) so an existing directory wins.
  */
-export function parseAddTarget(arg: string): AddTarget {
+export function parseAddTarget(arg: string, options: { localPathExists?: boolean } = {}): AddTarget {
   const value = arg.trim();
+  const url = parseGitHubUrl(value);
+  if (url) return { source: url.source, range: null, ref: parseSource(url.source), gitRef: url.ref };
+  if (!options.localPathExists && !value.startsWith('.') && !value.startsWith('/')) {
+    const gh = parseGitHubShorthand(value);
+    if (gh) {
+      const source = gitHubSource(gh.owner, gh.repo);
+      return { source, range: null, ref: parseSource(source), gitRef: gh.ref, skill: gh.skill };
+    }
+  }
   if (value.startsWith('git+') || isPathSource(value)) {
-    return { source: value, range: null, ref: parseSource(value) };
+    const ref = parseSource(value);
+    return { source: ref.kind === 'path' ? ref.path : value, range: null, ref };
   }
   let name = value;
   let range: string | null = null;

@@ -4,6 +4,10 @@ import { ConfigError } from './config';
 import type { Context } from './context';
 import { readTextIfExists } from './fs';
 import { compareConfigToLock, resolvedSkills, syncWorkspace, type SyncReport } from './installer';
+import { parseSource } from './source';
+import { skillRelPath } from './scope';
+import { journalPath } from './transaction';
+import { pathExists } from './fs';
 import { inspectSkill, listSkillDirs, listUnmanagedSkills } from './ownership';
 import { globalScope, skillDir, type ScopeTarget } from './scope';
 import { parseSkillMarkdown, SKILL_FILE, validateSkillMarkdown } from './skill';
@@ -64,7 +68,11 @@ export async function checkScope(
   }
   configuration.diagnostics.push(ok(`${configName} valid`));
   configuration.diagnostics.push(
-    ws.lockExists ? ok(`${lockName} valid`) : error(`${lockName} missing`, ['Run `agileflow update` to create it.']),
+    ws.lockExists
+      ? ok(`${lockName} valid`)
+      : Object.keys(ws.specs).length
+        ? error(`${lockName} missing`, ['Run `agileflow update` to create it.'])
+        : ok(`no skills configured; ${lockName} not needed yet`),
   );
   const mismatches = compareConfigToLock(services, ws);
   configuration.diagnostics.push(
@@ -76,6 +84,22 @@ export async function checkScope(
       : ok('lockfile matches config'),
   );
   configuration.diagnostics.push(info(`config: ${scope.configPath}`, [`lock: ${scope.lockPath}`], true));
+  const ignored: string[] = [];
+  for (const [id, spec] of Object.entries(ws.specs)) {
+    const kind = parseSource(spec.source).kind;
+    if (spec.version && kind !== 'registry') ignored.push(`${id}: \`version\` only applies to registry skills (use \`ref\` for git)`);
+    if (spec.ref && kind !== 'git') ignored.push(`${id}: \`ref\` only applies to git sources`);
+  }
+  for (const [id, entry] of Object.entries(ws.lock.resolved)) {
+    if (entry.path !== skillRelPath(id)) ignored.push(`${id}: lock path ${entry.path} is ignored; skills always live in ${skillRelPath(id)}`);
+    if (entry.ownership === 'managed' && !entry.integrity) ignored.push(`${id}: lock entry has no integrity; run \`agileflow update ${id}\``);
+  }
+  if (ignored.length) configuration.diagnostics.push(warn('settings that have no effect', ignored));
+  if (await pathExists(journalPath(services, scope))) {
+    configuration.diagnostics.push(
+      warn('an earlier AgileFlow command was interrupted', ['The next `agileflow sync` (or any change) completes or rolls it back.']),
+    );
+  }
 
   let fixed: SyncReport | null = null;
   if (options.fix && !mismatches.length) {
@@ -104,7 +128,7 @@ async function checkSkills(services: Services, ws: Workspace): Promise<CheckSect
   for (const [id, entry] of entries) {
     const state = await inspectSkill(ws.scope, id, entry);
     if (state.status === 'missing') missing.push(id);
-    if (state.status === 'modified') modified.push(id);
+    if (state.status === 'modified') modified.push(state.unhashed?.length ? `${id} (untracked entries: ${state.unhashed.join(', ')})` : id);
   }
   const present = managed.length - missing.filter((id) => ws.lock.resolved[id]?.ownership === 'managed').length;
   section.diagnostics.push(
@@ -116,25 +140,36 @@ async function checkSkills(services: Services, ws: Workspace): Promise<CheckSect
       : ok(`${plural(present, 'managed skill')} present${local.length ? `, ${local.length} locally owned` : ''}${disabled.length ? `, ${disabled.length} disabled` : ''}`),
   );
 
-  // Package integrity: verify the cached package for each locked version when available.
+  // Package integrity: verify the cached package for each locked version. `check`
+  // never downloads; `agileflow verify` re-fetches and checks provenance.
   const integrityProblems: string[] = [];
   const unverifiable: string[] = [];
+  const notCached: string[] = [];
   for (const [id, entry] of managed) {
     try {
-      const pkg = await services.fetcher.fetchLocked(id, entry, ws.scope.root);
+      const pkg = await services.fetcher.fetchLocked(id, entry, ws.scope.root, { cacheOnly: true });
       if (pkg.integrity !== entry.integrity) {
         integrityProblems.push(`${id}: package integrity ${pkg.integrity} != locked ${entry.integrity}`);
       }
     } catch (err) {
-      const message = (err as Error).message;
-      if (/integrity/i.test(message)) integrityProblems.push(`${id}: ${message}`);
-      else unverifiable.push(`${id}: ${message}`);
+      const e = err as Error;
+      if (e.name === 'NotCachedError') notCached.push(id);
+      else if (e.name === 'IntegrityError') integrityProblems.push(`${id}: ${e.message}`);
+      else unverifiable.push(`${id}: ${e.message}`);
     }
   }
   if (integrityProblems.length) section.diagnostics.push(error('integrity check failed', integrityProblems));
-  else if (managed.length && !unverifiable.length) section.diagnostics.push(ok('integrity verified'));
+  else if (managed.length && !unverifiable.length && !notCached.length) section.diagnostics.push(ok('integrity verified'));
   if (unverifiable.length) {
-    section.diagnostics.push(warn('could not verify package integrity (offline or source unavailable)', unverifiable));
+    section.diagnostics.push(warn('could not verify package integrity', unverifiable));
+  }
+  if (notCached.length) {
+    section.diagnostics.push(
+      info(`${plural(notCached.length, 'package')} not in the local cache (not verified)`, [
+        notCached.join(', '),
+        'Run `agileflow verify` to download and verify them.',
+      ]),
+    );
   }
 
   // SKILL.md validity and duplicates across the canonical directory.
@@ -171,7 +206,7 @@ async function checkSkills(services: Services, ws: Workspace): Promise<CheckSect
       ? warn(
           `${plural(modified.length, 'managed skill')} with local modifications`,
           [
-            ...modified.map((id) => `${id}: agileflow diff ${id}`),
+            ...modified.map((m) => `${m}: agileflow diff ${m.split(' ')[0]}`),
             'Updates will not overwrite them. Keep your changes permanently with `agileflow fork <skill>`.',
           ],
         )
@@ -183,7 +218,7 @@ async function checkSkills(services: Services, ws: Workspace): Promise<CheckSect
       info(
         'lock hashes',
         entries.map(
-          ([id, e]) => `${id} ${e.version} ${e.ownership}${e.integrity ? ` integrity=${e.integrity}` : ''}${e.baseHash ? ` base=${e.baseHash}` : ''}`,
+          ([id, e]) => `${id} ${e.version} ${e.ownership}${e.integrity ? ` integrity=${e.integrity}` : ''}${e.renderedHash ? ` base=${e.renderedHash}` : ''}`,
         ),
         true,
       ),
@@ -200,7 +235,11 @@ async function checkSkills(services: Services, ws: Workspace): Promise<CheckSect
     const personal = await listSkillDirs(globalScope(services.ctx)).catch(() => [] as string[]);
     const overrides = dirs.filter((d) => personal.includes(d));
     for (const id of overrides) {
-      section.diagnostics.push(info(`${id} has a project override of your global skill`));
+      section.diagnostics.push(
+        info(`${id} exists in both this project and your personal skills`, [
+          'Which copy an agent uses depends on the provider; rename one if they differ.',
+        ]),
+      );
     }
   }
   return section;

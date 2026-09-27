@@ -34,9 +34,11 @@ describe('path sources', () => {
     expect(lock.resolved['release-notes']).toMatchObject({ source: './my-skills/release-notes', version: 'local', ownership: 'managed' });
 
     writeSkill(path.join(sb.project, 'my-skills/release-notes'), 'release-notes', 'v2 body');
+    // Editing a local source is a normal workflow: sync warns, update picks it up.
     const sync = await sb.af(['sync']);
-    expect(sync.code).toBe(1);
-    expect(sync.stderr).toContain('local source changed since it was locked');
+    expect(sync.code).toBe(0);
+    expect(sync.stderr).toContain('changed since it was locked');
+    expect(read(path.join(sb.project, '.agents/skills/release-notes/SKILL.md'))).toContain('v1 body');
     expect((await sb.af(['update', '--yes'])).code).toBe(0);
     expect(read(path.join(sb.project, '.agents/skills/release-notes/SKILL.md'))).toContain('v2 body');
   });
@@ -122,7 +124,7 @@ describe('personal (global) skills', () => {
 
     await sb.af(['init', '--skills', 'filing-pr']);
     const check = await sb.af(['check']);
-    expect(check.stdout).toContain('filing-pr has a project override of your global skill');
+    expect(check.stdout).toContain('filing-pr exists in both this project and your personal skills');
     const list = await sb.af(['list']);
     expect(list.stdout).toContain('Project skills');
     expect(list.stdout).toContain('Personal skills');

@@ -52,6 +52,18 @@
               "enabled",
               "disabled"
             ]
+          },
+          "skillsDir": {
+            "type": "string",
+            "minLength": 1
+          },
+          "userSkillsDir": {
+            "type": "string",
+            "minLength": 1
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1
           }
         },
         "additionalProperties": false
@@ -76,8 +88,7 @@
             "minLength": 1
           },
           "ref": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "activation": {
             "type": "string",

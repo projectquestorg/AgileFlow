@@ -1,19 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { spawn } from 'node:child_process';
 import YAML from 'yaml';
 import {
   editFrontmatter,
   readFileText,
   replaceFile,
   SKILL_FILE,
+  splitFrontmatter,
   type ProviderContext,
   type ProviderDetection,
   type TreeFile,
 } from '@agileflow/core';
-
-const execFileAsync = promisify(execFile);
 
 /** Find an executable on PATH without spawning anything. */
 export async function findExecutable(
@@ -21,14 +19,21 @@ export async function findExecutable(
   env: Record<string, string | undefined>,
   platform: NodeJS.Platform,
 ): Promise<string | null> {
-  const dirs = (env.PATH ?? env.Path ?? '').split(platform === 'win32' ? ';' : ':').filter(Boolean);
-  const exts = platform === 'win32' ? (env.PATHEXT ?? '.EXE;.CMD;.BAT').split(';') : [''];
+  const dirs = (env.PATH ?? env.Path ?? '')
+    .split(platform === 'win32' ? ';' : ':')
+    // Windows PATH entries may be quoted ("C:\Program Files\x").
+    .map((d) => (platform === 'win32' ? d.replace(/^"(.*)"$/, '$1') : d))
+    .filter(Boolean);
+  const exts = platform === 'win32' ? (env.PATHEXT ?? '.EXE;.CMD;.BAT').split(';').filter(Boolean) : [''];
   for (const dir of dirs) {
     for (const ext of exts) {
       const candidate = path.join(dir, name + ext.toLowerCase());
       try {
         const stat = await fs.promises.stat(candidate);
-        if (stat.isFile()) return candidate;
+        if (!stat.isFile()) continue;
+        // On POSIX a file on PATH only counts when it is executable.
+        if (platform !== 'win32') await fs.promises.access(candidate, fs.constants.X_OK);
+        return candidate;
       } catch {
         // keep looking
       }
@@ -52,6 +57,11 @@ export interface DetectionSpec {
   homeMarkers: string[];
   /** Paths relative to the project root (project scope only). */
   projectMarkers: string[];
+  /**
+   * Absolute markers derived from the environment, e.g. `$CODEX_HOME` or
+   * `$CLAUDE_CONFIG_DIR`. Checked before the home markers.
+   */
+  envMarkers?: (pctx: ProviderContext) => Array<{ path: string; label: string }>;
 }
 
 export async function detectBySpec(pctx: ProviderContext, spec: DetectionSpec): Promise<ProviderDetection> {
@@ -65,7 +75,15 @@ export async function detectBySpec(pctx: ProviderContext, spec: DetectionSpec): 
       break;
     }
   }
-  for (const marker of spec.homeMarkers) {
+  let homeFound = false;
+  for (const marker of spec.envMarkers?.(pctx) ?? []) {
+    if (await exists(marker.path)) {
+      evidence.push(`${marker.label} exists`);
+      homeFound = true;
+      break;
+    }
+  }
+  for (const marker of homeFound ? [] : spec.homeMarkers) {
     if (await exists(path.join(pctx.ctx.homeDir, marker))) {
       evidence.push(`~/${marker} exists`);
       break;
@@ -82,15 +100,80 @@ export async function detectBySpec(pctx: ProviderContext, spec: DetectionSpec): 
   return { detected: evidence.length > 0, evidence, ...(executable ? { executable } : {}) };
 }
 
-/** `<exe> --version`, first line, 3s timeout. Only used for verbose diagnostics. */
-export async function probeVersion(executable: string | undefined): Promise<string | undefined> {
-  if (!executable) return undefined;
-  try {
-    const { stdout } = await execFileAsync(executable, ['--version'], { timeout: 3000 });
-    return stdout.trim().split('\n')[0];
-  } catch {
-    return undefined;
+const VERSION_TIMEOUT_MS = 3000;
+
+/**
+ * `<exe> --version`, first non-empty line. Only used for verbose inspection.
+ * Bounded: the child is killed after 3s and the promise settles then even if
+ * the child (or a grandchild holding stdout) lingers. Never throws.
+ * Windows `.cmd`/`.bat` shims (npm installs) need a shell to run.
+ */
+export function probeVersion(
+  executable: string | undefined,
+  platform: NodeJS.Platform = process.platform,
+  timeoutMs = VERSION_TIMEOUT_MS,
+): Promise<string | undefined> {
+  if (!executable) return Promise.resolve(undefined);
+  return new Promise((resolve) => {
+    let settled = false;
+    let stdout = '';
+    const finish = (value: string | undefined) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(value);
+    };
+    const shim = platform === 'win32' && /\.(cmd|bat)$/i.test(executable);
+    let child: ReturnType<typeof spawn>;
+    try {
+      child = shim
+        ? spawn(`"${executable}" --version`, { shell: true, stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true })
+        : spawn(executable, ['--version'], { stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true });
+    } catch {
+      resolve(undefined);
+      return;
+    }
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      finish(undefined);
+    }, timeoutMs);
+    child.stdout?.setEncoding('utf8');
+    child.stdout?.on('data', (chunk: string) => {
+      if (stdout.length < 4096) stdout += chunk;
+    });
+    child.on('error', () => finish(undefined));
+    child.on('close', (code) => {
+      const line = stdout
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .find(Boolean);
+      finish(code === 0 && line ? line : undefined);
+    });
+  });
+}
+
+/** First `major.minor.patch` in a `--version` line (`codex-cli 0.128.0` -> `0.128.0`). */
+export function parseVersion(line: string | undefined): string | undefined {
+  return line ? /(\d+\.\d+\.\d+)/.exec(line)?.[1] : undefined;
+}
+
+/** Numeric comparison of `major.minor.patch` strings. */
+export function compareVersions(a: string, b: string): number {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    const d = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (d) return d < 0 ? -1 : 1;
   }
+  return 0;
+}
+
+/** `~/...` when `abs` is inside the home directory, else `abs`. */
+export function tildify(abs: string, homeDir: string): string {
+  const rel = path.relative(homeDir, abs);
+  if (rel === '') return '~';
+  if (!rel.startsWith('..') && !path.isAbsolute(rel)) return `~/${rel.split(path.sep).join('/')}`;
+  return abs;
 }
 
 /** Set a frontmatter key in SKILL.md (e.g. `disable-model-invocation: true`). */
@@ -107,9 +190,9 @@ export function setSkillFrontmatter(files: TreeFile[], keyPath: string[], value:
 }
 
 export function getSkillFrontmatter(text: string, keyPath: string[]): unknown {
-  const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text.replace(/^﻿/, ''));
-  if (!match) return undefined;
-  const doc = YAML.parseDocument(match[1] ?? '');
+  const { frontmatter } = splitFrontmatter(text);
+  if (frontmatter === null) return undefined;
+  const doc = YAML.parseDocument(frontmatter);
   const value = doc.getIn(keyPath);
   return YAML.isScalar(value) ? value.value : value;
 }
