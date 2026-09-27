@@ -188,10 +188,19 @@ async function decideBackup(cli: Cli, plan: MigrationPlan, options: MigrateOptio
   return true;
 }
 
+/** Backups inside the project print relative to it; anything else (the user-level backup) prints from `~`. */
+export function displayBackupDir(cwd: string, homeDir: string, dir: string): string {
+  const fromCwd = path.relative(cwd, dir);
+  if (fromCwd && !fromCwd.startsWith('..') && !path.isAbsolute(fromCwd)) return fromCwd;
+  const fromHome = path.relative(homeDir, dir);
+  if (fromHome && !fromHome.startsWith('..') && !path.isAbsolute(fromHome)) return `~/${fromHome.split(path.sep).join('/')}`;
+  return dir;
+}
+
 function reportResult(cli: Cli, result: MigrationResult): void {
   const { ctx, out } = cli;
   out.line(`Applied ${result.applied.length} change${result.applied.length === 1 ? '' : 's'}.`);
-  if (result.backupDir) out.line(`Backup: ${path.relative(ctx.cwd, result.backupDir) || result.backupDir}`);
+  if (result.backupDir) out.line(`Backup: ${displayBackupDir(ctx.cwd, ctx.homeDir, result.backupDir)}`);
   for (const f of result.failed) {
     out.warn(`could not update ${f.action.kind === 'remove' ? f.action.path : f.action.file}: ${f.error}`);
   }
