@@ -1,39 +1,67 @@
-import { BackgroundTexture } from '@/components/background-texture';
-import { PageWrapper } from '@/components/page-wrapper';
-import { ScrollDepthTracker } from '@/components/scroll-depth-tracker';
-import { Hero } from '@/components/sections/hero';
-import { StatsStrip } from '@/components/sections/stats-strip';
-import { HowItWorks } from '@/components/sections/how-it-works';
-import { BentoFeatures } from '@/components/sections/bento-features';
-import { DocsPreview } from '@/components/sections/docs-preview';
-import { IDEIntegrations } from '@/components/sections/ide-integrations';
-import { CommandsShowcase } from '@/components/sections/commands-showcase';
-import { FAQ } from '@/components/sections/faq';
-import { FinalCTA } from '@/components/sections/final-cta';
-import { Footer } from '@/components/sections/footer';
-import { buildLandingContent } from '@/lib/landing-content';
+import { Header } from '@/components/header';
+import { HeroSection } from '@/components/hero';
+import { LogosSection } from '@/components/logos-section';
+import { FeatureSection } from '@/components/feature-section';
+import { Integrations } from '@/components/integrations';
+import { TestimonialsSection } from '@/components/testimonials-section';
+import { FaqsSection } from '@/components/faqs-page';
+import { CallToAction } from '@/components/cta';
+import { Footer } from '@/components/footer';
+import { FullWidthDivider } from '@/components/full-width-divider';
 
-export default async function Page() {
-  const content = await buildLandingContent();
+/**
+ * Testimonials are placeholders (fictional people) until real, permissioned
+ * quotes exist. Keep this false in production builds.
+ */
+const SHOW_TESTIMONIALS = false;
+
+/** One band of the page: a full-bleed line on top, content inside the shared frame. */
+function Band({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative">
-      <ScrollDepthTracker />
-      <PageWrapper version={content.version}>
-        <BackgroundTexture />
-        <main id="content" className="pt-20">
-          <Hero content={content.hero} />
-          <StatsStrip stats={content.stats} />
-          <HowItWorks steps={content.howItWorks} />
-          <DocsPreview content={content.docsPreview} />
-          <BentoFeatures tiles={content.features} />
-          <IDEIntegrations data={content.ideIntegrations} />
-          <CommandsShowcase content={content.commands} />
-          <CommandsShowcase content={content.skills} />
-          <FAQ items={content.faq} />
-          <FinalCTA content={content.finalCta} />
-          <Footer content={content.footer} />
+      <FullWidthDivider position="top" />
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Landing page, built only from Efferd blocks. Every section sits in one
+ * frame (max-w-5xl with side lines) and is separated by full-bleed lines,
+ * so the lines run continuously from the hero to the footer.
+ */
+export default function Page() {
+  return (
+    <div className="relative overflow-x-clip" id="top">
+      <Header />
+      <div className="relative mx-auto w-full max-w-5xl lg:border-x">
+        <main>
+          <HeroSection />
+          <Band>
+            <LogosSection />
+          </Band>
+          <Band>
+            <FeatureSection />
+          </Band>
+          <Band>
+            <Integrations />
+          </Band>
+          {SHOW_TESTIMONIALS && (
+            <Band>
+              <TestimonialsSection />
+            </Band>
+          )}
+          <Band>
+            <FaqsSection />
+          </Band>
+          <Band>
+            <CallToAction />
+          </Band>
         </main>
-      </PageWrapper>
+        <Band>
+          <Footer />
+        </Band>
+      </div>
     </div>
   );
 }

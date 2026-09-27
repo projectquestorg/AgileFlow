@@ -4,7 +4,7 @@ export default function GlobalError() {
   return (
     <html lang="en">
       <body>
-        <main className="flex min-h-dvh items-center justify-center bg-white px-6 py-24 text-center">
+        <main className="flex min-h-dvh items-center justify-center bg-background px-6 py-24 text-center">
           <div className="max-w-md">
             <p className="text-sm font-medium tracking-wide text-[var(--text-muted)]">
               500
@@ -17,7 +17,7 @@ export default function GlobalError() {
             </p>
             <a
               href="/"
-              className="mt-8 inline-flex h-10 items-center rounded-full bg-[var(--accent)] px-5 text-sm font-medium text-white"
+              className="mt-8 inline-flex h-10 items-center rounded-full bg-accent px-5 text-sm font-medium text-ink"
             >
               Back to home
             </a>
