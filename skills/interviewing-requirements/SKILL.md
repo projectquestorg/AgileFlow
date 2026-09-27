@@ -1,6 +1,6 @@
 ---
 name: interviewing-requirements
-description: Interview the user in small rounds of high-value questions to pin down requirements and stress-test a plan before implementation, after first checking the repository for facts it can answer. Use only when the user explicitly asks to be interviewed, questioned, or grilled about a plan, or says things like "ask me questions", "stress-test this plan", "help me decide", or "question me about this". Do not activate for ordinary implementation requests.
+description: Interview the user in small rounds of high-value questions to pin down requirements and stress-test a plan before implementation, after first checking the repository for facts it can answer. Use only when the user explicitly asks to be interviewed, questioned, or grilled about a plan, or says things like "ask me questions", "stress-test this plan", "help me decide by asking me questions", or "question me about this". Do not activate for ordinary implementation requests.
 ---
 
 # Interviewing requirements
@@ -17,8 +17,6 @@ Reach a shared, actionable understanding with as few questions as possible. The 
 6. **Incorporate the responses.** Restate what was decided in one or two lines and update your understanding of the plan. Point out any answer that conflicts with repository facts or an earlier answer.
 7. **Continue another round only if material uncertainty remains.** Each round should be smaller than the last. If the user says "you decide" or defers, take your recommended option and move on.
 8. **Stop once there is a shared actionable understanding.**
-
-If the project's `agileflow.yaml` has `interaction.questionPreference: minimize`, keep rounds especially small and prefer stating assumptions over asking.
 
 ## Constraints
 

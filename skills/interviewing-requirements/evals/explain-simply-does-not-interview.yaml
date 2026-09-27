@@ -1,0 +1,8 @@
+name: explain-simply-does-not-interview
+skill: interviewing-requirements
+prompt: |
+  Explain what this repository does as if I were new to programming.
+invocation: implicit
+neighbor: simplifying-explanations
+assert:
+  shouldActivate: false

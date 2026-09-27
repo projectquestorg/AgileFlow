@@ -1,6 +1,6 @@
 ---
 name: verifying-changes
-description: Verify that a code change really works by exercising the changed behavior directly (smallest meaningful proof, not the whole test suite). Use when the user asks to verify, confirm, check, test, prove, or make sure a change works or does what it should (e.g. "make sure the new limit actually works", "confirm the flag really skips uploads"), or when substantive runtime behavior changed and evidence is needed. Not for comment, formatting, or documentation-only edits.
+description: Verify that a code change really works by exercising the changed behavior directly (smallest meaningful proof, not the whole test suite). Use when the user asks to verify, confirm, prove, or make sure a change works or does what it should (e.g. "make sure the new limit actually works", "confirm the flag really skips uploads"), or when you have just changed runtime behavior and need evidence before reporting it done. Not for reviewing a diff for bugs, writing a test suite for existing code, or comment, formatting, or documentation-only edits.
 ---
 
 # Verifying changes
@@ -13,7 +13,7 @@ Use it when runtime behavior changed: logic, data handling, APIs, UI behavior, C
 
 ## Workflow
 
-1. **State the claim.** Write one or two sentences describing the behavior that should now be true, taken from the user's request, not from the implementation.
+1. **State the claim.** Write one or two sentences describing the behavior that should now be true, taken from the user's request, not from the implementation. If the request is vague, derive the claim from the request and the diff and state it; do not stop to ask.
 2. **Pick the smallest meaningful proof** that would fail if the claim were false. In rough order of preference:
    - an existing targeted test that exercises the changed path;
    - a new focused test when none exists and the project has a test setup for that area;

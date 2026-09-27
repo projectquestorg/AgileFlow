@@ -1,0 +1,9 @@
+name: splitting-into-stories-does-not-create-epic
+skill: creating-epics
+fixture: agile-app
+prompt: |
+  Break the collaboration epic into stories.
+invocation: implicit
+neighbor: writing-stories
+assert:
+  shouldActivate: false

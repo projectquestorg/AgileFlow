@@ -1,5 +1,105 @@
 name: babysit-until-green
 skill: babysitting-pr
+description: >
+  PR #231 (branch feat/bulk-discounts, pushed to a local bare remote) has a real
+  test failure from an off-by-one, a flaky infrastructure check that passes when
+  re-run, one outdated review comment on an earlier commit, and one current
+  review comment that points at the real bug. A scripted `gh` answers from the
+  sandbox's git state and runs the repository's tests for `gh pr checks`.
+fixture: eval-service
+setup: |
+  git init -q --bare .git/eval-remote.git
+  git remote add origin "$PWD/.git/eval-remote.git"
+  # Main is green: fix the known discount field bug first.
+  sed -i.bak 's/customer?.discount_percent/customer?.discountPercent/' src/billing/discounts.js && rm src/billing/discounts.js.bak
+  git commit -qam 'fix(billing): read discountPercent'
+  git push -q origin main
+  git checkout -q -b feat/bulk-discounts
+  cat > src/billing/bulk.js <<'JS'
+  /** Extra 5% off when an order has 10 or more units of one SKU. */
+  export const BULK_THRESHOLD = 10;
+
+  export function bulkDiscountPercent(items) {
+    const units = Math.max(0, ...items.map((item) => item.qty));
+    let pct = 0;
+    if (units > BULK_THRESHOLD) pct = 5;
+    return pct;
+  }
+  JS
+  cat > test/bulk.test.js <<'JS'
+  import { test } from 'node:test';
+  import assert from 'node:assert/strict';
+  import { bulkDiscountPercent } from '../src/billing/bulk.js';
+
+  test('no bulk discount below 10 units', () => {
+    assert.equal(bulkDiscountPercent([{ sku: 'a', price: 1, qty: 9 }]), 0);
+  });
+
+  test('bulk discount at 10 units', () => {
+    assert.equal(bulkDiscountPercent([{ sku: 'a', price: 1, qty: 10 }]), 5);
+  });
+  JS
+  git add -A
+  git commit -qm 'feat(billing): bulk discount for 10+ units'
+  git rev-parse HEAD > .git/eval-first-commit
+  sed -i.bak 's/let pct = 0;/let pct = 0; \/\/ percent, not a fraction/' src/billing/bulk.js && rm src/billing/bulk.js.bak
+  git commit -qam 'docs(billing): note the unit of pct'
+  git push -q -u origin feat/bulk-discounts
+bin:
+  gh: |
+    #!/bin/sh
+    # Scripted GitHub CLI for PR #231. State lives next to this script.
+    here=$(cd "$(dirname "$0")" && pwd)
+    top=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+    head=$(git -C "$top" rev-parse HEAD)
+    first=$(cat "$top/.git/eval-first-commit" 2>/dev/null)
+    echo "gh $*" >> "$here/.calls"
+    run_tests() { (cd "$top" && node --test >"$here/.test-log" 2>&1); }
+    case "$1 $2" in
+      "pr view"|"pr status")
+        case " $* " in
+          *" --comments "*)
+            printf 'alice (outdated, on %s):\n  src/billing/bulk.js: rename pct to percent for clarity.\n\n' "$first"
+            printf 'bob (on %s):\n  src/billing/bulk.js: the description says "10 or more units", but an order with exactly 10 gets no bulk discount.\n' "$head"
+            ;;
+          *)
+            printf '{"number":231,"title":"feat(billing): bulk discount for 10+ units","state":"OPEN","isDraft":false,"headRefName":"feat/bulk-discounts","headRefOid":"%s","baseRefName":"main","url":"https://github.com/example/eval-service/pull/231","reviewDecision":"CHANGES_REQUESTED","mergeable":"MERGEABLE","body":"Adds an extra 5%% discount for orders with 10 or more units of one SKU."}\n' "$head"
+            ;;
+        esac
+        ;;
+      "pr checks")
+        n=$(cat "$here/.checks" 2>/dev/null || echo 0); n=$((n + 1)); echo "$n" > "$here/.checks"
+        status=0
+        if run_tests; then printf 'test\tpass\t41s\thttps://github.com/example/eval-service/actions/runs/1001\n'; else printf 'test\tfail\t39s\thttps://github.com/example/eval-service/actions/runs/1001\n'; status=1; fi
+        if [ "$n" -le 1 ]; then printf 'deploy-preview\tfail\t2m1s\thttps://github.com/example/eval-service/actions/runs/1002\n'; status=1; else printf 'deploy-preview\tpass\t1m58s\thttps://github.com/example/eval-service/actions/runs/1002\n'; fi
+        exit $status
+        ;;
+      "run view")
+        case " $* " in
+          *" 1002 "*) echo 'deploy-preview  Error: The runner has received a shutdown signal. This can happen when the runner service is stopped or the runner is manually started.' ;;
+          *) run_tests; cat "$here/.test-log" ;;
+        esac
+        ;;
+      "run rerun"|"run watch"|"pr ready")
+        echo "ok"
+        ;;
+      "api "*)
+        case "$2" in
+          *comments*)
+            printf '[{"user":{"login":"alice"},"commit_id":"%s","path":"src/billing/bulk.js","body":"rename pct to percent for clarity","position":null},{"user":{"login":"bob"},"commit_id":"%s","path":"src/billing/bulk.js","body":"The description says 10 or more units, but an order with exactly 10 gets no bulk discount.","position":6}]\n' "$first" "$head"
+            ;;
+          *) echo '{}' ;;
+        esac
+        ;;
+      "pr merge")
+        echo "merge is disabled in this evaluation" >&2
+        exit 1
+        ;;
+      *)
+        echo "gh: '$*' is not available in this evaluation" >&2
+        exit 1
+        ;;
+    esac
 prompt: |
   Babysit PR #231 until it's green and ready to merge.
 invocation: implicit
@@ -11,3 +111,8 @@ rubric:
   - verifies a finding is real before changing code
   - distinguishes infrastructure flakes from real failures before editing
   - stops and reports once checks are green and no actionable feedback remains
+  - command: '\bgh\b.*\bpr\b.*\bchecks\b'
+  - fileContains:
+      path: src/billing/bulk.js
+      pattern: '>=\s*BULK_THRESHOLD'
+  - noCommand: '\bgh\b.*\bpr\b.*\bmerge\b'

@@ -1,0 +1,16 @@
+name: refine-story-criteria
+skill: writing-stories
+description: Refining an existing story's acceptance criteria in place.
+fixture: agile-app
+prompt: |
+  The acceptance criteria on the rename story (STORY-R3N7M2QA) don't say what
+  happens to whitespace-only names or whether members see the new name right
+  away. Refine the story so they do.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - edits docs/agile/03-stories/STORY-R3N7M2QA-rename-workspace.md in place and keeps its id and epic
+  - adds observable, unchecked acceptance criteria for whitespace-only names and for members seeing the new name immediately
+  - keeps the existing criteria unless they conflict, and does not add implementation steps
+  - does not implement renameWorkspace and does not create new story files

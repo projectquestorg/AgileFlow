@@ -1,0 +1,15 @@
+schema: 1
+package:
+  name: "@agileflow/writing-stories"
+  version: "1.0.1"
+activation:
+  mode: auto
+requirements:
+  commands: []
+  network: none
+capabilities:
+  modifiesFiles: yes
+  longRunning: false
+  userInteraction: optional
+compatibility:
+  agentSkills: true

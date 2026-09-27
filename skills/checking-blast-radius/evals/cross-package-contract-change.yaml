@@ -1,0 +1,16 @@
+name: cross-package-contract-change
+skill: checking-blast-radius
+fixture: monorepo
+prompt: |
+  I'm making `email` optional on the User contract in packages/contracts,
+  because people can now sign up with only a phone number. What else could
+  this break?
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - searches every workspace package for consumers of User, not only packages/contracts
+  - finds packages/web/src/invite.ts, where u.email.trim() would throw for a user without an email
+  - finds packages/web/src/label.ts, which would render undefined as the label, and packages/api/src/users.ts, which builds users
+  - names the load-bearing assumption (every consumer can handle a missing email) and proves or disproves it by reading the call sites
+  - labels findings as verified or inferred and does not change the code unless asked

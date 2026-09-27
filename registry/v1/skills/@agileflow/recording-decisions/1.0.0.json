@@ -1,0 +1,21 @@
+{
+  "name": "@agileflow/recording-decisions",
+  "version": "1.0.0",
+  "integrity": "sha256-hLSm0hKZJAoE4Ktpd/8XqlyHJjM+aXm4FJmtaAzCKHk=",
+  "url": "packages/@agileflow/recording-decisions/1.0.0.json",
+  "metadata": {
+    "description": "Record a technical or product decision that has been made as a short, durable decision record (ADR) with its context, the decision, the reasons and rejected alternatives, and its consequences, in the AgileFlow Work decisions folder when Work is enabled or in the repository's existing ADR directory otherwise. Use when the user asks to record, document, or write up a decision or an ADR, or to supersede an earlier decision. Not for debating or comparing options before a decision exists, for epics, stories, or plans, or for general documentation.",
+    "activation": "auto",
+    "files": 7,
+    "references": [],
+    "scripts": [],
+    "requirements": {
+      "commands": [],
+      "network": "none"
+    }
+  },
+  "compatibility": {
+    "agentSkills": true,
+    "bundleFormat": 1
+  }
+}

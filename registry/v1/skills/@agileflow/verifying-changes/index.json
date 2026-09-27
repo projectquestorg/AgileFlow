@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "name": "@agileflow/verifying-changes",
-  "description": "Verify that a code change really works by exercising the changed behavior directly (smallest meaningful proof, not the whole test suite). Use when the user asks to verify, confirm, check, test, prove, or make sure a change works or does what it should (e.g. \"make sure the new limit actually works\", \"confirm the flag really skips uploads\"), or when substantive runtime behavior changed and evidence is needed. Not for comment, formatting, or documentation-only edits.",
-  "latest": "1.0.0",
+  "description": "Verify that a code change really works by exercising the changed behavior directly (smallest meaningful proof, not the whole test suite). Use when the user asks to verify, confirm, prove, or make sure a change works or does what it should (e.g. \"make sure the new limit actually works\", \"confirm the flag really skips uploads\"), or when you have just changed runtime behavior and need evidence before reporting it done. Not for reviewing a diff for bugs, writing a test suite for existing code, or comment, formatting, or documentation-only edits.",
+  "latest": "1.0.1",
   "versions": {
     "1.0.0": {
       "name": "@agileflow/verifying-changes",
@@ -13,6 +13,27 @@
         "description": "Verify that a code change really works by exercising the changed behavior directly (smallest meaningful proof, not the whole test suite). Use when the user asks to verify, confirm, check, test, prove, or make sure a change works or does what it should (e.g. \"make sure the new limit actually works\", \"confirm the flag really skips uploads\"), or when substantive runtime behavior changed and evidence is needed. Not for comment, formatting, or documentation-only edits.",
         "activation": "auto",
         "files": 6,
+        "references": [],
+        "scripts": [],
+        "requirements": {
+          "commands": [],
+          "network": "none"
+        }
+      },
+      "compatibility": {
+        "agentSkills": true,
+        "bundleFormat": 1
+      }
+    },
+    "1.0.1": {
+      "name": "@agileflow/verifying-changes",
+      "version": "1.0.1",
+      "integrity": "sha256-Ah2RRemsydmoC+5y0HalGoRBEMlpHeXHS+50KxG9zis=",
+      "url": "packages/@agileflow/verifying-changes/1.0.1.json",
+      "metadata": {
+        "description": "Verify that a code change really works by exercising the changed behavior directly (smallest meaningful proof, not the whole test suite). Use when the user asks to verify, confirm, prove, or make sure a change works or does what it should (e.g. \"make sure the new limit actually works\", \"confirm the flag really skips uploads\"), or when you have just changed runtime behavior and need evidence before reporting it done. Not for reviewing a diff for bugs, writing a test suite for existing code, or comment, formatting, or documentation-only edits.",
+        "activation": "auto",
+        "files": 8,
         "references": [],
         "scripts": [],
         "requirements": {

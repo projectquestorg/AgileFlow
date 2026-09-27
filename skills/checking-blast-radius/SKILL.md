@@ -1,6 +1,6 @@
 ---
 name: checking-blast-radius
-description: Identify what a proposed or completed code change could break elsewhere by tracing its consumers and proving the load-bearing assumptions. Use when a change touches public APIs, shared contracts or schemas, migrations, shared components, config, or cross-package code, or when the user asks about blast radius, regressions, downstream impact, or "what else could this break".
+description: Identify what a proposed or completed code change could break elsewhere by tracing its consumers and proving the load-bearing assumptions. Use when the user asks about blast radius, downstream impact, regression risk, or "what else could this break", or before finishing or merging a change that alters a public API, a shared schema or contract, a database migration, or an interface used across packages. Not for local edits with only nearby callers, for reviewing a diff for bugs in general, or for explaining the concept.
 ---
 
 # Checking blast radius
@@ -11,7 +11,7 @@ The value of this skill is evidence, not a restatement of the reasoning already 
 
 ## Workflow
 
-1. **Pin down the change.** Identify exactly what is changing: signatures, return shapes, defaults, file formats, schema columns, env vars, behavior under edge inputs. Use the diff if one exists (`git diff`, `git diff <base>...HEAD`).
+1. **Pin down the change.** Identify exactly what is changing: signatures, return shapes, defaults, file formats, schema columns, env vars, behavior under edge inputs. Use the diff if one exists (`git diff`, `git diff <base>...HEAD`); for a proposed change, work from its description and state what you assumed rather than stopping to ask.
 2. **Find the consumers.** Search for every reference to the changed symbols, keys, routes, or files across the whole repository, not just the current package. Include string-based references (config keys, event names, route paths, serialized field names) that a symbol search misses.
 3. **Name the load-bearing assumptions.** Pick the one or two assumptions that, if wrong, would cause real breakage. Examples: "no caller relies on the old null return", "existing rows already satisfy the new constraint", "the CLI flag is not used in any script".
 4. **Prove them.** For each, gather direct evidence: read the call sites, run the affected tests, query the data shape, execute the consumer. State what would have disproven it.
@@ -23,7 +23,7 @@ The value of this skill is evidence, not a restatement of the reasoning already 
 - Search before concluding "no other callers". Absence of evidence from a narrow search is not evidence.
 - Distinguish **verified** (you read or ran it) from **inferred** (you reasoned about it). Label each finding.
 - Do not fix what you find unless the user asked for fixes. Report it; fixing may widen scope.
-- Keep it proportional. A private helper with two local callers needs a short answer, not a full sweep.
+- Keep it proportional. A private helper with two local callers needs a short answer, not a full sweep: one line naming the callers you checked and "no wider impact found".
 
 ## Report format
 

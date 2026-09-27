@@ -1,0 +1,8 @@
+name: generic-diff-review-does-not-activate
+skill: reviewing-story
+fixture: agile-app
+prompt: |
+  Review my uncommitted changes for bugs before I commit.
+invocation: implicit
+assert:
+  shouldActivate: false

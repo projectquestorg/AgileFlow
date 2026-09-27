@@ -1,0 +1,8 @@
+name: review-diff-does-not-verify
+skill: verifying-changes
+prompt: |
+  Review my uncommitted diff for bugs and risky changes.
+invocation: implicit
+neighbor: reviewing-changes
+assert:
+  shouldActivate: false

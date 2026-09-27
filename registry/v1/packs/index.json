@@ -2,6 +2,11 @@
   "schema": 1,
   "packs": [
     {
+      "name": "@agileflow/agile",
+      "description": "AgileFlow Work workflows for epics, stories, and decision records. Installed by `agileflow work init`. No hooks, no agents, no runtime.",
+      "version": 2
+    },
+    {
       "name": "@agileflow/communication",
       "description": "Manually invoked interaction styles (interviews, simpler explanations).",
       "version": 1
@@ -9,12 +14,12 @@
     {
       "name": "@agileflow/core",
       "description": "Everyday engineering workflows. Installed by `agileflow init --yes`.",
-      "version": 1
+      "version": 2
     },
     {
       "name": "@agileflow/github",
-      "description": "Pull request workflows using gh or the provider's GitHub tooling.",
-      "version": 1
+      "description": "Pull request workflows for GitHub repositories. Requires the GitHub CLI (`gh`), authenticated, with network access.",
+      "version": 2
     }
   ]
 }

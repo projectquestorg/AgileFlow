@@ -1,7 +1,7 @@
 schema: 1
 package:
   name: "@agileflow/simplifying-explanations"
-  version: "1.0.0"
+  version: "1.0.2"
 activation:
   mode: manual
 requirements:
@@ -10,6 +10,6 @@ requirements:
 capabilities:
   modifiesFiles: no
   longRunning: false
-  userInteraction: optional
+  userInteraction: none
 compatibility:
   agentSkills: true

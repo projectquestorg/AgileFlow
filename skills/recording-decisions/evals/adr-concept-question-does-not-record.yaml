@@ -1,0 +1,8 @@
+name: adr-concept-question-does-not-record
+skill: recording-decisions
+prompt: |
+  What is an architecture decision record, and how is it different from a
+  design doc?
+invocation: implicit
+assert:
+  shouldActivate: false

@@ -1,0 +1,62 @@
+name: follow-existing-adr-directory
+skill: recording-decisions
+description: A repository without AgileFlow Work that already keeps numbered ADRs in docs/adr.
+fixture: eval-service
+setup: |
+  mkdir -p docs/adr
+  cat > docs/adr/0001-record-architecture-decisions.md <<'MD'
+  # 1. Record architecture decisions
+
+  Date: 2025-03-02
+
+  ## Status
+
+  Accepted
+
+  ## Context
+
+  We need to remember why the service is built the way it is.
+
+  ## Decision
+
+  We record significant decisions as numbered ADRs in docs/adr.
+
+  ## Consequences
+
+  New contributors can read the reasoning behind the design.
+  MD
+  cat > docs/adr/0002-keep-the-service-dependency-free.md <<'MD'
+  # 2. Keep the service dependency-free
+
+  Date: 2025-04-11
+
+  ## Status
+
+  Accepted
+
+  ## Context
+
+  The service is small and deployed to constrained hosts.
+
+  ## Decision
+
+  Use only the Node standard library, including node:test for tests.
+
+  ## Consequences
+
+  No install step; some helpers are written by hand.
+  MD
+  git add -A
+  git commit -qm 'docs: add ADRs 0001 and 0002'
+prompt: |
+  We've decided that the payment webhook must reject events whose timestamp is
+  more than 5 minutes old, to stop replayed deliveries. Write this up as an ADR.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - creates docs/adr/0003-<slug>.md, continuing the existing numbering and filename pattern
+  - matches the existing format (numbered title heading, Date, Status, Context, Decision, Consequences)
+  - records the 5-minute window and the replay-protection reason, with an accepted status
+  - does not create an AgileFlow Work workspace, a docs/decisions folder, or any other decisions location
+  - does not change the webhook code

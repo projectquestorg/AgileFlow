@@ -1,0 +1,9 @@
+name: agile
+version: 2
+description: AgileFlow Work workflows for epics, stories, and decision records. Installed by `agileflow work init`. No hooks, no agents, no runtime.
+skills:
+  - "@agileflow/creating-epics@^1"
+  - "@agileflow/writing-stories@^1"
+  - "@agileflow/working-story@^1"
+  - "@agileflow/reviewing-story@^1"
+  - "@agileflow/recording-decisions@^1"

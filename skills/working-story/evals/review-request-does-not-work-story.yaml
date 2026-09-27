@@ -1,0 +1,8 @@
+name: review-request-does-not-work-story
+skill: working-story
+fixture: agile-app
+prompt: |
+  Review STORY-M9V4C6TE and tell me whether it's actually done.
+invocation: implicit
+assert:
+  shouldActivate: false

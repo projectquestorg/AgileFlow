@@ -1,6 +1,6 @@
 ---
 name: reviewing-changes
-description: Review the actual diff of a change, branch, or pull request for correctness bugs, regressions, scope mistakes, missing behavior, and security issues where relevant, and report prioritized findings. Use when the user asks to review, check, or look over code changes, a diff, a branch, or a PR before merging. Not for explaining unfamiliar code or writing new features.
+description: Review the actual diff of a change, branch, or pull request for correctness bugs, regressions, scope mistakes, missing behavior, and security issues where relevant, and report prioritized findings. Use when the user asks to review, critique, or look over code changes, a diff, a commit, a branch, or a PR, typically before merging. Not for explaining unfamiliar code, writing new features, proving by running it that a change works, or judging whether a work item's acceptance criteria are met.
 ---
 
 # Reviewing changes
@@ -9,7 +9,7 @@ Review what actually changed. Findings must be grounded in the diff and the code
 
 ## Workflow
 
-1. **Get the real diff.** Pick the right base: uncommitted work (`git diff`, `git diff --staged`), a branch (`git diff <base>...HEAD`), or a PR (its diff via the hosting tool if available). Confirm the base with the user only if it is genuinely ambiguous.
+1. **Get the real diff.** Pick the right base: uncommitted work (`git diff`, `git diff --staged`), a branch (`git diff <base>...HEAD`), or a PR (its diff via the hosting tool if available). If the base is genuinely ambiguous, review against the most likely one (the branch's upstream or the default branch) and state which base you used; do not stop to ask.
 2. **Understand the intent.** Read the PR description, commit messages, linked issue, or the user's summary. A change can be correct code and still fail its purpose.
 3. **Read beyond the hunks where needed.** Open the surrounding functions and the callers of changed signatures. Many real bugs live in the lines the diff did not touch.
 4. **Check, in priority order:**

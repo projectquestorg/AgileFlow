@@ -1,0 +1,17 @@
+name: supersede-role-decision
+skill: recording-decisions
+description: The new decision replaces DEC-P3M9A6HD; the old record must be marked superseded, not rewritten.
+fixture: agile-app
+prompt: |
+  We've decided to add a third workspace role, "billing admin", who can manage
+  invoices but not members, because customers' finance people need access
+  without being owners. This replaces our old owner/member role decision.
+  Please record it.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - creates one new decision file in docs/agile/04-decisions that names DEC-P3M9A6HD as the decision it replaces
+  - changes only the status of DEC-P3M9A6HD to superseded (optionally adding a one-line pointer) and leaves its reasoning intact
+  - records the reason given (finance people need invoice access without being owners) and the consequences for permission checks
+  - does not implement the role in code and does not create stories or epics

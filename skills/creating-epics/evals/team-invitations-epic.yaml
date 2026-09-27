@@ -1,0 +1,22 @@
+name: team-invitations-epic
+skill: creating-epics
+description: The fixture's collaboration epic is removed first, so the agent creates it from scratch.
+fixture: agile-app
+setup: |
+  git rm -q docs/agile/02-epics/EPIC-D8P2A6MW-team-collaboration.md
+  sed -i.bak '/^  - EPIC-D8P2A6MW$/d' docs/agile/04-decisions/DEC-P3M9A6HD-role-model.md
+  rm docs/agile/04-decisions/DEC-P3M9A6HD-role-model.md.bak
+  git add -A
+  git commit -q --amend --no-edit
+prompt: |
+  We need a way for teams to invite other people into their workspace.
+  Create an epic for this.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - creates one outcome-oriented epic file in docs/agile/02-epics with valid frontmatter (schema, type, id, title, status)
+  - does not create an implementation plan (no file-by-file or task-by-task steps)
+  - contains meaningful scope
+  - contains non-goals
+  - does not invent stories unless asked (no new files in docs/agile/03-stories)

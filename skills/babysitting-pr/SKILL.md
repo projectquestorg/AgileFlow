@@ -11,6 +11,7 @@ Drive one PR to a defined ready state, then stop.
 
 - Identify the PR (number, URL, or the current branch's PR) and its original goal from the title and description. That goal is the scope boundary for everything that follows.
 - Record the current head commit. Feedback is judged against it.
+- If the PR implements an AgileFlow story (its ID is in the PR description or branch), the story should be `in-review` while you work. It becomes `done` only after merge and a final check against its acceptance criteria and the project's Definition of Done; do not mark it done just because checks are green.
 
 ## Loop
 
@@ -24,7 +25,7 @@ Repeat until the done condition below is met:
    - **Repository failures** (test, lint, type, build errors caused by the code): fix them.
    - **Infrastructure flakes** (runner timeouts, network errors, rate limits, known-flaky jobs unrelated to the diff): re-run the job once. If it fails the same way again, report it rather than altering code to appease it.
 6. **Keep the branch current when needed:** update from the base branch only when it is behind in a way that blocks merging or causes conflicts. Follow the repository's merge-versus-rebase convention; never force-push without permission.
-7. **Wait efficiently** between rounds. Prefer a blocking watch (e.g. `gh pr checks --watch`) or the host's background/monitor capability over tight polling loops.
+7. **Wait efficiently** between rounds. Prefer a blocking watch (e.g. `gh pr checks --watch`) or the host's background/monitor capability over tight polling loops. If the host has neither, or long-running commands time out or are cut off, poll with a single `gh pr checks` every few minutes and cap the number of rounds; if the session has to end before the done condition, report the current state and exactly what is still pending.
 
 ## Constraints
 

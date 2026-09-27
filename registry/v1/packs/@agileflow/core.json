@@ -1,11 +1,12 @@
 {
   "name": "@agileflow/core",
-  "version": 1,
+  "version": 2,
   "description": "Everyday engineering workflows. Installed by `agileflow init --yes`.",
   "skills": [
     "@agileflow/diagnosing-bugs@^1",
     "@agileflow/checking-blast-radius@^1",
     "@agileflow/verifying-changes@^1",
-    "@agileflow/reviewing-changes@^1"
+    "@agileflow/reviewing-changes@^1",
+    "@agileflow/resolving-conflicts@^1"
   ]
 }

@@ -1,0 +1,15 @@
+name: collaboration-epic-stories
+skill: writing-stories
+fixture: agile-app
+prompt: |
+  Break the collaboration epic into stories.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - creates story files in docs/agile/03-stories that reference EPIC-D8P2A6MW
+  - stories are vertical slices that each deliver user-visible value (e.g. invite by email, accept an invitation), not per-layer or per-file tasks
+  - each story has a clear outcome
+  - acceptance criteria are observable, unchecked checkboxes
+  - dependencies are limited to real ones (no chain of every story depending on the previous)
+  - respects DEC-P3M9A6HD (only owner and member roles)

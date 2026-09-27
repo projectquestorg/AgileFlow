@@ -1,0 +1,9 @@
+name: compare-options-does-not-record
+skill: recording-decisions
+fixture: agile-app
+prompt: |
+  Should workspace invitations expire after 24 hours or 7 days? Walk me
+  through the trade-offs.
+invocation: implicit
+assert:
+  shouldActivate: false

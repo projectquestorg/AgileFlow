@@ -1,0 +1,8 @@
+name: write-tests-does-not-verify
+skill: verifying-changes
+fixture: eval-service
+prompt: |
+  Write unit tests for the roundCents helper in src/billing/discounts.js.
+invocation: implicit
+assert:
+  shouldActivate: false

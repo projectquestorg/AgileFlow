@@ -1,0 +1,8 @@
+name: epic-vs-story-question-does-not-activate
+skill: creating-epics
+fixture: agile-app
+prompt: |
+  In general, what's the difference between an epic and a user story?
+invocation: implicit
+assert:
+  shouldActivate: false

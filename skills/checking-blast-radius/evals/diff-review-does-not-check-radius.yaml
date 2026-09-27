@@ -1,0 +1,8 @@
+name: diff-review-does-not-check-radius
+skill: checking-blast-radius
+prompt: |
+  Review my uncommitted changes for bugs before I commit.
+invocation: implicit
+neighbor: reviewing-changes
+assert:
+  shouldActivate: false

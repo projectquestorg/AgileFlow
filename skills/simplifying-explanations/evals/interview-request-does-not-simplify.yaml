@@ -1,0 +1,8 @@
+name: interview-request-does-not-simplify
+skill: simplifying-explanations
+prompt: |
+  Interview me about the requirements for the new billing page before you build anything.
+invocation: implicit
+neighbor: interviewing-requirements
+assert:
+  shouldActivate: false

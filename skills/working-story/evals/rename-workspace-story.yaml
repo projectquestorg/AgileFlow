@@ -1,0 +1,15 @@
+name: rename-workspace-story
+skill: working-story
+fixture: agile-app
+prompt: |
+  Work on the rename story (STORY-R3N7M2QA).
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - reads the story, and checks its dependencies before implementing
+  - sets the story to in-progress before or while implementing
+  - implements renameWorkspace with owner-only permission and 1-60 character trimmed names
+  - verifies each acceptance criterion with evidence (tests added or run; npm test passes)
+  - does not scope creep (no unrelated features, files, plans, or status files)
+  - checks only criteria it verified, and ends in-review (the Definition of Done requires a reviewed PR) rather than done

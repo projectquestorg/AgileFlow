@@ -3,5 +3,6 @@ skill: babysitting-pr
 prompt: |
   Create a pull request for my current branch.
 invocation: implicit
+neighbor: filing-pr
 assert:
   shouldActivate: false

@@ -1,0 +1,21 @@
+{
+  "name": "@agileflow/working-story",
+  "version": "1.0.1",
+  "integrity": "sha256-vk2uxtqbZ+WiPSh80uQkKNOWTpSqyynwUS4UcQ1J1Xw=",
+  "url": "packages/@agileflow/working-story/1.0.1.json",
+  "metadata": {
+    "description": "Implement a specific AgileFlow Work story end to end, from its acceptance criteria, epic, decisions, and Definition of Done through dependency checks, the smallest complete change, per-criterion verification, and an honest final status. Use when the user asks to work on, implement, pick up, continue, or finish a named story. Not for writing or splitting stories, or for reviewing whether an already implemented story is done.",
+    "activation": "auto",
+    "files": 6,
+    "references": [],
+    "scripts": [],
+    "requirements": {
+      "commands": [],
+      "network": "none"
+    }
+  },
+  "compatibility": {
+    "agentSkills": true,
+    "bundleFormat": 1
+  }
+}

@@ -15,9 +15,12 @@ description: Open a pull request for the current branch with a title that follow
 3. **Follow repository title conventions.** Look at recent merged PR titles and commit messages, and any contributing guide or PR template. Match the style (conventional commits, ticket prefixes, casing). If a PR template exists, fill it in rather than replacing it.
 4. **Lead with the problem.** Open the description with what was wrong or missing and why it matters, in one to three sentences.
 5. **Explain the solution briefly.** Describe the approach and any notable decisions or trade-offs. Do not narrate the diff file by file.
-6. **Include relevant verification evidence.** State what was actually run (tests, commands, manual checks) and the result. If something was not verified, say so. Do not claim tests pass unless they were run.
-7. **Create the PR.** Push the branch with upstream tracking if needed, then create the PR against the correct base. Use draft status only if the user asked or the work is clearly incomplete.
-8. **Return the URL** to the user, plus one line on anything that needs their attention (unverified parts, open questions).
+6. **Link the story, if there is one.** If the work is tied to an AgileFlow story, include the story ID (`Implements STORY-...`) and a brief acceptance-criteria summary in the description where useful. Do not add story IDs to the title unless the repository's convention does.
+7. **Include relevant verification evidence.** State what was actually run (tests, commands, manual checks) and the result. If something was not verified, say so. Do not claim tests pass unless they were run.
+8. **Create the PR.** Push the branch with upstream tracking if needed, then create the PR against the correct base. Use draft status only if the user asked or the work is clearly incomplete.
+9. **Return the URL** to the user, plus one line on anything that needs their attention (unverified parts, open questions). If the PR implements an AgileFlow story that is `in-progress`, move it to `in-review` (`agileflow work status <id> in-review`, or change only its `status:` line).
+
+If `gh` is missing, not authenticated, or cannot reach GitHub (no network, or the remote is not on GitHub), do not install or log in on the user's behalf. Push the branch if you can, then give the user the drafted title and description (and a compare URL when the remote is on GitHub) and say that the PR was not created.
 
 ## Constraints
 
@@ -28,4 +31,4 @@ description: Open a pull request for the current branch with a title that follow
 
 ## Done when
 
-The PR exists against the correct base branch with a convention-following title and a problem-first description that includes verification evidence, and its URL has been returned to the user (or an existing PR's URL was returned instead of creating a duplicate).
+The PR exists against the correct base branch with a convention-following title and a problem-first description that includes verification evidence, and its URL has been returned to the user (or an existing PR's URL was returned instead of creating a duplicate, or, when `gh` could not create it, the user has the drafted title and description and knows the PR was not created).

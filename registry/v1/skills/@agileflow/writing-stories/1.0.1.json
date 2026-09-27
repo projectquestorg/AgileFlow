@@ -1,0 +1,21 @@
+{
+  "name": "@agileflow/writing-stories",
+  "version": "1.0.1",
+  "integrity": "sha256-vMZrosRdNXhiBkmbHl3PZJnfhei4PZTUDCiZTyu5Dxs=",
+  "url": "packages/@agileflow/writing-stories/1.0.1.json",
+  "metadata": {
+    "description": "Write AgileFlow Work stories, splitting an epic or requirement into small vertical-slice stories with observable acceptance criteria and only real dependencies, or writing or refining a single story for a bug or small change. Use when the user asks to break an epic into stories, or to write, split, or refine stories or their acceptance criteria. Not for creating epics, implementing or fixing the work itself, or judging whether a story is done.",
+    "activation": "auto",
+    "files": 8,
+    "references": [],
+    "scripts": [],
+    "requirements": {
+      "commands": [],
+      "network": "none"
+    }
+  },
+  "compatibility": {
+    "agentSkills": true,
+    "bundleFormat": 1
+  }
+}

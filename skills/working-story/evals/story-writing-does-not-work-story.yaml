@@ -1,0 +1,9 @@
+name: story-writing-does-not-work-story
+skill: working-story
+fixture: agile-app
+prompt: |
+  Break the collaboration epic into stories.
+invocation: implicit
+neighbor: writing-stories
+assert:
+  shouldActivate: false

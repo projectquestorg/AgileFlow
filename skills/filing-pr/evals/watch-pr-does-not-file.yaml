@@ -1,0 +1,8 @@
+name: watch-pr-does-not-file
+skill: filing-pr
+prompt: |
+  Keep an eye on PR #482 until CI is green and fix whatever fails.
+invocation: implicit
+neighbor: babysitting-pr
+assert:
+  shouldActivate: false

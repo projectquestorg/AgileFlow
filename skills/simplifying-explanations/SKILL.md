@@ -10,7 +10,7 @@ Make the idea understandable to someone without the background, without making i
 ## Workflow
 
 1. **Find the target.** Identify exactly what needs simplifying: a piece of code, an error message, a concept, or your own previous answer. If it is code or an error in this repository, read it first so the explanation matches reality.
-2. **Pick the level.** Use the user's cues ("I'm not a developer", "I know Python but not Rust"). If there are no cues, assume a smart reader new to this specific topic. Ask about level only if a wrong guess would make the answer useless; when structured user-question tooling is available, prefer it for that choice, otherwise ask in one short sentence.
+2. **Pick the level.** Use the user's cues ("I'm not a developer", "I know Python but not Rust"). If there are no cues, assume a smart reader new to this specific topic. Do not stop to ask about level: if a wrong guess could make the answer useless, say in one short line which level you assumed, and let the closing offer handle adjustments.
 3. **Lead with the one-sentence version:** what it is or does, and why it matters to the user.
 4. **Then build up in small steps,** one idea per step, each depending only on what came before.
 5. **Use concrete anchors:** a small example with real names from their code or situation, or one analogy that genuinely fits. Say where the analogy breaks if that could mislead.

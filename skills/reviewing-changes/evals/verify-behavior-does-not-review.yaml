@@ -1,0 +1,8 @@
+name: verify-behavior-does-not-review
+skill: reviewing-changes
+prompt: |
+  Run the tests and confirm my change to roundCents behaves correctly.
+invocation: implicit
+neighbor: verifying-changes
+assert:
+  shouldActivate: false

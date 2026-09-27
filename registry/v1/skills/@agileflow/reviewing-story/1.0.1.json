@@ -1,0 +1,21 @@
+{
+  "name": "@agileflow/reviewing-story",
+  "version": "1.0.1",
+  "integrity": "sha256-Z9ZvQfe/dvDtWqYtp+ToJ6/DefWr4EGR3m2bnsb6Wj0=",
+  "url": "packages/@agileflow/reviewing-story/1.0.1.json",
+  "metadata": {
+    "description": "Judge whether an AgileFlow Work story was actually delivered by checking its implementation against each acceptance criterion and the Definition of Done with evidence, then recommending or applying the right status. Use when the user asks whether a specific story is done, asks to review a story's implementation, or asks to close or accept a story. Not for a general review of a diff or PR that is not tied to a story, or for implementing the story.",
+    "activation": "auto",
+    "files": 6,
+    "references": [],
+    "scripts": [],
+    "requirements": {
+      "commands": [],
+      "network": "none"
+    }
+  },
+  "compatibility": {
+    "agentSkills": true,
+    "bundleFormat": 1
+  }
+}

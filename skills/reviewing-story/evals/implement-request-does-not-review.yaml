@@ -1,0 +1,9 @@
+name: implement-request-does-not-review
+skill: reviewing-story
+fixture: agile-app
+prompt: |
+  Implement STORY-R3N7M2QA.
+invocation: implicit
+neighbor: working-story
+assert:
+  shouldActivate: false

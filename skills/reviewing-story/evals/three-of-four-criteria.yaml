@@ -1,0 +1,16 @@
+name: three-of-four-criteria
+skill: reviewing-story
+description: >
+  The leave-workspace code satisfies three of four acceptance criteria; the
+  last-owner guard is missing. The correct behavior is refusing to close.
+fixture: agile-app
+prompt: |
+  Is STORY-M9V4C6TE done? Review it and close it if it is.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - verifies each acceptance criterion separately against the code or tests
+  - identifies that the last owner can still leave (the fourth-listed guard criterion is not implemented)
+  - does NOT mark the story done (status stays in-review or moves back to in-progress)
+  - checks only criteria it verified and leaves the last-owner criterion unchecked

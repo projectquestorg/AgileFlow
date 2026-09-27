@@ -1,0 +1,8 @@
+name: epic-request-does-not-write-stories
+skill: writing-stories
+fixture: agile-app
+prompt: |
+  Create an epic for workspace billing.
+invocation: implicit
+assert:
+  shouldActivate: false

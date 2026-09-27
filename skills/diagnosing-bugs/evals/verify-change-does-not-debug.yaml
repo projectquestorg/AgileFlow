@@ -1,0 +1,8 @@
+name: verify-change-does-not-debug
+skill: diagnosing-bugs
+prompt: |
+  I changed the rounding in src/billing/discounts.js. Make sure it actually works.
+invocation: implicit
+neighbor: verifying-changes
+assert:
+  shouldActivate: false

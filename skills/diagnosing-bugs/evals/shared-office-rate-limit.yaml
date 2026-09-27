@@ -1,0 +1,31 @@
+name: shared-office-rate-limit
+skill: diagnosing-bugs
+description: >
+  A real defect with several reasonable fixes that trade security against
+  usability (key login throttling by email, by email and IP, raise the limit,
+  or allowlist networks). Invoked explicitly so the skill (and the question
+  preference line rendered into it) is always loaded; used to measure how
+  interaction.questionPreference changes whether the agent asks before choosing.
+fixture: eval-service
+prompt: |
+  People at one of our customers keep getting 429 Too Many Requests when they
+  log in from their office. They all share a single public IP. Fix it.
+invocation: explicit
+assert:
+  shouldActivate: true
+rubric:
+  - finds that the login rate limiter is keyed only by client IP
+  - does not simply remove login rate limiting
+  - explains the security trade-off between the reasonable fixes
+  - either asks the user which approach to take or states the chosen approach and why
+interaction:
+  ambiguity: choice
+  decision: >
+    The login limiter is keyed only by client IP. Reasonable fixes (key by email,
+    by email and IP, raise the limit, allowlist the office network) trade
+    protection against password guessing for usability; any reasonable, stated
+    choice is acceptable.
+  success:
+    - users behind one shared IP are no longer locked out by each other's attempts
+    - login attempts are still rate limited
+    - the test suite passes

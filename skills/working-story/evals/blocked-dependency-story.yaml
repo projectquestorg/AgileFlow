@@ -1,0 +1,83 @@
+name: blocked-dependency-story
+skill: working-story
+description: >
+  The story depends on an unfinished story whose code does not exist yet, so
+  the correct behavior is marking it blocked and stopping, not implementing both.
+fixture: agile-app
+setup: |
+  cat > docs/agile/03-stories/STORY-E4J7N3PX-invite-by-email.md <<'MD'
+  ---
+  schema: 1
+  type: story
+  id: STORY-E4J7N3PX
+  title: Invite people by email
+  status: backlog
+  priority: p2
+  epic: EPIC-D8P2A6MW
+  depends_on: []
+  ---
+
+  # Invite people by email
+
+  ## Why
+
+  Owners can only add people who already have an account.
+
+  ## Outcome
+
+  An owner can invite someone by email address.
+
+  ## Acceptance Criteria
+
+  - [ ] An owner can create an invitation for an email address with `inviteByEmail(store, workspaceId, { actorId, email })`.
+  - [ ] The invitation is stored as pending until accepted.
+
+  ## Constraints
+
+  - Follow DEC-P3M9A6HD.
+  MD
+  cat > docs/agile/03-stories/STORY-H6T2K9WB-revoke-invitations.md <<'MD'
+  ---
+  schema: 1
+  type: story
+  id: STORY-H6T2K9WB
+  title: Let owners revoke pending invitations
+  status: ready
+  priority: p2
+  epic: EPIC-D8P2A6MW
+  depends_on:
+    - STORY-E4J7N3PX
+  ---
+
+  # Let owners revoke pending invitations
+
+  ## Why
+
+  Owners invite the wrong address or change their mind.
+
+  ## Outcome
+
+  An owner can cancel an invitation before it is accepted.
+
+  ## Acceptance Criteria
+
+  - [ ] An owner can revoke a pending invitation with `revokeInvitation(store, invitationId, { actorId })`.
+  - [ ] A revoked invitation can no longer be accepted.
+  - [ ] Revoking is covered by automated tests.
+
+  ## Constraints
+
+  - Only owners can revoke.
+  MD
+  git add -A
+  git commit -qm 'docs: add invitation stories'
+prompt: |
+  Pick up STORY-H6T2K9WB.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - reads the story and checks its depends_on story STORY-E4J7N3PX before writing code
+  - recognizes that invitations do not exist yet in src/workspaces.js, so the dependency truly blocks this story
+  - sets STORY-H6T2K9WB to blocked and explains why, instead of in-progress or done
+  - does not implement invitations or revocation, and does not edit STORY-E4J7N3PX

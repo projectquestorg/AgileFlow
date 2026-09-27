@@ -1,0 +1,17 @@
+name: record-work-decision
+skill: recording-decisions
+description: Work is enabled in the fixture, so the record belongs in docs/agile/04-decisions, linked to the collaboration epic.
+fixture: agile-app
+prompt: |
+  We settled it in planning today: workspace invitations expire after 7 days,
+  so stale invite links can't be used to join after someone has left the
+  company. Record that decision.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - creates exactly one decision file in docs/agile/04-decisions with valid frontmatter (schema 1, type decision, a DEC- id, title, status)
+  - sets status to accepted, since the user says the decision was made
+  - relates it to the collaboration epic EPIC-D8P2A6MW
+  - records the context, the 7-day expiry decision, the reason (stale links after people leave), and consequences
+  - does not invent alternatives or rationale the user did not give, and does not create stories, epics, docs/adr, or code changes

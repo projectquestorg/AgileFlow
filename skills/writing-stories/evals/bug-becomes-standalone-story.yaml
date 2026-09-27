@@ -1,0 +1,15 @@
+name: bug-becomes-standalone-story
+skill: writing-stories
+fixture: agile-app
+prompt: |
+  Write a story for this: right now the only owner of a workspace can add a
+  member and then that member can't remove anyone, and nobody can change
+  roles. We need owners to be able to promote a member to owner.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - creates exactly one story file with valid frontmatter
+  - the story has a clear outcome and observable acceptance criteria
+  - does not invent a new epic just to hold the story
+  - does not create task files, plans, or notes

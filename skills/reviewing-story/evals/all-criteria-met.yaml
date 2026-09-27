@@ -1,0 +1,49 @@
+name: all-criteria-met
+skill: reviewing-story
+description: >
+  The setup lands the missing last-owner guard with tests, so every criterion
+  is met. The Definition of Done also requires a reviewed and merged PR, so
+  the right result is all criteria checked and the story kept in-review with a
+  recommendation, not marked done.
+fixture: agile-app
+setup: |
+  node --input-type=module <<'JS'
+  import fs from 'node:fs';
+  const file = 'src/workspaces.js';
+  const guard = [
+    "  if (workspace.members.get(userId) === 'owner' && ownerCount(workspace) === 1) {",
+    "    throw new Error('the last owner cannot leave; transfer ownership first');",
+    '  }',
+    '  workspace.members.delete(userId);',
+  ].join('\n');
+  const src = fs.readFileSync(file, 'utf8').replace('  workspace.members.delete(userId);', guard);
+  fs.writeFileSync(file, `${src}
+  /** Owners left in a workspace. */
+  export function ownerCount(workspace) {
+    return [...workspace.members.values()].filter((role) => role === 'owner').length;
+  }
+  `);
+  JS
+  cat >> test/workspaces.test.js <<'JS'
+
+  test('the last owner cannot leave', () => {
+    const store = createStore();
+    const ws = createWorkspace(store, { name: 'Acme', ownerId: 'ada' });
+    assert.throws(() => leaveWorkspace(store, ws.id, 'ada'), /transfer ownership/);
+    assert.equal(canAccess(store, ws.id, 'ada'), true);
+  });
+  JS
+  npm test --silent > /dev/null
+  git commit -qam 'fix(workspaces): keep the last owner from leaving'
+prompt: |
+  The last-owner guard for STORY-M9V4C6TE just landed. Review the story and
+  tell me whether it's done.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - verifies each of the four acceptance criteria separately with evidence (code locations and a test run)
+  - finds that all four criteria are now met and checks their boxes
+  - notes that the Definition of Done also requires a reviewed and merged pull request, so the story is not marked done yet
+  - leaves the status in-review and recommends marking it done after the PR is merged
+  - does not change the implementation

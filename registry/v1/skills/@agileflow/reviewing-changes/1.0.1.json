@@ -1,0 +1,23 @@
+{
+  "name": "@agileflow/reviewing-changes",
+  "version": "1.0.1",
+  "integrity": "sha256-l0Z/lBzXXfyJw6gjPE6TKyQ6vIqtrz2lEeiH5OVh4Xs=",
+  "url": "packages/@agileflow/reviewing-changes/1.0.1.json",
+  "metadata": {
+    "description": "Review the actual diff of a change, branch, or pull request for correctness bugs, regressions, scope mistakes, missing behavior, and security issues where relevant, and report prioritized findings. Use when the user asks to review, critique, or look over code changes, a diff, a commit, a branch, or a PR, typically before merging. Not for explaining unfamiliar code, writing new features, proving by running it that a change works, or judging whether a work item's acceptance criteria are met.",
+    "activation": "auto",
+    "files": 8,
+    "references": [],
+    "scripts": [],
+    "requirements": {
+      "commands": [
+        "git"
+      ],
+      "network": "optional"
+    }
+  },
+  "compatibility": {
+    "agentSkills": true,
+    "bundleFormat": 1
+  }
+}

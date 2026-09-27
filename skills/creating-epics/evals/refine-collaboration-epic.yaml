@@ -1,0 +1,17 @@
+name: refine-collaboration-epic
+skill: creating-epics
+description: The epic already exists; the skill must refine it in place rather than create a duplicate.
+fixture: agile-app
+prompt: |
+  The team collaboration epic is too fuzzy for planning. Tighten it up: make
+  the success signals measurable and make it clear that bulk-importing
+  members from a CSV is out of scope.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - edits the existing docs/agile/02-epics/EPIC-D8P2A6MW-team-collaboration.md instead of creating a new epic file
+  - keeps the epic's id, type, and schema unchanged
+  - success signals become observable outcomes (for example a share of invitations accepted, or owners adding teammates without support) rather than tasks
+  - adds CSV bulk import to the non-goals
+  - still follows DEC-P3M9A6HD (owner and member are the only roles) and does not create stories

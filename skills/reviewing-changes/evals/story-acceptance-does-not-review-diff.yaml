@@ -1,0 +1,8 @@
+name: story-acceptance-does-not-review-diff
+skill: reviewing-changes
+fixture: agile-app
+prompt: |
+  Is STORY-M9V4C6TE done? Check it against its acceptance criteria.
+invocation: implicit
+assert:
+  shouldActivate: false

@@ -1,7 +1,6 @@
 name: github
-version: 1
-description: Pull request workflows using gh or the provider's GitHub tooling.
+version: 2
+description: Pull request workflows for GitHub repositories. Requires the GitHub CLI (`gh`), authenticated, with network access.
 skills:
   - "@agileflow/filing-pr@^1"
   - "@agileflow/babysitting-pr@^1"
-  - "@agileflow/resolving-conflicts@^1"

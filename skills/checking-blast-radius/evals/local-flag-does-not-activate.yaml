@@ -1,0 +1,9 @@
+name: local-flag-does-not-activate
+skill: checking-blast-radius
+fixture: eval-service
+prompt: |
+  Add a --quiet flag to src/deploy.js that suppresses the per-file
+  "uploaded ..." log lines.
+invocation: implicit
+assert:
+  shouldActivate: false
