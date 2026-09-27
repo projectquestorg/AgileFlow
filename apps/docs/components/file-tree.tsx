@@ -46,7 +46,7 @@ export function Folder({ name, children, comment }: FolderProps) {
   return (
     <div className="flex flex-col">
       <div className="flex items-center gap-2 py-px">
-        <FolderIcon className="h-3.5 w-3.5 flex-shrink-0 text-[#e8683a]" />
+        <FolderIcon className="h-3.5 w-3.5 flex-shrink-0 text-primary" />
         <span className="text-foreground whitespace-nowrap">{name}</span>
         {comment && (
           <span className="text-muted-foreground text-xs whitespace-nowrap">— {comment}</span>

@@ -1,127 +1,44 @@
 "use client"
-
+import type * as PageTree from "fumadocs-core/page-tree"
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronRight } from "lucide-react"
-
-import { PAGES_NEW } from "@/lib/docs"
-import { showMcpDocs } from "@/lib/flags"
-import type { source } from "@/lib/source"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/registry/new-york-v4/ui/collapsible"
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "@/registry/new-york-v4/ui/sidebar"
 
-// Pages that link directly (not collapsible)
-const DIRECT_PAGES = ["/", "/installation"]
+type Node = PageTree.Node
 
+/** Group the tree into sections: each separator starts a new labeled group. */
+export function sections(nodes: Node[]): Array<{ label: string | null; pages: PageTree.Item[] }> {
+  const out: Array<{ label: string | null; pages: PageTree.Item[] }> = [{ label: null, pages: [] }]
+  const add = (node: Node) => {
+    if (node.type === "separator") out.push({ label: String(node.name ?? ""), pages: [] })
+    else if (node.type === "page") out[out.length - 1]!.pages.push(node)
+    else if (node.type === "folder") {
+      out.push({ label: String(node.name ?? ""), pages: [] })
+      if (node.index) out[out.length - 1]!.pages.push(node.index)
+      node.children.forEach(add)
+    }
+  }
+  nodes.forEach(add)
+  return out.filter((s) => s.pages.length)
+}
+
+/** Docs navigation, rendered straight from content/docs/meta.json. */
 export function DocsSidebar({
   tree,
   ...props
-}: React.ComponentProps<typeof Sidebar> & { tree: typeof source.pageTree }) {
+}: React.ComponentProps<typeof Sidebar> & { tree: PageTree.Root }) {
   const pathname = usePathname()
-  const [openSections, setOpenSections] = React.useState<Set<string>>(new Set())
-
-  // Helper to check if a section contains the current page
-  const isSectionActive = (url: string) => {
-    if (url === "/") return pathname === "/"
-    return pathname.startsWith(url)
-  }
-
-  // Auto-open active section when pathname changes
-  React.useEffect(() => {
-    tree.children.forEach((item) => {
-      if (item.type === "folder") {
-        const sectionUrl = `/${item.name.toLowerCase()}`
-        if (isSectionActive(sectionUrl) && item.$id) {
-          setOpenSections((prev) => new Set([...prev, item.$id!]))
-        }
-      }
-    })
-  }, [pathname])
-
-  // Toggle section open/closed
-  const toggleSection = (id: string, isActive: boolean) => {
-    setOpenSections((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) {
-        // Only allow closing if not the active section
-        if (!isActive) {
-          next.delete(id)
-        }
-      } else {
-        next.add(id)
-      }
-      return next
-    })
-  }
-
-  // Helper to render pages within a folder, handling separators
-  const renderFolderContents = (children: typeof tree.children) => {
-    const elements: React.ReactNode[] = []
-
-    children.forEach((item, index) => {
-      if (item.type === "separator") {
-        elements.push(
-          <div
-            key={`sep-${index}`}
-            className="text-muted-foreground/60 mt-3 mb-1 px-2 text-[0.7rem] font-medium uppercase tracking-wider first:mt-0"
-          >
-            {item.name}
-          </div>
-        )
-      } else if (item.type === "page") {
-        if (!showMcpDocs && item.url?.includes("/mcp")) {
-          return
-        }
-        const isCurrentPage = item.url === pathname
-        elements.push(
-          <SidebarMenuSubItem key={item.url}>
-            <SidebarMenuSubButton
-              asChild
-              isActive={isCurrentPage}
-              className="text-muted-foreground data-[active=true]:text-foreground data-[active=true]:bg-accent data-[active=true]:font-medium h-7 text-[0.8rem]"
-            >
-              <Link href={item.url}>
-                <span>{item.name}</span>
-                {PAGES_NEW.includes(item.url) && (
-                  <span className="ml-auto flex size-1.5 rounded-full bg-blue-500" />
-                )}
-              </Link>
-            </SidebarMenuSubButton>
-          </SidebarMenuSubItem>
-        )
-      } else if (item.type === "folder") {
-        // Nested folder - render recursively
-        elements.push(
-          <div key={item.$id} className="mt-2">
-            <div className="text-muted-foreground/60 mb-1 px-2 text-[0.7rem] font-medium uppercase tracking-wider">
-              {item.name}
-            </div>
-            <SidebarMenuSub className="ml-0 border-l-0 pl-2">
-              {renderFolderContents(item.children)}
-            </SidebarMenuSub>
-          </div>
-        )
-      }
-    })
-
-    return elements
-  }
+  const groups = React.useMemo(() => sections(tree.children), [tree])
 
   return (
     <Sidebar
@@ -129,96 +46,31 @@ export function DocsSidebar({
       collapsible="none"
       {...props}
     >
-      <SidebarContent className="no-scrollbar overflow-x-hidden px-2">
-        <div className="from-background via-background/80 to-background/50 sticky -top-1 z-10 h-8 shrink-0 bg-gradient-to-b blur-xs" />
-
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {/* Introduction - direct link */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === "/"}
-                  className="data-[active=true]:bg-accent data-[active=true]:text-foreground h-8 text-[0.85rem] font-medium"
-                >
-                  <Link href="/">Introduction</Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Installation - direct link */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === "/installation"}
-                  className="data-[active=true]:bg-accent data-[active=true]:text-foreground h-8 text-[0.85rem] font-medium"
-                >
-                  <Link href="/installation">Installation</Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Collapsible sections from tree */}
-              {tree.children.map((item) => {
-                if (item.type !== "folder") return null
-                if (DIRECT_PAGES.some(p => item.name.toLowerCase() === p.slice(1))) return null
-
-                const sectionUrl = `/${item.name.toLowerCase()}`
-                const isActive = isSectionActive(sectionUrl)
-                const isOpen = openSections.has(item.$id ?? "") || isActive
-                const hasIndex = item.children.some(
-                  child => child.type === "page" && child.url === sectionUrl
-                )
-
-                return (
-                  <Collapsible
-                    key={item.$id}
-                    asChild
-                    open={isOpen}
-                    onOpenChange={() => toggleSection(item.$id ?? "", isActive)}
-                    className="group/collapsible"
-                  >
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton
-                          className="data-[state=open]:text-foreground h-8 text-[0.85rem] font-medium"
-                          tooltip={item.name}
-                        >
-                          <span>{item.name}</span>
-                          <ChevronRight className="text-muted-foreground ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub className="mr-0 border-l border-border/40 pr-0">
-                          {/* Link to index page if it exists */}
-                          {hasIndex && (
-                            <SidebarMenuSubItem>
-                              <SidebarMenuSubButton
-                                asChild
-                                isActive={pathname === sectionUrl}
-                                className="text-muted-foreground data-[active=true]:text-foreground data-[active=true]:bg-accent data-[active=true]:font-medium h-7 text-[0.8rem]"
-                              >
-                                <Link href={sectionUrl}>
-                                  <span>Overview</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          )}
-                          {renderFolderContents(
-                            item.children.filter(
-                              child => !(child.type === "page" && child.url === sectionUrl)
-                            )
-                          )}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <div className="from-background via-background/80 to-background/50 sticky -bottom-1 z-10 h-16 shrink-0 bg-gradient-to-t blur-xs" />
+      <SidebarContent className="no-scrollbar overflow-x-hidden px-2 pb-12">
+        {groups.map((group, i) => (
+          <SidebarGroup key={`${group.label ?? "top"}-${i}`} className="py-1.5">
+            {group.label && (
+              <SidebarGroupLabel className="text-muted-foreground/70 h-7 px-2 text-[0.7rem] font-medium tracking-wider uppercase">
+                {group.label}
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0.5">
+                {group.pages.map((page) => (
+                  <SidebarMenuItem key={page.url}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === page.url}
+                      className="text-muted-foreground hover:text-foreground data-[active=true]:bg-accent data-[active=true]:text-foreground h-8 text-[0.85rem] data-[active=true]:font-medium"
+                    >
+                      <Link href={page.url}>{page.name}</Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
     </Sidebar>
   )

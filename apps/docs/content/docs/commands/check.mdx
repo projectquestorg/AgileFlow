@@ -9,7 +9,12 @@ agileflow check --global    # personal skills only
 agileflow check --verbose   # paths, link types, provider versions, lock hashes, registry
 agileflow check --fix       # repair AgileFlow-owned artifacts
 agileflow check --json
+agileflow doctor            # the same command
 ```
+
+`check` never uses the network: it verifies packages that are in the local cache and reports the others as "not verified" (run [`agileflow verify`](/commands/discover-and-verify#agileflow-verify) to download and verify them). It also reports settings that have no effect (`version` on a git source, `ref` on a registry skill, a lock entry without integrity), an interrupted earlier command, and a `~/agileflow.yaml` (your home directory is never treated as a project).
+
+When [Agile Work](/work) is enabled, `check` also validates the workspace (an **Agile Work** section: duplicate IDs, references, dependency cycles, done epics with unfinished stories, unchecked criteria on done stories). See [Validation](/work/commands#validation-in-agileflow-check).
 
 ```text
 Configuration
@@ -34,16 +39,19 @@ Result: healthy
 ## What it checks
 
 - **Configuration:** `agileflow.yaml` and `agileflow.lock` parse and validate, and the lockfile matches the config.
-- **Skills:** every locked skill is present; cached packages match their locked integrity; every `SKILL.md` has valid frontmatter (name matching its directory, a description of at most 1024 characters); no duplicate names; which managed skills have local modifications. Unmanaged skills are listed as "left untouched" and are never errors.
+- **Skills:** every locked skill is present; cached packages match their locked integrity (a warning, not an error, when the package cannot be loaded offline); every `SKILL.md` has valid frontmatter (name matching its directory, a description of at most 1024 characters); no duplicate names; which managed skills have local modifications. Unmanaged skills are listed as "left untouched" and are never errors.
 - **Providers:** for each detected provider, whether it can see the skills. For Claude Code: links present and pointing at the canonical skills, mirrors not edited directly or out of date, Claude-only skills that shadow an AgileFlow skill. For manual skills: whether each provider's manual-only flag is present, and "manual-only enforcement: semantic" for Gemini CLI. For Gemini CLI: a reminder that project skills load only in trusted folders.
-- **Project overrides:** "`filing-pr` has a project override of your global skill" (informational).
+- **Same skill in both scopes:** "`filing-pr` exists in both this project and your personal skills" (informational; which copy an agent uses depends on the provider).
 - **Legacy files:** AgileFlow v4 residue, with a pointer to `agileflow migrate v4 --preview`.
+- **Optional features:** for detected providers, whether optional features such as [Codex structured questions](/commands/configure#codex-structured-questions) are enabled (informational).
 - **T3 Code:** when detected, a note that T3 runs the providers above and that T3's own skill picker may not list every provider-visible skill.
 
-`check` exits `1` when it finds an error, `0` otherwise (warnings do not fail it).
+`check` exits `1` when it finds an error (including when there is no `agileflow.yaml` and no personal configuration), `0` otherwise. Warnings do not fail it; the result line counts them ("healthy with 1 warning"). `--json` prints one report per scope with the same exit code.
+
+`--verbose` adds the config and lock paths, the registry in use, per-provider details (support level, detection evidence, skill locations, manual-invocation enforcement, version), and each skill's `integrity` and `renderedHash`.
 
 ## --fix
 
-`--fix` repairs only artifacts AgileFlow owns: it restores missing locked skills, recreates missing Claude Code links or mirrors, refreshes stale mirrors, and removes stale AgileFlow-owned links. It never rewrites `AGENTS.md`, changes provider permissions or sandbox settings, enables experimental provider features, or discards your edits.
+`--fix` repairs only artifacts AgileFlow owns, and only when the lockfile matches `agileflow.yaml` (otherwise run `agileflow update` first): it restores missing locked skills, recreates missing Claude Code links or mirrors, refreshes stale mirrors, and removes stale AgileFlow-owned links. It never rewrites `AGENTS.md`, changes provider permissions or sandbox settings, enables experimental provider features, or discards your edits.
 
 `agileflow doctor` still runs `check` during the transition from v4.

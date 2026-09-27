@@ -11,8 +11,19 @@ agileflow migrate v4 --no-backup
 agileflow migrate v4 --skills diagnosing-bugs,filing-pr
 agileflow migrate v4 --report-docs   # legacy docs directories report
 agileflow migrate --detach           # stop using AgileFlow; keep skills working
+agileflow migrate --detach --delete-skills   # also delete unmodified AgileFlow skills
 ```
+
+| Option | Meaning |
+| --- | --- |
+| `--preview` | Report what would change without changing anything. |
+| `--report-docs` | Report legacy docs directories (never deleted). |
+| `--yes` | Apply without prompting. |
+| `--no-backup` | Do not copy changed files to `.agileflow-v4-backup-<timestamp>/`. |
+| `--skills <ids>` | v5 skills to install after migrating (comma-separated). |
+| `--detach` | Stop using AgileFlow here but keep skills working (same as `remove --all`). |
+| `--keep-skills`, `--delete-skills` | With `--detach`: keep skills (default), or delete unmodified AgileFlow skills. |
 
 See [Migrating from v4](/guides/migrating-from-v4) for what is detected, removed, and kept.
 
-Non-interactively, `migrate v4` refuses to change files unless you pass `--yes`.
+Non-interactively, `migrate v4` refuses to change files (and exits `1`) unless you pass `--yes`. It exits `1` if any change could not be applied.

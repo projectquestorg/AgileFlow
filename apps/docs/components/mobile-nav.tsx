@@ -1,20 +1,14 @@
 "use client"
 
+import type * as PageTree from "fumadocs-core/page-tree"
+
 import * as React from "react"
 import Link, { type LinkProps } from "next/link"
 import { useRouter, usePathname } from "next/navigation"
-import { ChevronRight, List } from "lucide-react"
 
-import { PAGES_NEW } from "@/lib/docs"
-import { showMcpDocs } from "@/lib/flags"
-import { type source } from "@/lib/source"
+import { sections } from "@/components/docs-sidebar"
 import { cn } from "@/lib/utils"
 import { Button } from "@/registry/new-york-v4/ui/button"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/registry/new-york-v4/ui/collapsible"
 import {
   Drawer,
   DrawerContent,
@@ -65,7 +59,7 @@ export function MobileNav({
   tree,
   className,
 }: {
-  tree: typeof source.pageTree
+  tree: PageTree.Root
   className?: string
 }) {
   const [open, setOpen] = React.useState(false)
@@ -73,12 +67,6 @@ export function MobileNav({
   const activeItemRef = React.useRef<HTMLAnchorElement>(null)
   const pathname = usePathname()
   const handleScroll = useScrollPersistence(open, contentRef)
-
-  // Helper to check if a section contains the current page
-  const isSectionActive = (url: string) => {
-    if (url === "/") return pathname === "/"
-    return pathname.startsWith(url)
-  }
 
   // Scroll to center the active item when drawer opens
   React.useEffect(() => {
@@ -93,61 +81,6 @@ export function MobileNav({
       return () => clearTimeout(timer)
     }
   }, [open])
-
-  // Helper to render pages within a folder, handling separators
-  const renderFolderContents = (
-    children: typeof tree.children,
-    onNavigate: () => void
-  ) => {
-    const elements: React.ReactNode[] = []
-
-    children.forEach((item, index) => {
-      if (item.type === "separator") {
-        elements.push(
-          <div
-            key={`sep-${index}`}
-            className="text-muted-foreground mt-4 mb-2 text-xs font-medium uppercase tracking-wider first:mt-0"
-          >
-            {item.name}
-          </div>
-        )
-      } else if (item.type === "page") {
-        if (!showMcpDocs && item.url?.includes("/mcp")) {
-          return
-        }
-        const isCurrentPage = pathname === item.url
-        elements.push(
-          <MobileLink
-            key={item.url}
-            ref={isCurrentPage ? activeItemRef : undefined}
-            href={item.url}
-            onOpenChange={onNavigate}
-            isActive={isCurrentPage}
-            className="flex items-center gap-2 py-1 text-lg"
-          >
-            {item.name}
-            {PAGES_NEW.includes(item.url) && (
-              <span className="flex size-2 rounded-full bg-blue-500" />
-            )}
-          </MobileLink>
-        )
-      } else if (item.type === "folder") {
-        // Nested folder
-        elements.push(
-          <div key={item.$id} className="mt-3">
-            <div className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wider">
-              {item.name}
-            </div>
-            <div className="flex flex-col gap-1 pl-3 border-l border-border/40">
-              {renderFolderContents(item.children, onNavigate)}
-            </div>
-          </div>
-        )
-      }
-    })
-
-    return elements
-  }
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
@@ -222,74 +155,28 @@ export function MobileNav({
 
           <div className="border-t border-border/40" />
 
-          {/* Navigation */}
-          <div className="flex flex-col gap-1">
-            {/* Direct links */}
-            <MobileLink
-              ref={pathname === "/" ? activeItemRef : undefined}
-              href="/"
-              onOpenChange={setOpen}
-              isActive={pathname === "/"}
-              className="py-1 text-xl font-medium"
-            >
-              Introduction
-            </MobileLink>
-            <MobileLink
-              ref={pathname === "/installation" ? activeItemRef : undefined}
-              href="/installation"
-              onOpenChange={setOpen}
-              isActive={pathname === "/installation"}
-              className="py-1 text-xl font-medium"
-            >
-              Installation
-            </MobileLink>
-
-            {/* Collapsible sections */}
-            {tree?.children?.map((group) => {
-              if (group.type !== "folder") return null
-              if (group.name.toLowerCase() === "installation") return null
-
-              const sectionUrl = `/${group.name.toLowerCase()}`
-              const hasIndex = group.children.some(
-                (child) => child.type === "page" && child.url === sectionUrl
-              )
-
-              return (
-                <Collapsible
-                  key={group.$id}
-                  defaultOpen={isSectionActive(sectionUrl)}
-                  className="group/collapsible"
+          {/* Navigation: same sections as the desktop sidebar */}
+          {sections(tree.children).map((section, i) => (
+            <div key={section.label ?? i} className="flex flex-col gap-1">
+              {section.label && (
+                <div className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wider">
+                  {section.label}
+                </div>
+              )}
+              {section.pages.map((page) => (
+                <MobileLink
+                  key={page.url}
+                  ref={pathname === page.url ? activeItemRef : undefined}
+                  href={page.url}
+                  onOpenChange={setOpen}
+                  isActive={pathname === page.url}
+                  className="py-1 text-lg"
                 >
-                  <CollapsibleTrigger className="flex w-full items-center justify-between py-1 text-xl font-medium">
-                    <span>{group.name}</span>
-                    <ChevronRight className="text-muted-foreground size-5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="flex flex-col gap-1 py-2 pl-4 border-l border-border/40">
-                      {hasIndex && (
-                        <MobileLink
-                          ref={pathname === sectionUrl ? activeItemRef : undefined}
-                          href={sectionUrl}
-                          onOpenChange={setOpen}
-                          isActive={pathname === sectionUrl}
-                          className="py-1 text-lg"
-                        >
-                          Overview
-                        </MobileLink>
-                      )}
-                      {renderFolderContents(
-                        group.children.filter(
-                          (child) =>
-                            !(child.type === "page" && child.url === sectionUrl)
-                        ),
-                        () => setOpen(false)
-                      )}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              )
-            })}
-          </div>
+                  {page.name}
+                </MobileLink>
+              ))}
+            </div>
+          ))}
         </nav>
       </DrawerContent>
     </Drawer>
@@ -318,8 +205,8 @@ const MobileLink = React.forwardRef<
         onOpenChange?.(false)
       }}
       className={cn(
-        "text-2xl font-medium",
-        isActive && "text-foreground font-semibold",
+        "text-muted-foreground text-2xl font-medium",
+        isActive && "text-foreground",
         className
       )}
       {...props}

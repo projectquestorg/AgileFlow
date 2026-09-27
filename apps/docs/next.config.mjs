@@ -4,10 +4,7 @@ import { createMDX } from "fumadocs-mdx/next"
 const nextConfig = {
   devIndicators: false,
   typescript: {
-    ignoreBuildErrors: true,
-  },
-  outputFileTracingIncludes: {
-    "/*": ["./registry/**/*"],
+    ignoreBuildErrors: false,
   },
   images: {
     remotePatterns: [

@@ -12,10 +12,10 @@ version: 1
 resolved:
   diagnosing-bugs:
     source: "@agileflow/diagnosing-bugs"
-    version: 1.0.0
+    version: 1.0.1
     integrity: sha256-NPXz0qG+8Yj+Krt+03iGVnA2Q7FluotOZC/clkAKrGU=
     path: .agents/skills/diagnosing-bugs
-    baseHash: sha256-JUNeswhnIqtLFD20KesSozHF9cHeCN6NjK+EWQ8k2RQ=
+    renderedHash: sha256-JUNeswhnIqtLFD20KesSozHF9cHeCN6NjK+EWQ8k2RQ=
     activation: auto
     ownership: managed
   filing-pr:
@@ -30,14 +30,21 @@ resolved:
 | --- | --- |
 | `source` | Same as in `agileflow.yaml`. |
 | `version` | Exact version: semver for registry skills, the package version or `0.0.0-git.<sha>` for git, the package version or `local` for paths. |
-| `resolved` | Git commit for git sources. |
-| `integrity` | Hash of the package as published (every file's path, executable bit, and content). Checked before installing. |
+| `resolved` | The exact git commit, for git sources. `sync` checks out this commit. Must be a full commit id. |
+| `ref` | Git sources: the branch, tag, or commit from `agileflow.yaml` that `resolved` came from. A different `ref:` in `agileflow.yaml` makes `sync` ask for `update`. |
+| `integrity` | Hash of the **source** package as published (every file's path, executable bit, and content). Checked before installing. Absent for locally owned skills. |
 | `path` | Install location relative to the project (or home for personal skills). |
-| `baseHash` | Hash of the skill directory exactly as AgileFlow installed it. A different current hash means you modified the skill. |
-| `activation` | Activation used when installing. |
+| `renderedHash` | Hash of the **rendered** skill directory exactly as AgileFlow installed it: the source plus render inputs (managed notice, question preference overlay, activation metadata). A different current hash means you modified the skill. The hash ignores line endings and executable bits, so a Windows or `core.autocrlf` checkout of an unchanged skill is still clean; files AgileFlow cannot track (symlinks, a nested `.git`, `node_modules`, empty directories) make the skill count as modified. The same `integrity` with a new `renderedHash` means only the render inputs changed, and `sync` re-renders clean skills. See [Question preferences](/concepts/question-preferences). |
+| `activation` | Activation used when installing (default `auto`). |
 | `ownership` | `managed` (AgileFlow owns the content) or `local` (you own it: forks and registered local skills). |
-| `enabled` | `false` when the skill is disabled. |
+| `enabled` | `false` when the skill is disabled; omitted otherwise. |
+
+Keys are written in a stable order and skills are sorted by id, so lockfile diffs stay readable. The personal lockfile, `~/.config/agileflow/agileflow.lock`, has the same format.
 
 Ownership comes only from this file. AgileFlow never decides it owns a skill from its name.
 
 The CLI version and skill versions are independent: a newer CLI does not change your locked skills, and skill updates do not need a new CLI.
+
+## Compatibility across AgileFlow versions
+
+A lockfile written by a newer AgileFlow can carry fields an older one does not know; they are kept when the older CLI rewrites the file. A lockfile with a newer format `version` stops every command with a message to upgrade the CLI. To make a whole team use a compatible CLI, set `agileflow: ">=5.1.0"` in `agileflow.yaml`.

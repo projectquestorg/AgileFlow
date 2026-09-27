@@ -1,0 +1,64 @@
+---
+title: Continuous integration
+description: "Check and verify skills in CI, update them in automation, and gate your own skills on evals."
+---
+
+## Verify a repository's skills
+
+Use the GitHub Action:
+
+```yaml
+# .github/workflows/skills.yml
+name: Skills
+on: [pull_request]
+jobs:
+  skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: projectquestorg/AgileFlow@main
+        with:
+          fail-on: high          # content findings that fail the job (high, medium, none)
+          lint: skills           # optional: release-gate lint for skills you author
+          attestations: 'false'  # 'true' also checks GitHub attestations (needs GH_TOKEN)
+```
+
+It runs `agileflow check` (config, lockfile, installed files, provider visibility; no network), then `agileflow verify` (re-downloads and verifies every locked package, scans content), and optionally `agileflow eval --lint --catalog <dir>`.
+
+Or run the commands yourself; every command supports `--json`:
+
+```bash
+npx agileflow@next check --json
+npx agileflow@next verify --fail-on high --json
+```
+
+## Keep skills up to date automatically
+
+```bash
+agileflow update --non-interactive          # official updates; skips modified skills and third-party changes (exit 3)
+agileflow update --non-interactive --yes    # also applies third-party changes you trust
+agileflow update --dry-run --json           # the plan, for a bot to turn into a pull request
+```
+
+Exit code `3` means some skills need a human decision (a local modification or an unapproved third-party change); the output lists each one with the command to run. A bot can open a pull request with the lockfile change and let reviewers see the skill diffs.
+
+## Pin the CLI version for a team
+
+```yaml
+# agileflow.yaml
+agileflow: ">=5.0.0 <6"
+```
+
+Commands that change the project refuse to run on a CLI outside the range, so an old CLI never rewrites files a newer one produced.
+
+## Gate your own skills on behavior
+
+```bash
+agileflow eval --catalog skills --lint                                  # structure (fast, no model)
+agileflow eval --catalog skills --provider claude --runs 3 --json --out report.json
+```
+
+The report has activation precision, recall, and F1 per skill, pass rates with 95% confidence intervals, and adversarial results. Any failed or errored scenario exits `1`. Model-backed evals need the provider's credentials in CI (for example `ANTHROPIC_API_KEY` for Claude).

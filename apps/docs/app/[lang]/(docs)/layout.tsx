@@ -2,7 +2,6 @@ import { source } from "@/lib/source"
 import { SiteFooter } from "@/components/site-footer"
 import { SiteHeader } from "@/components/site-header"
 import { DocsSidebar } from "@/components/docs-sidebar"
-import { StickyBanner } from "@/components/sticky-banner"
 import { SidebarProvider } from "@/registry/new-york-v4/ui/sidebar"
 
 export default async function DocsLayout({
@@ -13,24 +12,13 @@ export default async function DocsLayout({
   params: Promise<{ lang: string }>
 }) {
   const { lang } = await params
-  const tree = source.pageTree[lang] || source.pageTree
+  const tree = source.getPageTree(lang)
 
   return (
     <div
       data-slot="layout"
       className="bg-background relative z-10 flex min-h-svh flex-col"
     >
-      <StickyBanner>
-        If you like AgileFlow, give it a star on{" "}
-        <a
-          href="https://github.com/projectquestorg/AgileFlow"
-          target="_blank"
-          rel="noreferrer"
-          className="font-medium underline underline-offset-4 hover:no-underline"
-        >
-          GitHub
-        </a>
-      </StickyBanner>
       <SiteHeader tree={tree} />
       <main className="flex flex-1 flex-col">
         <div className="container-wrapper flex flex-1 flex-col px-2">

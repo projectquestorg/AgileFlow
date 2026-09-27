@@ -35,7 +35,7 @@ export function StickyBanner({
   return (
     <div
       className={cn(
-        "relative z-50 flex items-center justify-center gap-4 bg-[#e8683a] px-4 py-2.5 text-center text-sm text-white",
+        "relative z-50 flex items-center justify-center gap-4 bg-primary px-4 py-2.5 text-center text-sm text-primary-foreground",
         className
       )}
     >

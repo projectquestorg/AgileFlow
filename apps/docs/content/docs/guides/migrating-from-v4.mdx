@@ -44,11 +44,11 @@ v4 may have written `approval_policy = "never"` and `sandbox_mode = "danger-full
 
 ## Backup
 
-Everything migration changes is copied to `.agileflow-v4-backup-<timestamp>/` first (skip with `--no-backup`).
+Everything migration changes is copied to `.agileflow-v4-backup-<timestamp>/` first. Interactively it asks; skip it with `--no-backup`.
 
 ## After cleanup
 
-If the project has no `agileflow.yaml`, migration offers v5 skills, preselecting those that cover what you used in v4:
+If the project has no `agileflow.yaml`, migration offers v5 skills. `diagnosing-bugs`, `checking-blast-radius`, and `verifying-changes` are preselected, plus those that cover what you used in v4 (detected from v4 plugins in `agileflow.config.json` and v4 skill copies). With `--yes` it installs that selection; `--skills <ids>` picks the list yourself:
 
 | You used in v4 | v5 skills |
 | --- | --- |

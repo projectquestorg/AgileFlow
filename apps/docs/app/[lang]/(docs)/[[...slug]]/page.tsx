@@ -23,23 +23,7 @@ export const dynamic = "force-static"
 export const dynamicParams = false
 
 export function generateStaticParams() {
-  // Generate params for all languages × all English pages
-  // This ensures /es/installation works even without installation.es.mdx
-  const englishPages = source.getPages("en")
-  const languages = ["en", "es", "fr", "de", "pt", "ar"]
-
-  const params: { lang: string; slug?: string[] }[] = []
-
-  for (const lang of languages) {
-    for (const page of englishPages) {
-      params.push({
-        lang,
-        slug: page.slugs,
-      })
-    }
-  }
-
-  return params
+  return source.getPages("en").map((page) => ({ lang: "en", slug: page.slugs }))
 }
 
 export async function generateMetadata(props: {
@@ -103,7 +87,7 @@ export default async function Page(props: {
 
   const doc = page.data
   const MDX = doc.body
-  const tree = source.pageTree[params.lang] || source.pageTree
+  const tree = source.getPageTree(params.lang)
   const neighbours = findNeighbour(tree, page.url)
 
   const raw = await page.data.getText("raw")

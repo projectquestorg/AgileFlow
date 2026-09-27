@@ -1,4 +1,14 @@
 {
   "title": "Commands",
-  "pages": ["init", "add-remove-list", "sync-and-update", "check", "configure", "fork-and-diff", "migrate", "eval"]
+  "pages": [
+    "init",
+    "add-remove-list",
+    "discover-and-verify",
+    "sync-and-update",
+    "check",
+    "configure",
+    "fork-and-diff",
+    "migrate",
+    "eval"
+  ]
 }

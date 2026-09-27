@@ -7,6 +7,7 @@ description: "Project configuration: which skills a repository uses."
 
 ```yaml
 version: 1
+agileflow: ">=5.0.0"   # optional
 skills:
   diagnosing-bugs:
     source: "@agileflow/diagnosing-bugs"
@@ -30,8 +31,13 @@ providers:
   codex:
     enabled: auto
     structuredQuestions: inherit
+  windsurf:                     # a custom provider
+    skillsDir: .windsurf/skills
 interaction:
   questionPreference: provider-default
+work:
+  enabled: true
+  root: docs/agile
 ```
 
 ## skills
@@ -41,25 +47,43 @@ The key is the skill id: the directory name in `.agents/skills` (lowercase lette
 | Field | Meaning |
 | --- | --- |
 | `source` | `@scope/name` (registry), `git+<url>[#path]`, or a path. A path to `.agents/skills/<id>` itself means locally owned. See [Skill sources](/concepts/sources). |
-| `version` | Semver range for registry skills, for example `^1`. |
-| `ref` | Branch, tag, or commit for git sources. |
+| `version` | Semver range for registry skills, for example `^1`. Must be a valid range. |
+| `ref` | Branch, tag, or commit for git sources (letters, digits, `.`, `_`, `/`, `+`, `-`; not starting with `-`). |
 | `activation` | `auto` or `manual`; overrides the package default. |
 | `enabled` | `false` disables the skill (files removed, entry kept). |
 | `provenance.forkedFrom` | Set by `agileflow fork`. |
 
 ## providers
 
+Keyed by provider id: `claude`, `codex`, `cursor`, `opencode`, `gemini`, or any other id for a [custom provider](/concepts/providers). `agileflow init` writes entries for `claude` and `codex`; the others default to `auto`.
+
 | Field | Values |
 | --- | --- |
 | `enabled` | `auto` (default: when detected), `true`, or `false`. For Claude Code this controls the compatibility links. |
-| `structuredQuestions` | Codex only: `inherit` (default), `enabled`, or `disabled`. Records intent; the Codex setting itself changes only through `agileflow configure codex-questions`. |
+| `skillsDir` | Custom providers only: the project-relative directory the agent reads skills from. AgileFlow links each skill there, like it does for Claude Code. |
+| `userSkillsDir` | Custom providers only: the home-relative directory for personal skills (`--global`). |
+| `displayName` | Custom providers only: the name shown by `list` and `check`. |
+| `structuredQuestions` | Codex only: `inherit` (default), `enabled`, or `disabled`. Records intent; the Codex setting itself changes only through [`agileflow configure codex-questions`](/commands/configure#codex-structured-questions), which records its choice in your personal `config.yaml`. |
 
 ## interaction
 
-`questionPreference`: `provider-default` (default), `prefer`, or `minimize`. See [configure](/commands/configure#question-preference).
+`questionPreference`: `provider-default` (default), `prefer`, or `minimize`. `agileflow init` copies your personal default here. See [Question preferences](/concepts/question-preferences).
+
+## work
+
+Present after [`agileflow work init`](/work/commands#work-init).
+
+| Field | Meaning |
+| --- | --- |
+| `enabled` | `true` turns on the `agileflow work` commands and the Agile Work checks in `agileflow check`. |
+| `root` | Workspace directory relative to the project, default `docs/agile`. The folders under it (`00-product` to `04-decisions`) are fixed. |
 
 ## registry
 
-Optional. A registry URL or directory to use instead of the official one.
+Optional. An HTTPS URL or a directory to use instead of the official registry. `check --verbose` and `configure show` print which registry is in effect and where the setting came from.
 
-A JSON Schema is published in the repository at `schemas/agileflow.schema.json`.
+## agileflow
+
+Optional. A semver range of AgileFlow CLI versions this project needs, for example `">=5.1.0 <6"`. Commands that change the project refuse to run on a CLI outside the range and tell you how to upgrade, so an older CLI never rewrites files a newer one produced.
+
+Unknown keys are rejected. A JSON Schema is published in the repository at `schemas/agileflow.schema.json` (the personal `config.yaml` has `schemas/global-config.schema.json`).

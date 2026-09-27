@@ -16,9 +16,12 @@ agileflow init --global   # personal skills in ~/.agents/skills
 2. **Reports** existing instruction files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`) and leaves them unchanged.
 3. **Asks where to install** (interactive only): *Project* (`.agents/skills`, shared with the repository) or *Personal* (`~/.agents/skills`, only for you).
 4. **Recommends skills.** `diagnosing-bugs`, `checking-blast-radius`, and `verifying-changes` are preselected; `filing-pr` and `babysitting-pr` are also preselected when the repository has a GitHub remote. Everything else is optional.
-5. **Resolves every package first**, then writes `agileflow.yaml`, `agileflow.lock`, `.agents/skills/<skill>/`, and Claude Code links if Claude Code is detected. If the registry is unreachable, nothing is written.
+5. **Offers Agile Work** (interactive, project only, not with `--skills`): "Enable AgileFlow Work?" defaults to No. Yes runs [`agileflow work init`](/work/commands#work-init) after the skills are installed.
+6. **Resolves every package first**, then writes `agileflow.yaml`, `agileflow.lock`, `.agents/skills/<skill>/`, and Claude Code links if Claude Code is detected. If the registry is unreachable, nothing is written.
 
-`init --yes` installs only the [core pack](/reference/official-skills#packs) and never changes provider configuration.
+The new `agileflow.yaml` starts with `providers` entries for Claude Code and Codex set to `auto`, and `interaction.questionPreference` copied from your personal default (`provider-default` unless you set one; see [Question preferences](/concepts/question-preferences)).
+
+`--skills` takes official skill ids (comma-separated) and skips the picker. `init --yes` installs only the [core pack](/reference/official-skills#packs), never creates an Agile workspace, and never changes provider configuration.
 
 If the project already has an `agileflow.yaml`, `init` says so and changes nothing. Use `add`, `sync`, or `update` instead.
 

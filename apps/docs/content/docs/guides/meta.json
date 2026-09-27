@@ -1,4 +1,9 @@
 {
   "title": "Guides",
-  "pages": ["updates-and-conflicts", "customizing-skills", "migrating-from-v4"]
+  "pages": [
+    "updates-and-conflicts",
+    "customizing-skills",
+    "continuous-integration",
+    "migrating-from-v4"
+  ]
 }

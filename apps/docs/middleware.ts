@@ -5,5 +5,5 @@ export default createI18nMiddleware(i18n)
 
 export const config = {
   // Match all paths except static files, API routes, etc.
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|og|.*\\..*).*)"],
+  matcher: ["/((?!api|llm|_next/static|_next/image|favicon.ico|og|.*\\..*).*)"],
 }

@@ -1,33 +1,21 @@
 import { notFound } from "next/navigation"
 import { NextResponse, type NextRequest } from "next/server"
 
-import { processMdxForLLMs } from "@/lib/llm"
 import { source } from "@/lib/source"
-import { getActiveStyle } from "@/registry/_legacy-styles"
 
 export const revalidate = false
 
+/** Raw markdown of a docs page, for LLMs and "copy page". */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ slug?: string[] }> }
 ) {
-  const [{ slug }, activeStyle] = await Promise.all([params, getActiveStyle()])
-
+  const { slug } = await params
   const page = source.getPage(slug)
+  if (!page) notFound()
 
-  if (!page) {
-    notFound()
-  }
-
-  const processedContent = processMdxForLLMs(
-    await page.data.getText("raw"),
-    activeStyle.name
-  )
-
-  return new NextResponse(processedContent, {
-    headers: {
-      "Content-Type": "text/markdown; charset=utf-8",
-    },
+  return new NextResponse(await page.data.getText("raw"), {
+    headers: { "Content-Type": "text/markdown; charset=utf-8" },
   })
 }
 

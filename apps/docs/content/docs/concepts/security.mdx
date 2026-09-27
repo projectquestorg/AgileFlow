@@ -1,0 +1,54 @@
+---
+title: Security
+description: "How AgileFlow decides what reaches your agent: transport, integrity, pinned releases, attestations, content scanning, and consent."
+---
+
+Skills are instructions for agents that can run commands on your machine with your credentials. A skill does not need a bug to be dangerous: "run `curl ... | sh` first" is enough. AgileFlow therefore treats every skill package as untrusted content and is careful about what it lets through. It never executes skills itself; your agent does, under its own permission settings.
+
+## What is verified
+
+| Layer | Protection |
+| --- | --- |
+| Transport | Registries must be HTTPS (or a local directory); redirects cannot downgrade to `http://`. Git uses `https`, `ssh`, or `file`. `AGILEFLOW_ALLOW_INSECURE=1` relaxes this for development only. |
+| Registry documents | Schema-validated; names, versions, and bundle headers cross-checked; bundle URLs must stay inside the registry. |
+| Package bytes | Hashed and checked against the registry's integrity and, once locked, against `agileflow.lock` (a changed republish is refused). |
+| Official releases | Every official version published before your CLI was built is **pinned into the CLI**. A compromised registry, a mirror, or a network attacker cannot substitute different bytes for those versions, even with matching metadata. |
+| Provenance | The npm package is published with [npm provenance](https://docs.npmjs.com/generating-provenance-statements) (SLSA build provenance signed through Sigstore): `npm audit signatures`. Every official skill bundle on `main` has a [GitHub artifact attestation](https://docs.github.com/actions/security-for-github-actions/using-artifact-attestations): `agileflow verify --attestations`. |
+| Git sources | Pinned to a commit in the lockfile; refs and commits are validated and can never be read as git options, so a cloned repository's `agileflow.yaml` cannot run commands. |
+| Installed files | `check` and `verify` compare the installed skill with what AgileFlow rendered; nothing you edited is ever overwritten. |
+
+## Content scanning
+
+`add`, `update`, `info`, and `verify` scan a skill's files (not its `evals/`, which are never installed) for patterns worth a human look:
+
+| Finding | Severity |
+| --- | --- |
+| Downloading and executing code (`curl ... \| sh`, `iex (irm ...)`) | high |
+| Deleting the home or root directory | high |
+| Reading credentials (`~/.ssh`, `~/.aws`, tokens) or sending environment data over the network | high |
+| Prompt injection: "ignore previous instructions", "do not tell the user" | high |
+| Invisible or bidirectional-override Unicode | high |
+| Destructive git or disk commands, `sudo`, disabling agent approvals or sandboxes (`--dangerously-skip-permissions`) | medium |
+| HTML comments containing text (invisible when rendered, read by the agent) | medium |
+| Long encoded blobs | medium |
+| `allowed-tools` pre-approving unrestricted `Bash` | medium |
+| Network use while the sidecar declares `network: none` | medium |
+| Executable scripts, binary files, other network use | low |
+
+A line phrased as a prohibition ("Do not run `git reset --hard` without permission") downgrades its finding to low, since such lines usually make a skill safer. The scanner is a reviewer's aid, not a verdict: it cannot prove a skill safe, and a skill without findings still deserves a read. Official skills are kept free of medium and high findings by CI.
+
+## Consent
+
+- Interactive `add` shows the files, requirements, and findings, and asks; with a high finding the default answer is "no".
+- Without a terminal (CI, scripts, `--json`), third-party content is installed only with `--yes`.
+- `update` shows the diff and findings of every third-party change. Interactive runs apply them after you confirm; non-interactive runs skip them (exit `3`) unless `--yes` approves them.
+- Every approval is recorded locally (`agileflow history`).
+- Destructive operations ask first: `remove` of modified skills needs `--force`, and `remove --all` needs confirmation or `--yes`.
+
+## Evals
+
+`agileflow eval --provider ...` does run agents: it launches real provider CLIs in throwaway sandbox repositories. Each run gets an isolated HOME containing only that provider's login files (never your personal skills, settings, or MCP servers). Scenario `setup` scripts run only for official skills and local directories you name; third-party setup scripts need `--allow-setup`.
+
+## Reporting a vulnerability
+
+Please report security issues privately through [GitHub security advisories](https://github.com/projectquestorg/AgileFlow/security/advisories/new) rather than public issues.

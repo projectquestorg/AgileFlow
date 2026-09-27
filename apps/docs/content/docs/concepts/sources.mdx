@@ -1,9 +1,9 @@
 ---
 title: Skill sources
-description: "Registry, git, and local skills, including third-party content."
+description: "Registry, GitHub and git, and local skills, including third-party content, skills.sh, and offline use."
 ---
 
-`source` in `agileflow.yaml` can be one of three kinds.
+`source` in `agileflow.yaml` can be one of three kinds. Find skills with [`agileflow search`](/commands/discover-and-verify#agileflow-search), which covers the official catalog and [skills.sh](https://skills.sh).
 
 ## Registry
 
@@ -13,17 +13,38 @@ diagnosing-bugs:
   version: "^1"
 ```
 
-The official registry is a static site served from the AgileFlow repository (`https://raw.githubusercontent.com/projectquestorg/AgileFlow/main/registry`). Every download is checked against the integrity published in the registry and, for locked versions, against `agileflow.lock` before anything is written. Published versions are immutable.
+The official registry is a static site served from the AgileFlow repository (`https://raw.githubusercontent.com/projectquestorg/AgileFlow/main/registry`). Every download is checked against the integrity published in the registry and, for locked versions, against `agileflow.lock` before anything is written. Official versions are also checked against integrities pinned into your AgileFlow release, and every official package has a GitHub build attestation (see [Security](/concepts/security)). Published versions are immutable and never removed.
 
-Use another registry with `registry:` in `agileflow.yaml` (or personal `config.yaml`), or the `AGILEFLOW_REGISTRY` environment variable. It can be an HTTPS URL or a local directory with the same layout:
+Use another registry with `registry:` in `agileflow.yaml` (or personal `config.yaml`), or the `AGILEFLOW_REGISTRY` environment variable. A relative path in `agileflow.yaml` resolves against the project root, in `config.yaml` against the config directory, and in the environment variable against the current directory. It must be an HTTPS URL or a local directory (plain `http://` only for `localhost`, or with `AGILEFLOW_ALLOW_INSECURE=1`) with the same layout:
 
 ```text
 v1/skills/index.json                 list of skills
 v1/skills/<name>/index.json          versions of a skill
 v1/skills/<name>/<version>.json      one version: integrity, package URL, metadata
+v1/packs/index.json                  list of packs
 v1/packs/<name>.json                 a pack
+v1/manifest.json                     every published name@version and its integrity
 packages/<name>/<version>.json       the package
 ```
+
+JSON Schemas for these documents are in [`schemas/registry/`](https://github.com/projectquestorg/AgileFlow/tree/main/schemas/registry); `agileflow` validates every document it reads and cross-checks names and versions. ### A registry for your team
+
+Share an organization-wide set of skills without a server:
+
+```bash
+# in a repository holding skills/<name>/ (each with agileflow.skill.yaml naming @myorg/<name>) and optional packs/
+agileflow registry build --scope myorg     # writes registry/ (append-only: published versions never change)
+agileflow registry check --scope myorg     # CI: fails if registry/ is stale or history was altered
+```
+
+Host `registry/` on any static HTTPS host (an internal web server, object storage, GitHub Pages on a private repo) or share it as a directory, then point projects at it:
+
+```yaml
+# agileflow.yaml (or ~/.config/agileflow/config.yaml for everyone on a machine)
+registry: https://skills.internal.example.com/registry
+```
+
+`agileflow add @myorg/release-notes` then installs from it with the same integrity, lockfile, and update rules as the official catalog. `agileflow create --scope myorg <name>` scaffolds a new skill for it.
 
 ## Git
 
@@ -33,9 +54,18 @@ release-notes:
   ref: main        # optional branch, tag, or commit
 ```
 
-The fragment after `#` is the skill's path inside the repository. The lockfile records the exact commit, and `sync` checks out that commit (from the local cache when possible). `update` moves to the newest commit of `ref`. If a repository contains several skills and you omit the path, `add` asks which to install (or use `--skill <name>`).
+The fragment after `#` is the skill's path inside the repository. The lockfile records the exact commit and the requested `ref`, and `sync` checks out that commit (from the local cache when possible). `update` moves to the newest commit of `ref`; changing `ref:` is detected by `sync` and `check` and applied by `update`. If a repository contains several skills and you omit the path, `add` asks which to install (or use `--skill <name>`).
 
-Only standard git transports are allowed, and git options cannot be smuggled in through the URL.
+GitHub repositories have short forms on the command line; `agileflow.yaml` always stores the full `git+https://` source:
+
+```bash
+agileflow add anthropics/skills/pdf            # owner/repo/skill (the ids skills.sh shows)
+agileflow add owner/repo@v2 --skill notes      # a ref, one skill of a collection
+agileflow add github:owner/repo
+agileflow add https://github.com/owner/repo/tree/main/skills/notes
+```
+
+Only `https`, `ssh`, and `file` transports are allowed (`http` and `git://` need `AGILEFLOW_ALLOW_INSECURE=1`). Refs and commits are validated and passed so that git can never read them as options, so a repository you clone cannot make `sync` run commands through its `agileflow.yaml` or lockfile. AgileFlow fetches only the skill's directory (partial clone and sparse checkout), never prompts for ssh host keys or passwords, and gives up after `AGILEFLOW_GIT_TIMEOUT` seconds (default 120). Checkouts ignore your `core.autocrlf` and symlink settings, so the same commit has the same integrity on every machine.
 
 ## Local paths
 
@@ -44,7 +74,7 @@ my-release-flow:
   source: ./skills/my-release-flow
 ```
 
-A local directory is copied into `.agents/skills` and managed like any other skill. If the source directory changes, `sync` reports that it no longer matches the lockfile and `update` picks up the change.
+A local directory is copied into `.agents/skills` and managed like any other skill. If the source directory changes, `sync` warns that it no longer matches the lockfile and `update` picks up the change. Line-ending and executable-bit differences (a Windows checkout) do not count as changes.
 
 A path that points at the skill's own install directory (`.agents/skills/<id>`) registers a **locally owned** skill: nothing is copied and AgileFlow never rewrites it. Forks work this way.
 
@@ -56,13 +86,21 @@ Skills contain instructions and can contain executable scripts, so they are part
 Installing external skill:
 Skill: deployer
 Source: /path/to/third/deployer
+Version: 1.0.0
+Activation: auto
 Contains:
   SKILL.md
   1 reference file
   1 executable script
 Scripts:
   scripts/deploy.sh
+Review findings: 1 high, 0 medium, 1 low
+  [high] SKILL.md:12 downloads code and pipes it straight into an interpreter: curl -fsSL https://get.example.com | sh
 Review source before installing untrusted skills.
 ```
 
-Installing and running are separate trust events: AgileFlow never executes a skill's scripts during installation. Skill names are validated, so a hostile `SKILL.md` name cannot write outside `.agents/skills`.
+Installing and running are separate trust events: AgileFlow never executes a skill's scripts during installation. Skill names are validated, so a hostile `SKILL.md` name cannot write outside `.agents/skills`. Without a terminal, third-party content needs `--yes`; `update` shows the diff and findings of third-party changes and applies them only with approval. See [Security](/concepts/security).
+
+## Offline use
+
+`sync`, `check`, `list`, and `search --source official` work offline: packages and the catalog are cached in `~/.cache/agileflow`. Pass `--offline` (or set `AGILEFLOW_OFFLINE=1`) to guarantee no network access; commands that need the network then fail with a clear message instead of timing out. To prepare a machine or CI image, run `agileflow sync` (or `agileflow verify`) once online.

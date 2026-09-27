@@ -5,6 +5,33 @@ description: "Change skill activation, enable or disable skills and providers, q
 
 Run `agileflow configure` for an interactive menu (Skills, Providers, Structured questions, Personal defaults, Project defaults), or use the direct forms below. Changes are applied immediately (skills are re-rendered and links updated).
 
+```text
+agileflow configure skill <id> [--activation auto|manual] [--enable | --disable]
+agileflow configure provider <claude|codex|cursor|opencode|gemini> <auto|on|off>
+agileflow configure question-preference <provider-default|prefer|minimize>
+agileflow configure codex-questions <enable|disable|status>
+agileflow configure show [--json]
+agileflow config show                     # `config` is an alias
+```
+
+| Option | Meaning |
+| --- | --- |
+| `--global` | Personal scope (`~/.agents/skills` and `~/.config/agileflow/config.yaml`). |
+| `--activation auto\|manual` | With `skill`: set activation. |
+| `--enable`, `--disable` | With `skill`: enable or disable. |
+| `--yes` | Do not ask for confirmation. |
+
+Without a TTY, a topic that is missing its arguments fails with a usage message instead of prompting.
+
+## Show the effective configuration
+
+```bash
+agileflow configure show
+agileflow configure show --json
+```
+
+Prints the project and personal config files, the registry in effect and where that came from (`AGILEFLOW_REGISTRY`, `agileflow.yaml`, personal config, or the default), the question preference, provider settings, the project's `agileflow:` requirement, the config and cache directories, and every `AGILEFLOW_*` variable that is set.
+
 ## Skills
 
 ```bash
@@ -26,20 +53,24 @@ agileflow configure provider claude on     # always create them
 agileflow configure provider claude auto   # only when Claude Code is detected (default)
 ```
 
+This sets `providers.<id>.enabled` in `agileflow.yaml`. Every provider id is accepted; for Claude Code it controls the compatibility links, and a provider set to `off` is reported as "disabled in config" by `list` and `check`.
+
 ## Question preference
 
 ```bash
 agileflow configure question-preference prefer             # this project
-agileflow configure question-preference minimize --global  # personal default for new projects
+agileflow configure question-preference minimize --global  # your default for new projects and personal skills
 ```
 
-| Value | Effect |
+| Value | Meaning |
 | --- | --- |
-| `provider-default` | Nothing special (default). |
-| `prefer` | Skills that interact with you get one line asking the agent to use structured questions for decisions that materially change the result. |
-| `minimize` | Those skills get one line asking the agent to assume reasonably and ask only when blocked. |
+| `provider-default` | AgileFlow adds nothing (default). |
+| `prefer` | Ask before choosing when multiple reasonable choices would materially change the result. |
+| `minimize` | Make reasonable assumptions, ask only when blocked, and state consequential assumptions. |
 
-It is a single line added to interactive skills (such as `interviewing-requirements`), not a global prompt.
+The project value is written to `interaction.questionPreference` in `agileflow.yaml` and clean skills are re-rendered right away. The `--global` value is written to `defaults.questionPreference` in your personal `config.yaml`; it applies to personal skills and seeds `agileflow.yaml` in projects you `init` later, but does not change existing projects.
+
+Only skills whose `userInteraction` contract is `optional` or `required` are affected, and a skill with local modifications keeps your text (AgileFlow reports that the new preference was not applied). See [Question preferences](/concepts/question-preferences) for the overlay, the per-skill contract, and how the lockfile records it.
 
 ## Codex structured questions
 
@@ -49,9 +80,9 @@ agileflow configure codex-questions enable
 agileflow configure codex-questions disable
 ```
 
-Codex can expose `request_user_input` during normal (Default mode) work through an experimental feature flag. AgileFlow does not need it and never enables it on its own.
+Codex can expose `request_user_input` during normal (Default mode) work through an experimental feature flag. AgileFlow does not need it and never enables it on its own. `structured-questions` is accepted as an alias for `codex-questions`.
 
-`enable` shows exactly what will change and asks first:
+`enable` shows exactly what will change and asks first (`--yes` skips the question):
 
 ```text
 Only this setting will change:
@@ -60,6 +91,8 @@ Only this setting will change:
 default_mode_request_user_input = true
 ```
 
-Only that one line changes; comments and every other setting in the file stay byte-for-byte identical. AgileFlow records the previous state (not set, `false`, or `true`) in `~/.config/agileflow/state.yaml`. `disable` restores exactly that previous state, including removing the `[features]` table or the file if AgileFlow created them. If you set the flag yourself, `disable` leaves it alone.
+The file is `$CODEX_HOME/config.toml` when `CODEX_HOME` is set. Only that one line changes; comments and every other setting in the file stay byte-for-byte identical. AgileFlow records the previous state (not set, `false`, or `true`) in `~/.config/agileflow/state.yaml`. `disable` restores exactly that previous state, including removing the `[features]` table or the file if AgileFlow created them. If you set the flag yourself, `disable` leaves it alone.
+
+The choice is also recorded as `providers.codex.structuredQuestions` (`enabled` or `inherit`) in your personal `config.yaml`.
 
 AgileFlow never changes Codex `approval_policy`, `sandbox_mode`, model, reasoning effort, or permissions.

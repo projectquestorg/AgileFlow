@@ -5,12 +5,18 @@ description: "Add skills, packs, git and local sources; remove only what AgileFl
 
 ## agileflow add
 
+`agileflow install` is the same command.
+
 ```bash
 agileflow add diagnosing-bugs            # official skill (@agileflow/diagnosing-bugs)
 agileflow add diagnosing-bugs@^1         # with a version range
 agileflow add @agileflow/github          # a pack: adds each skill in it
+agileflow add anthropics/skills/pdf      # GitHub: owner/repo/skill (the ids skills.sh lists)
+agileflow add owner/repo@v1.2.0          # a tag, branch, or commit
+agileflow add https://github.com/owner/repo/tree/main/skills/x
 agileflow add git+https://github.com/example/skills.git#skills/release-notes
 agileflow add ./skills/my-release-flow   # a local directory
+agileflow add filing-pr --dry-run        # review only: files, risk scan, nothing written
 agileflow add                            # interactive: pick from the registry catalog
 ```
 
@@ -19,13 +25,20 @@ Options:
 | Option | Meaning |
 | --- | --- |
 | `--global` | Add to personal skills (`~/.agents/skills`). |
-| `--yes` | Skip the confirmation. |
+| `--yes` | Skip the confirmation. Required without a terminal for third-party content. |
 | `--activation auto\|manual` | Override the skill's default activation. |
 | `--skill <name>` | Pick a skill from a source that contains several (repeatable). |
+| `--ref <ref>` | Git sources: the branch, tag, or commit to track (recorded in the lockfile). |
+| `--dry-run` | Resolve and review without installing. |
+| `--json` | Machine-readable result (the installed skills, their integrity, and review findings). |
 
-Before installing, `add` shows what the skill contains: source, version, activation, reference files, **executable scripts** (listed by name), and requirements such as `gh` on PATH or network access. Third-party content is labeled "Installing external skill" with "Review source before installing untrusted skills." Scripts are never executed during installation.
+Before installing, `add` shows what the skill contains: source, version, integrity, activation, reference files, **executable scripts** (listed by name), requirements such as `gh` on PATH or network access, and **review findings** from a content scan: commands that download and run code, destructive or history-rewriting commands, access to credentials, sending data over the network, instructions to ignore other instructions or hide actions from you, invisible Unicode and HTML comments, encoded blobs, broad `allowed-tools`, and network use a skill did not declare. Third-party content is labeled "Installing external skill"; the confirmation defaults to "no" when a high-severity finding is present. Without a terminal, third-party content (anything outside the official `@agileflow` catalog) is installed only with `--yes`. Scripts are never executed during installation. Approvals are recorded in [`agileflow history`](/commands/discover-and-verify#agileflow-history).
 
-Registry skills get a caret range by default (for example `^1.0.0`), so a new major version is never installed without you changing the range.
+`owner/repo` means a GitHub repository unless a local directory with that relative path exists (use `./owner/repo` to force a path). The lockfile pins the exact commit; the requested ref is recorded too, so changing `ref:` in `agileflow.yaml` is detected by `sync` and applied by `update`.
+
+Registry skills get a caret range on the installed version by default (for example `^1.0.1`; `~0.3.2` for a `0.x` version), so a new major version is never installed without you changing the range. Skills added from a pack use the pack's ranges (`^1`).
+
+`add` creates `agileflow.yaml` if the project does not have one yet. A skill that is already installed is left as is (use `agileflow update <skill>` for a newer version). Without a TTY, `add` needs at least one target.
 
 `add` refuses to overwrite a directory in `.agents/skills` that AgileFlow does not manage. See [Skill sources](/concepts/sources) for git and local skills.
 
@@ -34,17 +47,29 @@ Registry skills get a caret range by default (for example `^1.0.0`), so a new ma
 ```bash
 agileflow remove babysitting-pr
 agileflow remove babysitting-pr --force   # discard local modifications
-agileflow remove --all                    # stop using AgileFlow here
+agileflow remove --all --yes              # stop using AgileFlow here
+agileflow remove filing-pr --dry-run      # what would be removed
 ```
+
+| Option | Meaning |
+| --- | --- |
+| `--global` | Remove from personal skills. |
+| `--force` | Discard local modifications. |
+| `--all` | Stop using AgileFlow in this scope (removes `agileflow.yaml` and `agileflow.lock`). |
+| `--keep-skills` | With `--all`: keep skills as standalone Agent Skills (default). |
+| `--delete-skills` | With `--all`: delete unmodified AgileFlow skills. |
+| `--yes` | Do not ask. Required without a terminal for `--all`. |
+| `--dry-run` | Show what would be removed. |
+| `--json` | Machine-readable result. |
 
 `remove` deletes only what the lockfile says AgileFlow owns: `.agents/skills/<skill>` and the Claude Code link or mirror it created. Skills AgileFlow does not manage are never touched, whatever their name.
 
-- A **modified** managed skill is not removed without `--force` (or `agileflow fork` first to keep your changes).
+- A **modified** managed skill is not removed without `--force` (or `agileflow fork` first to keep your changes). Files AgileFlow cannot track inside a skill (a nested `.git`, `node_modules`, symlinks, empty directories) count as modifications.
 - A **locally owned** skill (a fork or a skill you registered from `.agents/skills`) is removed from `agileflow.yaml` and `agileflow.lock`, but its files are kept.
 
 ### Removing AgileFlow from a project
 
-`agileflow remove --all` (same as `agileflow migrate --detach`) removes `agileflow.yaml` and `agileflow.lock`. It asks whether to keep installed skills as standalone Agent Skills. The default is yes: the managed notice is removed, Claude Code links stay, and every provider keeps seeing the skills. `--delete-skills` deletes unmodified AgileFlow skills instead; modified and locally owned skills are kept.
+`agileflow remove --all` (same as `agileflow migrate --detach`) removes `agileflow.yaml` and `agileflow.lock`. It asks whether to keep installed skills as standalone Agent Skills and then confirms; without a TTY it needs `--yes` (and keeps the skills unless you pass `--delete-skills`). For personal skills (`--global`), your personal defaults, provider settings, and registry setting stay in `config.yaml`, and a Codex setting AgileFlow changed at your request is restored if nobody edited it since. The default is yes: the managed notice is removed, Claude Code links stay, and every provider keeps seeing the skills. `--delete-skills` deletes unmodified AgileFlow skills instead; modified and locally owned skills are kept.
 
 ## agileflow list
 
@@ -56,16 +81,19 @@ agileflow list --json
 
 ```text
 Project skills
-  NAME                       VERSION  MODE    SOURCE    STATUS
-  diagnosing-bugs            1.0.0    auto    official  clean
-  interviewing-requirements  1.0.0    manual  official  clean
-  release-notes              local    auto    local     clean
+  NAME                       VERSION  MODE    SOURCE                              STATUS
+  diagnosing-bugs            1.0.1    auto    official                            clean
+  interviewing-requirements  1.0.1    manual  official                            clean
+  filing-pr                  local    auto    fork of @agileflow/filing-pr@1.1.0  local
+  release-notes              local    auto    local                               clean
   Not managed by AgileFlow (left untouched): my-team-release
 
 Providers
   Codex     native .agents/skills
   Claude    linked .claude/skills
   Cursor    native .agents/skills (not detected)
+  OpenCode  native .agents/skills (not detected)
+  Gemini    native .agents/skills
 ```
 
-Status is one of `clean`, `modified`, `missing`, `local` (locally owned), or `disabled`.
+Source is `official` (`@agileflow/...`), `registry` (another scope), `git`, `local`, or `fork of <package>@<version>`. Status is one of `clean`, `modified`, `missing`, `local` (locally owned), `disabled`, or `not locked` (in `agileflow.yaml` but not yet in the lockfile; run `agileflow update`). A provider turned off with `agileflow configure provider <id> off` shows as "disabled in config".

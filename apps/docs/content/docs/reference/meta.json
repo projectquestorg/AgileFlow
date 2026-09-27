@@ -1,4 +1,9 @@
 {
   "title": "Reference",
-  "pages": ["official-skills", "agileflow-yaml", "agileflow-lock"]
+  "pages": [
+    "official-skills",
+    "agileflow-yaml",
+    "agileflow-lock",
+    "versioning"
+  ]
 }

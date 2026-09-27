@@ -1,0 +1,78 @@
+---
+title: Agile Work
+description: "Opt-in epics, stories, decisions, and product planning as Markdown, without a second state store."
+---
+
+AgileFlow answers three different questions:
+
+```text
+AgileFlow
+├── Context   What is this repository?            AGENTS.md, CLAUDE.md, repository docs, code, tests
+├── Work      What are we building?               AgileFlow Work
+└── Skills    How should the agent do the work?   Agent Skills
+```
+
+**AgileFlow Work** is the middle layer: what outcome we are trying to achieve, which epics exist, which stories are ready or blocked, and what counts as done. It is opt-in. `agileflow init` never creates it.
+
+```bash
+agileflow work init
+```
+
+## One directory, five categories
+
+Everything Agile lives under one root (`docs/agile` by default):
+
+```text
+docs/agile/
+├── README.md
+├── 00-product/
+│   └── product.md          # problem, users, outcomes, principles, non-goals, Definition of Done
+├── 01-roadmap/
+│   └── roadmap.md          # now / next / later
+├── 02-epics/
+│   └── EPIC-7M4K2P9Q-social-authentication.md
+├── 03-stories/
+│   ├── STORY-3Q7MX2PK-google-login.md
+│   └── STORY-Q6M2J7NK-fix-invoice-email.md
+└── 04-decisions/
+    └── DEC-4C8M2Q7K-auth-provider.md
+```
+
+`work init` creates `README.md`, `product.md`, and `roadmap.md`. The artifact folders appear with their first file, so no empty folders or `.gitkeep` files are committed. The root is configurable (`--root planning`); the folders under it are not.
+
+## What does not belong here
+
+The workspace holds durable product and work context only. Not allowed as AgileFlow artifacts: research dumps, brainstorms, implementation plans, agent notes or memory, `status.json`, progress files, scratchpads, session state, handoffs, and audit or review output. Agents keep scratch work in their provider's planning tools or in temporary files outside the repository. `agileflow check` warns about any other file or folder it finds in the workspace (dot-files such as `.DS_Store` are skipped).
+
+There is also no miscellaneous folder, no archive, and no folders by status, priority, or epic. Status and priority are frontmatter; a story points at its epic.
+
+## No second state store
+
+The story file is the source of truth. There is no `status.json`, no generated `board.md`, no index, and no dependency graph file. The CLI computes lists, boards, epic progress, and relationships from frontmatter every time. The Markdown files are the database: every command reads the three artifact folders once (a few thousand files take well under a second or two; 10,000 stories take a few seconds) and derives everything else in memory.
+
+Because every story is its own file with a random ID, several agents on different branches or worktrees can create and update work at the same time without editing a shared file or fighting over a counter. The workspace must be committed to Git to be shared, so `work init` warns when `.gitignore` would hide it.
+
+Agile Work is not an agent orchestrator. It keeps the backlog, dependencies, and readiness in plain files and exposes them as stable JSON (`work list --ready --json`, `work board --json`), so external multi-agent tools can decide who works on what. See [Integrating with agent orchestrators](/work/commands#integrating-with-agent-orchestrators).
+
+## Anti-slop rules
+
+1. Only five durable artifact categories exist.
+2. Do not persist agent scratch work.
+3. Do not duplicate status.
+4. Do not duplicate parent-child relationships.
+5. Do not write implementation details that the code will immediately supersede.
+6. Do not create artifacts just because a template exists.
+7. Small work does not need an epic.
+8. Every story needs a clear outcome.
+9. Acceptance criteria describe observable completion, not implementation steps.
+10. Durable decisions only get decision documents when future work genuinely needs the reasoning.
+
+## Not in the MVP
+
+No sprints, story points, velocity, burndown, assignees, separate bug or task artifacts, Scrum ceremony prompts, archive workflow, delete command, or external trackers (Linear, Jira, GitHub Projects). Agile here means small slices, clear outcomes, visible work, iterative delivery, and verification.
+
+## Coming from AgileFlow v4
+
+`agileflow work import v4` converts a v4 backlog (`docs/05-epics`, `docs/06-stories`, `docs/09-agents/status.json`) into Work epics and stories. It never changes or deletes the v4 files. See [work import](/work/commands#work-import-v4).
+
+Next: [Artifacts](/work/artifacts), [Commands](/work/commands), [Skills](/work/skills).

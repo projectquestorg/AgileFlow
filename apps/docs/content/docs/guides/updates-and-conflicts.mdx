@@ -3,9 +3,9 @@ title: Updates and conflicts
 description: "How AgileFlow updates skills without ever silently overwriting your edits."
 ---
 
-Every managed skill is recorded in `agileflow.lock` with `baseHash`, the hash of the directory exactly as AgileFlow installed it. When you run `agileflow update`:
+Every managed skill is recorded in `agileflow.lock` with `renderedHash`, the hash of the directory exactly as AgileFlow installed it. When you run `agileflow update`:
 
-- If the current files still match `baseHash`, the skill is **clean** and is replaced with the new version.
+- If the current files still match `renderedHash`, the skill is **clean** and is replaced with the new version.
 - If they differ, the skill has **local modifications** and is never overwritten without your choice.
 
 There is no stash directory and no hidden "protected" state.
@@ -43,7 +43,7 @@ or
   agileflow update --reset diagnosing-bugs
 ```
 
-The command exits with status **3** when it skipped a modified skill, so CI can notice.
+The command exits with status **3** when it skipped a modified skill, so CI can notice. The same applies whenever `update` runs without prompts: with `--yes`, without a TTY, or with `CI` set.
 
 ## Other cases
 

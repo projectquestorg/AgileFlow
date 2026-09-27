@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     images: [
       {
-        url: `${APP_URL}/opengraph-image.png`,
+        url: `${APP_URL}/og.png`,
         width: 1200,
         height: 630,
         alt: siteConfig.name,
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteConfig.name,
     description: siteConfig.description,
-    images: [`${APP_URL}/opengraph-image.png`],
+    images: [`${APP_URL}/og.png`],
     creator: "@agileflow",
   },
   icons: {
@@ -82,8 +82,8 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                if (localStorage.theme === 'dark' || ((!('theme' in localStorage) || localStorage.theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.querySelector('meta[name="theme-color"]').setAttribute('content', '${META_THEME_COLORS.dark}')
+                if (localStorage.theme === 'light' || (localStorage.theme === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  document.querySelector('meta[name="theme-color"]').setAttribute('content', '${META_THEME_COLORS.light}')
                 }
                 if (localStorage.layout) {
                   document.documentElement.classList.add('layout-' + localStorage.layout)
@@ -92,7 +92,7 @@ export default async function RootLayout({
             `,
           }}
         />
-        <meta name="theme-color" content={META_THEME_COLORS.light} />
+        <meta name="theme-color" content={META_THEME_COLORS.dark} />
       </head>
       <body
         className={cn(

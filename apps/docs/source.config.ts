@@ -2,6 +2,7 @@ import { defineConfig, defineDocs } from "fumadocs-mdx/config"
 import rehypePrettyCode from "rehype-pretty-code"
 
 import { transformers } from "@/lib/highlight-code"
+import { agileflowCodeTheme } from "@/lib/code-theme"
 
 export default defineConfig({
   mdxOptions: {
@@ -10,10 +11,7 @@ export default defineConfig({
       plugins.push([
         rehypePrettyCode,
         {
-          theme: {
-            dark: "github-dark",
-            light: "github-light-default",
-          },
+          theme: agileflowCodeTheme,
           transformers,
         },
       ])

@@ -3,9 +3,7 @@ title: AgileFlow
 description: "Portable workflows for coding agents. Install a skill once and use it with Codex, Claude Code, Cursor, OpenCode, and Gemini CLI."
 ---
 
-**Portable workflows for coding agents.**
-
-Install a skill once. Use it with Codex, Claude Code, Cursor, OpenCode, Gemini CLI, and the tools built on top of them. Small, versioned workflows. No agent runtime. No repository takeover.
+The same skills also work in tools built on top of these agents. Small, versioned workflows. No agent runtime. No repository takeover.
 
 ## What AgileFlow is
 
@@ -16,10 +14,11 @@ AgileFlow is a **skill manager, compatibility layer, and evaluation system** for
 - It records exact versions and hashes in `agileflow.lock`, so updates are deterministic and your edits are never silently overwritten.
 - It lets you fork any skill and own it permanently.
 - It ships evals so skill descriptions and instructions improve because measured behavior improved.
+- Optionally, [Agile Work](/work) keeps product, roadmap, epics, stories, and decisions as Markdown in one directory, with a CLI that derives boards and validates relationships.
 
 ## What AgileFlow is not
 
-AgileFlow is not an agent framework, a multi-agent runtime, a hook runtime, a project-management system, or a repository scaffolder. Your coding agent keeps doing the reasoning, planning, delegation, tool use, and permissions.
+AgileFlow is not an agent framework, a multi-agent runtime, a hook runtime, a Jira clone, or a repository scaffolder. Agile Work is opt-in and stays small: five artifact types, no sprints, no points, no second state store. Your coding agent keeps doing the reasoning, planning, delegation, tool use, and permissions.
 
 Once skills are installed, **nothing from AgileFlow runs while your agent works**: no hook, no background process, no AgileFlow agent. If you uninstall the CLI, your skills keep working because they are standard `SKILL.md` files in provider-native locations.
 
@@ -28,6 +27,7 @@ Once skills are installed, **nothing from AgileFlow runs while your agent works*
 - [Installation](/installation)
 - [Quick start](/quick-start)
 - [Providers](/concepts/providers): which coding agents are supported and how
+- [Agile Work](/work): epics and stories for your agents
 - [Migrating from v4](/guides/migrating-from-v4)
 
 > **Looking for AgileFlow v4?** v4 (plugins, agents, hooks, slash commands, docs scaffolding) is superseded by v5. Its documentation is archived with the source on the [`v4` branch on GitHub](https://github.com/projectquestorg/AgileFlow/tree/v4). Nothing in that archive describes current behavior.

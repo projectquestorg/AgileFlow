@@ -6,13 +6,8 @@ import { cn } from "@/lib/utils"
 import { Callout } from "@/components/callout"
 import { FileTree, Folder, File, MoreFiles } from "@/components/file-tree"
 import { CodeBlockCommand } from "@/components/code-block-command"
-import { CodeCollapsibleWrapper } from "@/components/code-collapsible-wrapper"
 import { CodeTabs } from "@/components/code-tabs"
-import { ComponentPreview } from "@/components/component-preview"
-import { ComponentSource } from "@/components/component-source"
-import { ComponentsList } from "@/components/components-list"
 import { CopyButton } from "@/components/copy-button"
-import { DirectoryList } from "@/components/directory-list"
 import { getIconForLanguageExtension } from "@/components/icons"
 import {
   Accordion,
@@ -135,7 +130,7 @@ export const mdxComponents = {
     <hr className="my-4 md:my-8" {...props} />
   ),
   table: ({ className, ...props }: React.ComponentProps<"table">) => (
-    <div className="no-scrollbar my-6 w-full overflow-y-auto rounded-lg border">
+    <div className="no-scrollbar my-6 w-full overflow-x-auto rounded-lg border">
       <table
         className={cn(
           "relative w-full overflow-hidden border-none text-sm [&_tbody_tr:last-child]:border-b-0",
@@ -151,7 +146,7 @@ export const mdxComponents = {
   th: ({ className, ...props }: React.ComponentProps<"th">) => (
     <th
       className={cn(
-        "px-4 py-2 text-left font-bold [&[align=center]]:text-center [&[align=right]]:text-right",
+        "px-4 py-2 text-left font-medium [&[align=center]]:text-center [&[align=right]]:text-right",
         className
       )}
       {...props}
@@ -160,7 +155,7 @@ export const mdxComponents = {
   td: ({ className, ...props }: React.ComponentProps<"td">) => (
     <td
       className={cn(
-        "px-4 py-2 text-left whitespace-nowrap [&[align=center]]:text-center [&[align=right]]:text-right",
+        "px-4 py-2 text-left align-top first:whitespace-nowrap [&[align=center]]:text-center [&[align=right]]:text-right",
         className
       )}
       {...props}
@@ -341,11 +336,6 @@ export const mdxComponents = {
   AlertDescription,
   AspectRatio,
   CodeTabs,
-  ComponentPreview,
-  ComponentSource,
-  CodeCollapsibleWrapper,
-  ComponentsList,
-  DirectoryList,
   Link: ({ className, ...props }: React.ComponentProps<typeof Link>) => (
     <Link
       className={cn("font-medium underline underline-offset-4", className)}

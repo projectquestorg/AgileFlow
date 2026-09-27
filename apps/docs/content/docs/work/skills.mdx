@@ -1,0 +1,56 @@
+---
+title: Skills
+description: "The agile pack: creating-epics, writing-stories, working-story, reviewing-story, and recording-decisions, and how they compose with other skills."
+---
+
+The `@agileflow/agile` pack contains only the workflows needed to use the artifacts well. No hooks, no agents, no runtime.
+
+```yaml
+name: agile
+version: 1
+skills:
+  - "@agileflow/creating-epics@^1"
+  - "@agileflow/writing-stories@^1"
+  - "@agileflow/working-story@^1"
+  - "@agileflow/reviewing-story@^1"
+  - "@agileflow/recording-decisions@^1"
+```
+
+`agileflow work init` offers it; `agileflow add @agileflow/agile` installs it later. The workspace and CLI work without it. The skills use the `agileflow work` commands when the CLI is available and edit the Markdown directly otherwise.
+
+| Skill | `userInteraction` | What it does |
+| --- | --- | --- |
+| `creating-epics` | optional | Reads product context and the roadmap, clarifies only decisions that change the epic, and writes one outcome-level epic with scope, non-goals, and success signals. It does not create stories unless asked. |
+| `writing-stories` | optional | Breaks an epic or requirement into vertical slices ("User can sign in with Google", not "Create Google button component") with observable acceptance criteria and only real dependencies. |
+| `working-story` | optional | Reads the story, its epic and decisions, checks dependencies (blocks, or corrects wrong metadata), sets `in-progress`, implements the smallest complete solution, verifies every criterion with evidence, checks only verified criteria, and ends in `in-review` or `done` according to the Definition of Done. |
+| `reviewing-story` | none | Asks "did the code deliver the story?": verifies each criterion against the implementation, identifies missing behavior and regressions, and refuses to close a story with an unmet criterion. |
+| `recording-decisions` | optional | Records a decision that has been made (context, decision, reasons, consequences) as a `04-decisions/` record, or in your existing ADR directory when Work is off. Supersedes old records instead of rewriting them. |
+
+`working-story` does not automatically open a PR, write decisions, plans, progress logs, or status files, spawn subagents, or run every test and audit.
+
+## Questions
+
+With [question preference](/concepts/question-preferences) `prefer`, planning skills ask about material product choices; with `minimize`, they infer from context and keep moving. They never ask what the repository answers ("What framework does your app use?" when `package.json` says). Questions belong in planning: once a story is `ready`, `working-story` should rarely need one, and needing one is a sign the story was not ready.
+
+## With the PR skills
+
+`filing-pr` includes the story ID (`Implements STORY-3Q7MX2PK`) and a short acceptance-criteria summary when the work is tied to a story, without forcing IDs into PR titles, and moves the story to `in-review`. `babysitting-pr` keeps it there until the PR merges and a final check against the criteria and Definition of Done allows `done`.
+
+## End to end
+
+```text
+"I want users to log in with Google and Apple."
+  creating-epics   → EPIC-7M4K2P9Q Social authentication
+"Break that into stories."
+  writing-stories  → STORY-3Q7MX2PK Google sign-in, STORY-H5D2V8NA Apple sign-in, ...
+"Work on the Google story."
+  working-story    → ready → in-progress, implements and verifies
+"File and babysit."
+  filing-pr, babysitting-pr → in-progress → in-review
+PR merges
+  reviewing-story  → confirms every criterion: in-review → done
+All stories finished
+  agileflow work status EPIC-7M4K2P9Q done
+```
+
+Multiple agents can work in parallel: one agent owns one story file at a time, any agent may read any artifact, and there is no shared state file to fight over. There is no "current story" stored anywhere; a new conversation reads the story and Git state again.

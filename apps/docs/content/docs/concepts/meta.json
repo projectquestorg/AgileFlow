@@ -1,4 +1,11 @@
 {
   "title": "Concepts",
-  "pages": ["skills-and-packs", "sources", "scopes", "providers"]
+  "pages": [
+    "skills-and-packs",
+    "sources",
+    "scopes",
+    "providers",
+    "security",
+    "question-preferences"
+  ]
 }

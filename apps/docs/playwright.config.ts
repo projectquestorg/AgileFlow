@@ -62,7 +62,7 @@ export default defineConfig({
   // Run your local dev server before starting the tests
   // On CI, use production build (port 3001) for faster startup; locally use dev mode (port 3002)
   webServer: {
-    command: process.env.CI ? "pnpm start" : "pnpm dev",
+    command: process.env.CI ? "npm run start" : "npm run dev",
     url: process.env.CI ? "http://localhost:3001" : "http://localhost:3002",
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,

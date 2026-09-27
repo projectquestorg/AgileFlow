@@ -1,0 +1,147 @@
+---
+title: Artifacts
+description: "Product, roadmap, epics, stories, and decisions: frontmatter, statuses, IDs, and relationships."
+---
+
+## Product and roadmap
+
+`00-product/product.md` is the most stable artifact: problem, users, outcomes, principles, non-goals, and the **Definition of Done** that `working-story` and `reviewing-story` use. `01-roadmap/roadmap.md` is strategic (Now, Next, Later), not a list of story checkboxes; epics carry a `horizon` instead. Neither file has frontmatter, and not every heading needs to be filled in at once.
+
+## Epics
+
+An epic is a larger outcome. It answers why it matters, what changes for the user, what is in and out of scope, and how we will know it worked. Name it after the outcome ("Support team collaboration"), not the work ("Change DB schema and update components").
+
+```markdown
+---
+schema: 1
+type: epic
+id: EPIC-7M4K2P9Q
+title: Social authentication
+status: active
+horizon: now
+priority: p1
+---
+
+# Social Authentication
+
+## Problem
+## Outcome
+## Scope
+## Non-goals
+## Success
+## Constraints
+```
+
+| Field | Required | Values |
+| --- | --- | --- |
+| `schema`, `type`, `id`, `title`, `status` | yes | `status`: `proposed`, `active`, `done`, `cancelled` |
+| `horizon` | no | `now`, `next`, `later` |
+| `priority` | no | `p0` urgent, `p1` high, `p2` normal, `p3` low |
+| `legacy_id` | no | the v4 epic ID this epic was imported from (`work import v4`) |
+
+An epic does not list its stories. Each story says `epic: EPIC-...`, and `agileflow work show <epic>` derives the list. An epic cannot be closed cleanly while it has unfinished stories.
+
+## Stories
+
+A story is an independently actionable slice of work. It does not need an epic: small bugs and improvements are standalone stories. A bug is a story; there is no separate bug or task artifact.
+
+```markdown
+---
+schema: 1
+type: story
+id: STORY-3Q7MX2PK
+title: Add Google sign-in
+status: ready
+priority: p1
+epic: EPIC-7M4K2P9Q
+depends_on: []
+---
+
+# Add Google sign-in
+
+## Why
+## Outcome
+## Acceptance Criteria
+
+- [ ] Google appears as an authentication option.
+- [ ] A new Google user can create an account.
+
+## Constraints
+
+- Follow DEC-4C8M2Q7K for authentication provider integration.
+```
+
+| Field | Required | Values |
+| --- | --- | --- |
+| `schema`, `type`, `id`, `title`, `status` | yes | see statuses below |
+| `priority` | no | `p0` to `p3` |
+| `epic` | no | an epic ID |
+| `depends_on` | no | story IDs this story cannot reasonably finish before (not "related") |
+| `legacy_id` | no | the v4 story ID this story was imported from (`work import v4`) |
+
+Fields such as assignee, points, sprint, component, labels, or timestamps are not part of schema 1; `check` warns about unknown fields.
+
+**Acceptance criteria** are Markdown checkboxes describing observable completion. Check one (`- [x]`) only after verifying it, not because code was written.
+
+### Statuses
+
+| Status | Meaning |
+| --- | --- |
+| `backlog` | Valid work, not ready to start (requirements incomplete, not prioritized, waiting for a decision). |
+| `ready` | Clear enough to begin: outcome understood, criteria useful, main constraints and dependencies known. |
+| `in-progress` | Implementation is happening. |
+| `in-review` | Complete enough to be reviewed or merged. |
+| `blocked` | Cannot reasonably continue because of a known blocker. |
+| `done` | Meets the project's Definition of Done. |
+| `cancelled` | No longer intended to be completed. |
+
+Recommended flow:
+
+```text
+backlog → ready → in-progress → in-review → done
+
+in-progress → blocked      blocked → ready
+ready       → blocked      blocked → in-progress
+in-review   → blocked      in-review → in-progress
+done        → in-progress  (reopen)
+any active state → cancelled
+```
+
+`in-progress → done` is also normal where the repository has no review step. Other moves are allowed with a warning: the workflow is a default, not a prison.
+
+Epics follow `proposed → active → done` (plus `cancelled`, and `done → active` to reopen). Decisions follow `proposed → accepted → superseded`, or `proposed → rejected`. The same rule applies: other moves warn but are allowed.
+
+## Decisions
+
+Record a decision only when future work would otherwise rediscover the same choice and the reasoning matters: architecture, product constraints, providers, storage, compatibility. Not every choice.
+
+```markdown
+---
+schema: 1
+type: decision
+id: DEC-4C8M2Q7K
+title: Use Auth.js for social authentication
+status: accepted
+related:
+  - EPIC-7M4K2P9Q
+---
+
+# Use Auth.js for social authentication
+
+## Context
+## Decision
+## Why
+## Consequences
+```
+
+Statuses: `proposed`, `accepted`, `superseded`, `rejected`. `related` is optional.
+
+## IDs and file names
+
+IDs are `TYPE-XXXXXXXX`: `EPIC-`, `STORY-`, or `DEC-` plus 8 random Crockford Base32 characters (`0-9` and `A-Z` without `I`, `L`, `O`, `U`). There is no counter and no next-id file, so branches, worktrees, and parallel agents can create IDs without coordinating; a collision is astronomically unlikely (40 random bits per ID), and `agileflow check` reports duplicate IDs as errors if one ever happens. IDs never change.
+
+Files are named `<ID>-<initial-slug>.md`. The ID in the frontmatter is authoritative; the slug is for humans and is not renamed when the title changes. Commands accept unambiguous prefixes: `3Q7M`, `STORY-3Q7`, or `7m4k`.
+
+## Schemas
+
+Every structured artifact has `schema: 1` (the document format, not the AgileFlow version). JSON Schemas for editors are in the repository at `schemas/work/epic.schema.json`, `story.schema.json`, and `decision.schema.json`.

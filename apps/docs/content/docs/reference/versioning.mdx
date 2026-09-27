@@ -1,0 +1,33 @@
+---
+title: Versioning and compatibility
+description: "How AgileFlow versions the CLI, file formats, the registry, and skills, and how long old behavior is supported."
+---
+
+## The CLI
+
+The `agileflow` package follows [semantic versioning](https://semver.org). Releases are published to npm with provenance from the AgileFlow release workflow; prereleases (`5.1.0-alpha.1`) go to the `next` tag, stable releases to `latest`. `agileflow self-update` follows the channel you are on, and `agileflow self-update --to <version>` installs an exact version (also to roll back). The changelog lists every change.
+
+A project can require a CLI range (`agileflow: ">=5.1.0 <6"` in `agileflow.yaml`); commands that change the project refuse to run on other versions.
+
+## File formats
+
+`agileflow.yaml`, `agileflow.lock`, `config.yaml`, skill sidecars, packs, eval scenarios, and Work frontmatter carry a format version (`version: 1` or `schema: 1`), with JSON Schemas in the repository's `schemas/` directory.
+
+- New optional fields are added within a format version. A CLI keeps lockfile fields it does not know when it rewrites the file, so teammates on different minor versions can share a lockfile.
+- An incompatible change gets a new format version. An older CLI that meets it stops with an upgrade message instead of guessing; the newer CLI migrates the old format when it writes.
+- Rendered skill content can change between CLI versions (for example a clearer managed notice). `sync` leaves skills rendered by another version alone, so a team never ping-pongs files; `update` refreshes them.
+
+## The registry
+
+The registry API is versioned by path (`v1/`). `v1` stays backward compatible for as long as released CLIs read it; a breaking change would be published under `v2/` next to it. Published skill versions are immutable and never removed, so every lockfile keeps resolving.
+
+## Skills
+
+Each skill has its own semver version in `agileflow.skill.yaml`. A patch release fixes wording or evals, a minor release adds behavior, and a major release changes what the skill does or requires. `agileflow add` pins the major version (`^1.2.0`), so `update` never crosses a major version unless you change the range.
+
+## Deprecation policy
+
+- A command, flag, or config key that is replaced keeps working for at least one minor release and prints what to use instead (for example `doctor` became an alias of `check`, and `migrate --user` of `migrate --global`).
+- Removals happen only in a major release and are listed in the changelog under "Removed".
+- Exit codes are stable: `0` success, `1` error or problems found, `3` a non-interactive `update` skipped skills that need a decision. AgileFlow never exits `2`.
+- `--json` output shapes are additive within a major version: fields may be added, never renamed or removed.

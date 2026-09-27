@@ -1,0 +1,57 @@
+---
+title: Question preferences
+description: "How one project setting makes AgileFlow skills ask more or fewer questions, through a render overlay and each skill's interaction contract."
+---
+
+A question preference sets how AgileFlow skills approach ambiguity: ask before choosing, or assume and keep going. Set it once per project instead of saying "ask me questions" in every prompt.
+
+```yaml
+# agileflow.yaml
+interaction:
+  questionPreference: prefer   # provider-default | prefer | minimize
+```
+
+Change it with [`agileflow configure question-preference`](/commands/configure#question-preference).
+
+| Value | Meaning |
+| --- | --- |
+| `provider-default` | AgileFlow adds nothing (default). The provider's and model's own judgment applies. |
+| `prefer` | When multiple reasonable choices would materially change the result, the agent asks before choosing. It first resolves anything it can from the repository and its tools, and uses the provider's structured question tool when available, otherwise a brief plain-text question. |
+| `minimize` | The agent makes reasonable assumptions and continues. It asks only when blocked or when an unresolved ambiguity could materially change the result. It states the consequential assumptions in its final summary. |
+
+There are exactly three values on purpose. AgileFlow does not reproduce provider collaboration modes; it only sets how its own skills approach ambiguity.
+
+## Render overlays
+
+The preference is a **render overlay**. The skill as published (the source) never contains it. When AgileFlow installs a skill, it renders the source together with the preference into the copy in `.agents/skills/<id>`, adding one short instruction directly after the frontmatter (below the managed notice). The provider reads it only while that skill is active.
+
+There is no global prompt, hook, or runtime, and `AGENTS.md` / `CLAUDE.md` are never touched. The setting affects AgileFlow skills only, and it never changes activation: `interviewing-requirements` stays manual under every value.
+
+## The interaction contract
+
+Which skills get an overlay is decided by the skill's own contract, `capabilities.userInteraction` in `agileflow.skill.yaml`. The contract wins over the preference.
+
+| `userInteraction` | Contract | Overlay |
+| --- | --- | --- |
+| `none` | The skill completes without asking substantive workflow questions. Provider permission prompts do not count. | Never. `checking-blast-radius`, `verifying-changes`, `reviewing-changes`, `simplifying-explanations`, `reviewing-story`. |
+| `optional` | The skill can meet real product, design, or decision ambiguity where your input improves the result. | `prefer` or `minimize` as described above. `diagnosing-bugs`, `filing-pr`, `babysitting-pr`, `resolving-conflicts`, `creating-epics`, `writing-stories`, `working-story`, `recording-decisions`. |
+| `required` | Interacting with you is the point of the skill. | Under `prefer`, the same as `optional`. Under `minimize`, it still asks the questions the workflow requires, but skips unnecessary ones and resolves repository facts itself. `interviewing-requirements`. |
+
+## Changing the preference
+
+Changing the preference re-renders clean skills immediately. `agileflow.lock` tells a render change apart from an upstream change: `integrity` (the source package) stays the same and only `renderedHash` changes. See [agileflow.lock](/reference/agileflow-lock).
+
+A skill with local modifications keeps your text, and AgileFlow reports "question preference change not applied because the skill has local modifications". `agileflow diff <id>` still shows only your own edits: the installed base is rendered with the preference that produced it.
+
+## Project and personal values
+
+- The **project** value lives in `agileflow.yaml` (`interaction.questionPreference`) and changes the committed skill files, so everyone on the team gets the same behavior.
+- The **personal** default lives in `~/.config/agileflow/config.yaml` (`defaults.questionPreference`). It applies to your personal skills in `~/.agents/skills` and is copied into `agileflow.yaml` when you run `agileflow init` in a new project. It does not change existing projects, because their skill files are shared with other people.
+
+## Structured question tools
+
+The overlay tells the agent to use a structured question tool when the provider offers one. Whether Codex offers `request_user_input` during normal (Default mode) work is a separate, opt-in Codex setting: see [Codex structured questions](/commands/configure#codex-structured-questions). The preference works without it; the agent then asks in plain text.
+
+## Measuring it
+
+`agileflow eval --question-preference all` runs eval scenarios under all three values and compares how often the agent asked. The goal is a better decision boundary for when to ask, not more questions. See [Question preference evals](/commands/eval#question-preference-evals).

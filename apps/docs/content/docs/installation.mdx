@@ -6,15 +6,17 @@ description: "Install the AgileFlow CLI."
 AgileFlow requires **Node.js 20 or newer** and `git` (for `git+` skill sources).
 
 ```bash
-npm install -g agileflow
+npm install -g agileflow@next   # v5 prereleases; `agileflow` (latest) once 5.0.0 ships
 agileflow --version
 ```
 
 Or run it without installing:
 
 ```bash
-npx agileflow@latest init
+npx agileflow@next init
 ```
+
+Shell completion: `agileflow completion bash >> ~/.bashrc` (also `zsh` and `fish`). Update the CLI with `agileflow self-update`; roll back with `agileflow self-update --to <version>`. Every release is published with [npm provenance](https://docs.npmjs.com/generating-provenance-statements): `npm audit signatures` verifies it was built by the AgileFlow release workflow.
 
 The CLI is only needed to add, update, and check skills. Your coding agent never calls it.
 
@@ -24,8 +26,8 @@ The CLI is only needed to add, update, and check skills. Your coding agent never
 | --- | --- |
 | `agileflow.yaml`, `agileflow.lock` (project root) | Project skills: intent and exact resolution. Commit both. |
 | `.agents/skills/` | Installed project skills. Commit them to share with your team. |
-| `~/.config/agileflow/` | Personal configuration (`config.yaml`), personal lockfile, and records of provider settings AgileFlow changed at your request. On Windows: `%APPDATA%\AgileFlow`. |
-| `~/.cache/agileflow/` | Package cache (enables offline `sync`) and per-project sync records. On Windows: `%LOCALAPPDATA%\AgileFlow\cache`. |
+| `~/.config/agileflow/` | Personal configuration (`config.yaml`), personal lockfile, and records of provider settings AgileFlow changed at your request (`state.yaml`). Honors `XDG_CONFIG_HOME`. On Windows: `%APPDATA%\AgileFlow`. |
+| `~/.cache/agileflow/` | Package cache (enables offline `sync`), cached catalog (offline `search`), per-project sync records, scope locks, crash-recovery journals, and the local operation history (`agileflow history`). Honors `XDG_CACHE_HOME`. On Windows: `%LOCALAPPDATA%\AgileFlow\cache`. |
 
 No `.agileflow/` directory is created in your repository.
 
@@ -35,6 +37,14 @@ No `.agileflow/` directory is created in your repository.
 | --- | --- |
 | `AGILEFLOW_REGISTRY` | Use a different skill registry (URL or local directory). |
 | `AGILEFLOW_CONFIG_DIR`, `AGILEFLOW_CACHE_DIR` | Override the config and cache locations. |
+| `AGILEFLOW_HOME` | Use a different home directory (personal skills in `<home>/.agents/skills`). |
 | `AGILEFLOW_LINK_MODE` | `mirror` forces generated copies instead of links for Claude Code. |
 | `AGILEFLOW_NO_UPDATE_NOTIFIER` | Skip the "CLI update available" check in `agileflow update`. |
-| `AGILEFLOW_NON_INTERACTIVE` | Never prompt (same as running without a TTY). |
+| `AGILEFLOW_NON_INTERACTIVE`, `CI` | Never prompt (same as running without a TTY). |
+| `AGILEFLOW_DEBUG` | Print stack traces for unexpected errors (same as `--debug`). |
+| `AGILEFLOW_OFFLINE` | Never use the network; work from the package cache (same as `--offline`). |
+| `AGILEFLOW_ALLOW_INSECURE` | Allow plain `http://` registries and `http://`/`git://` git remotes (not recommended). |
+| `AGILEFLOW_REGISTRY_TIMEOUT`, `AGILEFLOW_GIT_TIMEOUT` | Seconds before a registry request or a git operation gives up (defaults 20 and 120). |
+| `AGILEFLOW_LOCK_TIMEOUT` | Seconds to wait for another AgileFlow command on the same project (default 30). |
+| `AGILEFLOW_NO_HISTORY` | Do not record changes in the local history. |
+| `AGILEFLOW_SKILLS_SH_URL` | Use a different skills.sh-compatible search service for `agileflow search`. |

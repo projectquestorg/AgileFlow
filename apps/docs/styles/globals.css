@@ -1,19 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "./legacy-themes.css";
 
-@import "../registry/styles/style-vega.css" layer(base);
-@import "../registry/styles/style-nova.css" layer(base);
-@import "../registry/styles/style-lyra.css" layer(base);
-@import "../registry/styles/style-maia.css" layer(base);
-@import "../registry/styles/style-mira.css" layer(base);
 
-@custom-variant style-vega (&:where(.style-vega *));
-@custom-variant style-nova (&:where(.style-nova *));
-@custom-variant style-lyra (&:where(.style-lyra *));
-@custom-variant style-maia (&:where(.style-maia *));
-@custom-variant style-mira (&:where(.style-mira *));
 
 @custom-variant dark (&:is(.dark *));
 @custom-variant fixed (&:is(.layout-fixed *));
@@ -26,7 +15,6 @@
   --breakpoint-4xl: 2000px;
   --font-sans: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  --font-serif: var(--font-serif), Georgia, "Times New Roman", Times, serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -81,97 +69,97 @@
 
 :root {
   --radius: 0.625rem;
-  /* Brand color: #e8683a (burnt orange) */
-  --brand: oklch(0.667 0.170 39.478);
-  --brand-foreground: oklch(1 0 0);
-  --brand-muted: oklch(0.75 0.12 39.478);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.667 0.170 39.478);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.95 0.03 39.478);
-  --accent-foreground: oklch(0.5 0.15 39.478);
+  /* Brand color: #BFC3C9 (Metallic Silver) */
+  --brand: #bfc3c9;
+  --brand-foreground: #09090b;
+  --brand-muted: oklch(0.7 0.006 270);
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #111113;
+  --card-foreground: #fafafa;
+  --popover: #111113;
+  --popover-foreground: #fafafa;
+  --primary: #bfc3c9;
+  --primary-foreground: #09090b;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.97 0.01 17);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.667 0.170 39.478);
-  --chart-1: oklch(0.667 0.170 39.478);
-  --chart-2: oklch(0.6 0.15 39.478);
-  --chart-3: oklch(0.55 0.14 39.478);
-  --chart-4: oklch(0.5 0.13 39.478);
-  --chart-5: oklch(0.45 0.12 39.478);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.667 0.170 39.478);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.97 0.02 39.478);
-  --sidebar-accent-foreground: oklch(0.5 0.15 39.478);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.667 0.170 39.478);
-  --surface: oklch(0.98 0 0);
-  --surface-foreground: var(--foreground);
+  --border: rgb(255 255 255 / 0.1);
+  --input: rgb(255 255 255 / 0.15);
+  --ring: #71717a;
+  --chart-1: oklch(0.78 0.008 270);
+  --chart-2: oklch(0.72 0.007 270);
+  --chart-3: oklch(0.66 0.006 270);
+  --chart-4: oklch(0.56 0.005 270);
+  --chart-5: oklch(0.45 0.004 270);
+  --sidebar: #09090b;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #bfc3c9;
+  --sidebar-primary-foreground: #09090b;
+  --sidebar-accent: #27272a;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: rgb(255 255 255 / 0.1);
+  --sidebar-ring: #71717a;
+  --surface: #111113;
+  --surface-foreground: #a1a1aa;
   --code: var(--surface);
   --code-foreground: var(--surface-foreground);
-  --code-highlight: oklch(0.96 0 0);
+  --code-highlight: #1c1c1f;
   --code-number: oklch(0.56 0 0);
-  --selection: oklch(0.667 0.170 39.478);
-  --selection-foreground: oklch(1 0 0);
+  --selection: #bfc3c9;
+  --selection-foreground: #09090b;
 }
 
 .dark {
-  /* Brand color (slightly brighter for dark mode) */
-  --brand: oklch(0.72 0.17 39.478);
-  --brand-foreground: oklch(0.145 0 0);
-  --brand-muted: oklch(0.6 0.12 39.478);
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.269 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.72 0.17 39.478);
-  --primary-foreground: oklch(0.145 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.3 0.06 39.478);
-  --accent-foreground: oklch(0.85 0.12 39.478);
+  /* Brand color: Metallic Silver in dark mode */
+  --brand: #bfc3c9;
+  --brand-foreground: #09090b;
+  --brand-muted: oklch(0.7 0.006 270);
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #111113;
+  --card-foreground: #fafafa;
+  --popover: #111113;
+  --popover-foreground: #fafafa;
+  --primary: #bfc3c9;
+  --primary-foreground: #09090b;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.58 0.22 27);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.72 0.17 39.478);
-  --chart-1: oklch(0.72 0.17 39.478);
-  --chart-2: oklch(0.65 0.15 39.478);
-  --chart-3: oklch(0.6 0.14 39.478);
-  --chart-4: oklch(0.55 0.13 39.478);
-  --chart-5: oklch(0.5 0.12 39.478);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.72 0.17 39.478);
-  --sidebar-primary-foreground: oklch(0.145 0 0);
-  --sidebar-accent: oklch(0.3 0.05 39.478);
-  --sidebar-accent-foreground: oklch(0.85 0.12 39.478);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.72 0.17 39.478);
-  --surface: oklch(0.2 0 0);
-  --surface-foreground: oklch(0.708 0 0);
+  --border: rgb(255 255 255 / 0.1);
+  --input: rgb(255 255 255 / 0.15);
+  --ring: #71717a;
+  --chart-1: oklch(0.78 0.008 270);
+  --chart-2: oklch(0.72 0.007 270);
+  --chart-3: oklch(0.66 0.006 270);
+  --chart-4: oklch(0.56 0.005 270);
+  --chart-5: oklch(0.45 0.004 270);
+  --sidebar: #09090b;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #bfc3c9;
+  --sidebar-primary-foreground: #09090b;
+  --sidebar-accent: #27272a;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: rgb(255 255 255 / 0.1);
+  --sidebar-ring: #71717a;
+  --surface: #111113;
+  --surface-foreground: #a1a1aa;
   --code: var(--surface);
   --code-foreground: var(--surface-foreground);
-  --code-highlight: oklch(0.27 0 0);
+  --code-highlight: #1c1c1f;
   --code-number: oklch(0.72 0 0);
-  --selection: oklch(0.72 0.17 39.478);
-  --selection-foreground: oklch(0.145 0 0);
+  --selection: #bfc3c9;
+  --selection-foreground: #09090b;
 }
 
 @layer base {
@@ -191,94 +179,91 @@
     font-family: var(--font-sans);
   }
 
-  /* Claude Code docs style: Serif headings */
+  /* Headings match the website: Inter, medium weight, tight tracking */
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-serif) !important;
-    font-weight: 400 !important;
-    color: oklch(0.25 0 0) !important;
+    font-family: var(--font-sans) !important;
+    font-weight: 500 !important;
+    letter-spacing: -0.02em;
+    color: var(--foreground) !important;
   }
 
-  /* Dark mode: whiter headers */
-  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
-    color: oklch(0.95 0 0) !important;
-  }
-
-  /* Brand color accents for links */
+  /* Silver metallic accents for links */
   a:hover {
-    color: var(--brand);
+    color: var(--primary);
   }
 
-  /* Brand color for strong text in content */
+  /* Silver for strong text in content */
   .prose strong, article strong {
-    color: var(--brand);
+    color: var(--primary);
   }
 
-  /* Brand color accents throughout */
+  /* Silver accents throughout */
   [data-active="true"],
   [aria-current="page"],
   .active {
-    color: var(--brand) !important;
-    border-color: var(--brand) !important;
+    color: var(--primary) !important;
+    border-color: var(--primary) !important;
   }
 
   /* Sidebar active items */
   nav a[aria-current="page"],
   nav a[data-active="true"] {
-    color: var(--brand) !important;
-    background-color: oklch(from var(--brand) l c h / 0.1) !important;
+    color: var(--primary) !important;
+    background-color: oklch(0.78 0.008 270 / 0.1) !important;
   }
 
-  /* Focus ring with brand color */
+  /* Focus ring with silver */
   :focus-visible {
-    outline-color: var(--brand) !important;
+    outline-color: var(--primary) !important;
   }
 
-  /* Scrollbar with brand color */
+  /* Scrollbar with silver */
   ::-webkit-scrollbar-thumb {
-    background-color: oklch(from var(--brand) l c h / 0.3);
+    background-color: oklch(0.78 0.008 270 / 0.3);
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: var(--brand);
+    background-color: var(--primary);
   }
 
-  /* Dark mode: more brand color usage */
+  /* Dark mode: silver accents */
   .dark a:hover {
-    color: var(--brand) !important;
+    color: var(--primary) !important;
   }
 
   .dark nav a[aria-current="page"],
   .dark nav a[data-active="true"] {
-    color: var(--brand) !important;
-    background-color: oklch(from var(--brand) l c h / 0.15) !important;
-    border-left-color: var(--brand) !important;
+    color: var(--primary) !important;
+    background-color: var(--accent) !important;
+    border-left-color: var(--primary) !important;
   }
 
   .dark [data-active="true"],
   .dark [aria-current="page"] {
-    color: var(--brand) !important;
+    color: var(--primary) !important;
   }
 
-  /* Dark mode brand colored borders */
+  /* Dark mode silver borders */
   .dark .border-primary,
   .dark [data-slot="sidebar"] [data-active="true"] {
-    border-color: var(--brand) !important;
+    border-color: var(--primary) !important;
   }
 
   /* Dark mode blockquotes */
   .dark blockquote {
-    border-left-color: var(--brand) !important;
+    border-left-color: var(--primary) !important;
   }
 
-  /* Dark mode code blocks with brand accent */
-  .dark pre {
-    border-left: 2px solid var(--brand);
+  /* Code blocks: hairline border like the website's cards */
+  .dark figure[data-rehype-pretty-code-figure] {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
   }
 
-  /* Package manager tabs brand accent */
+  /* Package manager tabs accent */
   [data-slot="copy-button"] {
-    color: var(--brand);
+    color: var(--primary);
   }
 
   /* Claude Code docs style: JetBrains Mono for code */

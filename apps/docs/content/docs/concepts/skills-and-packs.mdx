@@ -22,31 +22,43 @@ diagnosing-bugs/
 schema: 1
 package:
   name: "@agileflow/diagnosing-bugs"
-  version: "1.0.0"
+  version: "1.0.1"
 activation:
-  mode: auto            # or manual
+  mode: auto                # or manual
 requirements:
-  commands: []          # e.g. [git, gh]
-  network: none         # none | optional | required
+  commands: []              # e.g. [git, gh]
+  network: none             # none | optional | required
 capabilities:
   modifiesFiles: possible
   longRunning: false
-  userInteraction: none # none | optional | required
+  userInteraction: optional # none | optional | required (see below)
 compatibility:
   agentSkills: true
 ```
 
+`userInteraction` is a contract about substantive questions, not tool permission prompts:
+
+- `none`: the skill is expected to complete without asking the user workflow questions.
+- `optional`: the skill may meet legitimate product, design, or decision ambiguity where the user's input improves the result.
+- `required`: interacting with the user is the point of the skill.
+
+The contract decides whether the project's [question preference](/concepts/question-preferences) adds an overlay to the skill.
+
 ### How a skill is installed
 
-When AgileFlow writes a skill to `.agents/skills/<id>`, it:
+The published package is the **source**; what lands in `.agents/skills/<id>` is the **rendered** skill. When AgileFlow renders a skill, it:
 
 1. leaves out `evals/`;
 2. sets the frontmatter `name` to the install id;
-3. adds a notice after the frontmatter: `<!-- Managed by AgileFlow. Run agileflow fork <id> before customizing this copy. -->`;
-4. adds one line for [question preference](/commands/configure#question-preference) to interactive skills, when set;
+3. adds a notice after the frontmatter:
+   ```text
+   <!-- Managed by AgileFlow.
+   Run `agileflow fork <id>` before customizing this copy. -->
+   ```
+4. adds the [question preference](/concepts/question-preferences) overlay to skills whose `userInteraction` is `optional` or `required`, when a preference is set;
 5. translates `activation: manual` for every provider (see [Providers](/concepts/providers#manual-skills)).
 
-The result is deterministic, so AgileFlow can tell exactly whether you edited a skill: the hash of the directory is compared with `baseHash` in the lockfile.
+The result is deterministic. The lockfile records both hashes: `integrity` for the source package and `renderedHash` for the rendered directory. AgileFlow can therefore tell exactly whether you edited a skill (the directory no longer matches `renderedHash`), and whether only the render inputs changed (same `integrity`, new rendering), in which case `sync` re-renders clean skills.
 
 ### Automatic and manual skills
 
@@ -63,11 +75,10 @@ A pack is a named list of skills with version ranges. It has no runtime, hooks, 
 
 ```yaml
 name: github
-version: 1
+version: 2
 skills:
   - "@agileflow/filing-pr@^1"
   - "@agileflow/babysitting-pr@^1"
-  - "@agileflow/resolving-conflicts@^1"
 ```
 
 The official skills and packs are listed in [Official skills](/reference/official-skills).

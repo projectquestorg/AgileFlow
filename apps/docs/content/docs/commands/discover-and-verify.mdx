@@ -1,0 +1,116 @@
+---
+title: search, info, verify, history
+description: "Find skills in the official catalog and skills.sh, preview them, verify what you run, and see what changed."
+---
+
+## agileflow search
+
+```bash
+agileflow search pdf                       # official catalog + skills.sh
+agileflow search release notes --source official
+agileflow search pdf --source skills.sh --limit 50 --json
+```
+
+`search` looks in two places:
+
+- the **official catalog** (the AgileFlow registry, or the one you configured). It works offline from the cached catalog.
+- the public **[skills.sh](https://skills.sh)** directory of GitHub-hosted Agent Skills. Results show the repository and install count, and the exact argument to install one, for example `agileflow add anthropics/skills/pdf`.
+
+skills.sh results are third-party content: preview them with `info` before installing. `add` shows a content scan and asks for confirmation.
+
+## agileflow info
+
+```bash
+agileflow info diagnosing-bugs            # latest version
+agileflow info diagnosing-bugs@1.0.0      # a specific version
+agileflow info @agileflow/github          # a pack: its skills
+agileflow info anthropics/skills/pdf --content   # also print SKILL.md
+agileflow info owner/repo --skill release-notes --ref v2 --json
+```
+
+Everything worth knowing before installing: versions, commit (git), integrity (and whether this AgileFlow release pins it), activation, the Agent Skills fields `license`, `compatibility`, `allowed-tools`, and `metadata`, requirements, files, and the content scan. Nothing is written.
+
+## agileflow verify
+
+```bash
+agileflow verify                     # every skill in agileflow.lock
+agileflow verify diagnosing-bugs
+agileflow verify --attestations      # also check GitHub build attestations (needs gh)
+agileflow verify --fail-on high      # CI gate on content findings
+agileflow verify --global --json
+agileflow verify --sbom > skills.cdx.json   # CycloneDX SBOM of the locked skills
+```
+
+```text
+SKILL                  VERSION  INTEGRITY    FILES  FINDINGS
+checking-blast-radius  1.0.1    ok (pinned)  clean  0H 0M 0L
+diagnosing-bugs        1.0.1    ok (pinned)  clean  0H 0M 0L
+release-notes          local    ok           clean  0H 1M 0L
+Verified 3 skill(s).
+```
+
+For each locked skill `verify`:
+
+1. fetches the exact locked package (from the cache, or the registry or git) and checks it against the lockfile integrity;
+2. for official packages, checks it against the integrity **pinned into this AgileFlow release**, so a compromised registry or mirror cannot substitute content for a version the CLI knows;
+3. checks the installed files (`clean`, `modified`, `missing`);
+4. scans the content (see [Security](/concepts/security#content-scanning));
+5. with `--attestations`, runs `gh attestation verify` on the official bundle to confirm it was built by the AgileFlow repository's workflow (Sigstore-signed provenance).
+
+It exits `1` when an integrity or attestation check fails, or when findings reach `--fail-on`. `--sbom` prints a [CycloneDX](https://cyclonedx.org) 1.5 bill of materials instead: one component per skill with its version, source (registry package or git repository and commit), declared license, and the verification results, for inventory and license tooling. Unlike `check`, which never uses the network, `verify` downloads what is not cached.
+
+## agileflow history
+
+```bash
+agileflow history            # this project
+agileflow history --global   # personal skills
+agileflow history --all --limit 50 --json
+```
+
+A local record of every command that changed skills: when, what, the result, and which third-party content you approved (`deployer@1.2.0 from git+https://...`). It lives in the cache directory, never in the repository. Turn it off with `AGILEFLOW_NO_HISTORY=1`.
+
+## agileflow create
+
+```bash
+agileflow create releasing-packages \
+  --description "Prepares and publishes a release. Use when the user asks to cut, tag, or publish a version." \
+  --trigger "Cut a 2.3.0 release and publish it." \
+  --not-trigger "What does semantic versioning mean?"
+```
+
+Scaffolds `skills/<name>/` with a `SKILL.md` (a Workflow and a "Done when" section), an `agileflow.skill.yaml`, and eval scenarios built from your trigger examples (plus an unrelated negative), then lints it. Interactive runs ask for the description and examples. Edit the workflow, then:
+
+```bash
+agileflow eval --lint skills/releasing-packages                 # release gate
+agileflow eval skills/releasing-packages --provider claude      # activation precision and recall
+agileflow add ./skills/releasing-packages                       # use it (evals are not installed)
+```
+
+Publish it by pushing the directory to a Git repository; others add it with `agileflow add owner/repo/releasing-packages`, and it appears on skills.sh once installed from GitHub.
+
+## agileflow registry
+
+```bash
+agileflow registry build --scope myorg   # skills/ + packs/ -> registry/
+agileflow registry check --scope myorg   # verify it is current and its history intact
+```
+
+Builds a static registry for your team from a directory of skills, with the same format, integrity, and append-only rules as the official catalog. See [A registry for your team](/concepts/sources#a-registry-for-your-team).
+
+## agileflow completion
+
+```bash
+agileflow completion bash >> ~/.bashrc
+agileflow completion zsh > "${fpath[1]}/_agileflow"
+agileflow completion fish > ~/.config/fish/completions/agileflow.fish
+```
+
+## agileflow self-update
+
+```bash
+agileflow self-update                 # newest version on your channel (next for prereleases)
+agileflow self-update --dry-run
+agileflow self-update --to 5.0.0      # pin or roll back
+```
+
+Updates a global npm install in place (`npm install --global agileflow@<version>`); for `npx` or local installs it prints the command to use. Skill updates are separate: `agileflow update`.

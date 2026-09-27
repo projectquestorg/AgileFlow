@@ -26,12 +26,12 @@ Project skills are materialized into the repository (not linked to a cache) so t
 If the same skill exists in both places, project-level generally wins where the provider's own discovery works that way. AgileFlow adds no precedence rules of its own; `agileflow check` reports it as information:
 
 ```text
-[--] filing-pr has a project override of your global skill
+[--] filing-pr exists in both this project and your personal skills
 ```
 
 ## Personal defaults
 
-`~/.config/agileflow/config.yaml` also holds personal defaults, such as the question preference new projects start with:
+`~/.config/agileflow/config.yaml` also holds personal defaults, such as the [question preference](/concepts/question-preferences) new projects start with (it also applies to your personal skills), and optionally a `registry`:
 
 ```yaml
 version: 1
@@ -45,3 +45,7 @@ globalSkills:
     source: "@agileflow/filing-pr"
     version: "^1.0.0"
 ```
+
+## The home directory is not a project
+
+Your home directory holds personal skills in `~/.agents/skills`. A project rooted there would share that directory and capture every repository below it, so AgileFlow never treats `~` as a project: `init` refuses to create one there (use `--global` for personal skills), and the search for `agileflow.yaml` stops below the home directory. `check --global` warns about a leftover `~/agileflow.yaml`.

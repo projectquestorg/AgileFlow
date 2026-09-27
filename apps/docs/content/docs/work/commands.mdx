@@ -1,0 +1,198 @@
+---
+title: Commands
+description: "agileflow work init, new, list, show, status, and board, plus validation in agileflow check."
+---
+
+All Agile functionality lives under one namespace. Every command accepts `--json` for agents.
+
+```bash
+agileflow work init
+agileflow work new epic|story|decision --title "..."
+agileflow work list
+agileflow work show <id>
+agileflow work status <id> <status>
+agileflow work board
+```
+
+There is no `work delete` (set `status: cancelled` to keep history) and no `work doctor`: `agileflow check` validates the workspace.
+
+## work init
+
+```bash
+agileflow work init                 # docs/agile
+agileflow work init --root planning # another directory
+agileflow work init --no-skills     # workspace and CLI only
+agileflow work init --yes           # no questions (adopts a compatible existing workspace)
+agileflow work init --json          # machine-readable result
+```
+
+```text
+AgileFlow Work organizes durable product work using:
+  product
+  roadmap
+  epics
+  stories
+  decisions
+Workspace:
+  docs/agile
+Install Agile workflow skills?
+  [x] creating-epics
+  [x] writing-stories
+  [x] working-story
+  [x] reviewing-story
+Continue? yes
+```
+
+It adds `work: { enabled: true, root: docs/agile }` to `agileflow.yaml` (creating it if needed), creates `README.md`, `00-product/product.md`, and `01-roadmap/roadmap.md`, and installs the `agile` pack (including `recording-decisions`) unless you decline. If Git ignores the workspace directory (for example a `/docs/` rule in `.gitignore`), `work init` warns and names the rule: work items only help a team when they are committed. `agileflow init` offers the same setup ("Enable AgileFlow Work?").
+
+If the directory already exists, nothing is overwritten. A compatible workspace is adopted after confirmation (`--yes` confirms); an incompatible one (unexpected folders such as `09-agents/`, subfolders in `03-stories/`, unreadable artifacts) is explained and left untouched, and the command exits `1`. Running `work init` again recreates missing starter files without touching the others.
+
+## work new
+
+```bash
+agileflow work new epic --title "Social authentication" --horizon now --priority p1
+agileflow work new story --epic 7M4K --title "Add Google sign-in"
+agileflow work new story --title "Fix duplicate invoice email"          # standalone
+agileflow work new story --title "Account linking" --depends-on 3Q7M
+agileflow work new decision --title "Use Auth.js" --related 7M4K
+```
+
+```text
+Created STORY-3Q7MX2PK
+docs/agile/03-stories/STORY-3Q7MX2PK-add-google-sign-in.md
+```
+
+With `--json`: `{"id": "STORY-3Q7MX2PK", "type": "story", "path": "docs/agile/03-stories/..."}`. New items start as `proposed` (epics, decisions) or `backlog` (stories) unless `--status` says otherwise. References must exist.
+
+## work list
+
+```bash
+agileflow work list
+agileflow work list --type epic          # grouped by horizon
+agileflow work list --status ready
+agileflow work list --epic 7M4K
+agileflow work list --status ready --json
+agileflow work list --ready              # stories that can start now
+agileflow work list --type stories       # singular or plural
+```
+
+`--ready` lists stories that are `ready` or `backlog` and whose every `depends_on` story is `done`. Each story in `--json` output carries its derived readiness:
+
+```json
+{
+  "id": "STORY-3Q7MX2PK",
+  "type": "story",
+  "title": "Add Google sign-in",
+  "status": "ready",
+  "path": "docs/agile/03-stories/STORY-3Q7MX2PK-add-google-sign-in.md",
+  "priority": "p1",
+  "epic": "EPIC-7M4K2P9Q",
+  "depends_on": ["STORY-T9K2P4VC"],
+  "acceptanceCriteria": { "total": 4, "checked": 0 },
+  "dependenciesDone": false,
+  "waitingOn": ["STORY-T9K2P4VC"],
+  "ready": false
+}
+```
+
+## work show
+
+```bash
+agileflow work show 3Q7M
+agileflow work show 3Q7M --body          # also print the Markdown
+```
+
+```text
+STORY-3Q7MX2PK
+Add Google sign-in
+Status:    ready
+Priority:  p1
+Epic:      EPIC-7M4K2P9Q  Social authentication
+Dependencies:
+  none
+Acceptance Criteria:
+  0 / 4 complete
+Path:      docs/agile/03-stories/STORY-3Q7MX2PK-add-google-sign-in.md
+```
+
+A story also lists the stories that depend on it ("Needed by") and the decisions that reference it. For an epic it derives the stories (grouped by status), related decisions, and progress. For a decision it lists the related items.
+
+## work status
+
+```bash
+agileflow work status 3Q7M in-progress
+```
+
+```text
+STORY-3Q7MX2PK
+ready -> in-progress
+```
+
+Only the `status:` line changes; the rest of the file stays byte-for-byte identical. Invalid values are rejected. Moves outside the recommended flow, marking a story done with unchecked criteria, and starting a story whose dependencies are not done are allowed with a warning. Closing an epic with unfinished stories is refused unless you pass `--force` (cancel the stories you do not intend to finish instead).
+
+## work board
+
+```bash
+agileflow work board
+```
+
+```text
+AGILEFLOW WORK
+NOW
+EPIC-7M4K2P9Q  Social authentication            active    1/4 done
+  READY
+    STORY-3Q7MX2PK  Google sign-in              p1
+  IN PROGRESS
+    STORY-T9K2P4VC  Auth provider abstraction   p1
+  BLOCKED
+    STORY-H5D2V8NA  Apple sign-in               p2
+STANDALONE
+  READY
+    STORY-Q6M2J7NK  Fix invoice email            p1
+
+! STORY-3Q7MX2PK Google sign-in is marked ready
+  but depends on STORY-T9K2P4VC Auth provider abstraction (in-progress)
+```
+
+Computed from story frontmatter on every run; nothing is written. Done and cancelled work is summarized in epic progress.
+
+## work import v4
+
+```bash
+agileflow work import v4 --preview   # show the plan, write nothing
+agileflow work import v4 --yes       # import
+```
+
+Converts a v4 backlog (`docs/05-epics/`, `docs/06-stories/`, and `docs/09-agents/status.json`) into Work epics and stories with new IDs. Titles, bodies and acceptance criteria, epic links, dependencies, and priorities are kept; v4 statuses are mapped onto the Work lifecycle (the original is shown in the plan). Each imported item records its v4 ID in `legacy_id`, so running the import again skips what was already imported. The v4 files are never changed or deleted; remove them yourself once you are happy with the result.
+
+## Integrating with agent orchestrators
+
+Agile Work is not an orchestrator and does not run agents. Multi-agent tools (a Kanban of agents, parallel worktrees, a CI bot) can drive it through the JSON interface:
+
+1. `agileflow work list --ready --json` returns the stories an agent can pick up now.
+2. The orchestrator assigns a story and moves it: `agileflow work status STORY-... in-progress --json`.
+3. The agent works the story (the `working-story` skill), then `in-review`; `reviewing-story` checks every criterion before `done`.
+4. `agileflow work board --json` gives the whole picture, including stories marked ready whose dependencies are unfinished.
+
+IDs are random (`STORY-` plus 8 Crockford Base32 characters), so parallel agents on different branches can create items without coordinating. Collisions are astronomically unlikely, and `agileflow check` reports duplicate IDs as errors if one ever happens (for example after copying a file).
+
+In `--json` mode every `work` command prints exactly one JSON document on stdout. Errors are `{"ok": false, "error": {"code": "...", "message": "...", "hints": [...]}}` with exit code `1`.
+
+## Validation in agileflow check
+
+When Work is enabled, `agileflow check` adds a section:
+
+```text
+Agile Work
+  [ok] workspace structure valid
+  [ok] 4 epics
+  [ok] 23 stories
+  [ok] 3 decisions
+  [ok] no duplicate IDs
+  [ok] no missing epic references
+  [ok] dependency graph valid
+  [!] STORY-A72D... is marked ready but depends on STORY-M88Q... (in-progress)
+Result: healthy with 1 warning
+```
+
+Errors (the check fails): duplicate IDs, invalid frontmatter or unknown statuses, unknown epic, dependency, or decision references, dependency cycles, and epics marked done with unfinished stories. Warnings: done stories with unchecked acceptance criteria, ready stories with unfinished dependencies, IDs mentioned in a body that do not exist, fields outside schema 1, and files that do not belong in the workspace. `check` never changes a status.

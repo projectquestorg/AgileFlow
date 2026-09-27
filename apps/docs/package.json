@@ -13,19 +13,11 @@
     "typecheck": "tsc --noEmit",
     "format:write": "prettier --write \"**/*.{ts,tsx,mdx}\" --cache",
     "format:check": "prettier --check \"**/*.{ts,tsx,mdx}\" --cache",
-    "icons:dev": "tsx --tsconfig ./tsconfig.scripts.json ./scripts/build-icons.ts --watch",
-    "registry:build": "tsx --tsconfig ./tsconfig.scripts.json ./scripts/build-registry.mts && prettier --log-level silent --write \"registry/**/*.{ts,tsx,json,mdx}\" --cache",
-    "registry": "tsx --tsconfig ./tsconfig.scripts.json ./scripts/build-registry.mts",
-    "registry:capture": "tsx --tsconfig ./tsconfig.scripts.json ./scripts/capture-registry.mts",
-    "validate:registries": "tsx --tsconfig ./tsconfig.scripts.json ./scripts/validate-registries.mts",
     "postinstall": "fumadocs-mdx",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
-    "test:e2e:update": "playwright test --update-snapshots",
-    "translate": "tsx --tsconfig ./tsconfig.scripts.json ./scripts/translate-docs.ts",
-    "translate:es": "tsx --tsconfig ./tsconfig.scripts.json ./scripts/translate-docs.ts es",
-    "translate:dry": "tsx --tsconfig ./tsconfig.scripts.json ./scripts/translate-docs.ts --dry-run"
+    "test:e2e:update": "playwright test --update-snapshots"
   },
   "dependencies": {
     "@base-ui/react": "1.0.0-rc.2",
@@ -175,5 +167,6 @@
       "@ianvs/prettier-plugin-sort-imports",
       "prettier-plugin-tailwindcss"
     ]
-  }
+  },
+  "description": "AgileFlow documentation site"
 }

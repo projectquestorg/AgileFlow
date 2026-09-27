@@ -7,7 +7,7 @@ description: "sync reproduces the lockfile exactly; update intentionally changes
 | --- | --- | --- |
 | Changes versions | Never | Yes, within the ranges in `agileflow.yaml` |
 | Reads | `agileflow.lock` | `agileflow.yaml` and the registry |
-| Writes the lockfile | Only for enable/disable and activation changes | Yes |
+| Writes the lockfile | Only for enable/disable, activation, and render changes (`renderedHash`) | Yes |
 | Network | Not needed when the packages are cached | Needed for registry and git sources |
 | Use after | `git clone`, `git pull`, switching branches | When you want newer skills |
 
@@ -17,14 +17,24 @@ Make the filesystem match `agileflow.lock`:
 
 1. Read `agileflow.yaml` and `agileflow.lock`.
 2. Verify each package's integrity.
-3. Materialize exactly the locked versions into `.agents/skills`.
+3. Materialize exactly the locked versions into `.agents/skills`, and re-render clean skills whose render inputs changed (activation, [question preference](/concepts/question-preferences)). A skill rendered by a different AgileFlow version is left as committed (no churn between teammates); `update` refreshes it.
 4. Create or refresh provider compatibility links and mirrors.
 5. Remove stale AgileFlow-owned output (skills that left the lockfile, only if unmodified).
 6. Run a lightweight provider check and print any problems.
 
-`sync` never overwrites a locally modified skill. If `agileflow.yaml` lists a skill the lockfile does not, or a range the locked version no longer satisfies, `sync` stops and tells you to run `agileflow update`.
+`sync` never overwrites a locally modified skill; it warns when an activation or question preference change could not be applied to one. If `agileflow.yaml` lists a skill the lockfile does not, a range the locked version no longer satisfies, or a different git `ref`, `sync` stops and tells you to run `agileflow update`.
+
+```bash
+agileflow sync --dry-run         # what would change; nothing is written
+agileflow sync --json            # machine-readable report
+agileflow sync --offline         # guarantee no network access
+```
+
+Writes are journaled: if `sync` (or any command) is interrupted, the next command finishes or rolls back the interrupted skills, so none is left half-written or wrongly reported as modified. Two AgileFlow commands on one project never run at the same time; the second waits for the first.
 
 Locked packages are cached in `~/.cache/agileflow/packages/`, so `sync` works offline once a version has been downloaded.
+
+`agileflow sync --global` does the same for personal skills. `sync` exits `1` when a skill could not be restored or a provider check reports an error.
 
 ## agileflow update
 
@@ -34,9 +44,11 @@ Resolve newer versions allowed by `agileflow.yaml`, update the lockfile, and syn
 agileflow update                     # all skills, asks before applying
 agileflow update diagnosing-bugs     # specific skills
 agileflow update --dry-run           # show what would change
-agileflow update --yes               # apply without the confirmation
+agileflow update --yes               # apply without the confirmation, including third-party changes
+agileflow update --dry-run --json    # the plan for scripts and bots
 agileflow update --non-interactive   # CI: never prompt, never overwrite edits
-agileflow update --reset diagnosing-bugs   # discard local edits of this skill
+agileflow update --reset diagnosing-bugs   # discard local edits of this skill (repeatable)
+agileflow update --global            # personal skills
 ```
 
 ```text
@@ -47,7 +59,9 @@ All managed skills are clean.
 Apply? yes
 ```
 
-Clean managed skills are upgraded. Locally modified ones are never overwritten without an explicit choice. See [Updates and conflicts](/guides/updates-and-conflicts).
+Clean managed skills are upgraded. Locally modified ones are never overwritten without an explicit choice. See [Updates and conflicts](/guides/updates-and-conflicts). A downgrade (a narrowed range) is labeled as such.
+
+**Third-party changes** (git sources, local paths outside the project, non-`@agileflow` registries) are shown with their diff and [content findings](/concepts/security#content-scanning) before you confirm. Non-interactive runs skip them unless `--yes` approves them, so new instructions from someone else's repository never reach your agent unreviewed. `update` never installs over a skill directory AgileFlow does not own, even if you add its name to `agileflow.yaml`.
 
 `update` also reports forks whose upstream has moved on, and prints `AgileFlow CLI update available: X -> Y` when a newer CLI is published. CLI and skill versions are independent.
 
@@ -57,4 +71,4 @@ Clean managed skills are upgraded. Locally modified ones are never overwritten w
 | --- | --- |
 | `0` | Success |
 | `1` | Error |
-| `3` | `--non-interactive` skipped skills with local modifications |
+| `3` | A non-interactive run (`--non-interactive`, no TTY, or `CI`) skipped skills that need a decision: local modifications, or third-party changes not approved with `--yes`. Other skills were updated. |

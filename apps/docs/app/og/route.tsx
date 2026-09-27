@@ -45,14 +45,17 @@ export async function GET(request: Request) {
   return new ImageResponse(
     (
       <div
-        tw="flex h-full w-full bg-black text-white"
-        style={{ fontFamily: "Geist Sans" }}
+        tw="flex h-full w-full text-white"
+        style={{
+          fontFamily: "Geist Sans",
+          backgroundColor: "#09090B"
+        }}
       >
-        <div tw="flex border absolute border-stone-700 border-dashed inset-y-0 left-16 w-[1px]" />
-        <div tw="flex border absolute border-stone-700 border-dashed inset-y-0 right-16 w-[1px]" />
-        <div tw="flex border absolute border-stone-700 inset-x-0 h-[1px] top-16" />
-        <div tw="flex border absolute border-stone-700 inset-x-0 h-[1px] bottom-16" />
-        <div tw="flex absolute flex-row bottom-24 right-24 text-white">
+        <div tw="flex border absolute border-[#27272A] border-dashed inset-y-0 left-16 w-[1px]" />
+        <div tw="flex border absolute border-[#27272A] border-dashed inset-y-0 right-16 w-[1px]" />
+        <div tw="flex border absolute border-[#27272A] inset-x-0 h-[1px] top-16" />
+        <div tw="flex border absolute border-[#27272A] inset-x-0 h-[1px] bottom-16" />
+        <div tw="flex absolute flex-row bottom-24 right-24" style={{ color: "#BFC3C9" }}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 256 256"
@@ -86,7 +89,7 @@ export async function GET(request: Request) {
         </div>
         <div tw="flex flex-col absolute w-[896px] justify-center inset-32">
           <div
-            tw="tracking-tight flex-grow-1 flex flex-col justify-center leading-[1.1]"
+            tw="tracking-tight flex-grow-1 flex flex-col justify-center leading-[1.1] text-white"
             style={{
               textWrap: "balance",
               fontWeight: 600,
@@ -97,10 +100,11 @@ export async function GET(request: Request) {
             {title}
           </div>
           <div
-            tw="text-[40px] leading-[1.5] flex-grow-1 text-stone-400"
+            tw="text-[40px] leading-[1.5] flex-grow-1"
             style={{
               fontWeight: 500,
               textWrap: "balance",
+              color: "#A1A1AA"
             }}
           >
             {description}

@@ -1,33 +1,51 @@
 ---
 title: Official skills and packs
-description: "The nine official AgileFlow skills and the three official packs."
+description: "The fourteen official AgileFlow skills and the four official packs."
 ---
 
-Every official skill is small (30 to 45 lines), ends with an explicit "Done when" completion condition, stays provider-neutral, and ships with at least four eval scenarios including prompts that must not trigger it.
+Every official skill is small (under 60 lines), ends with an explicit "Done when" completion condition, stays provider-neutral, and ships with at least three eval scenarios, including prompts that must not trigger it.
 
 ## Skills
 
-| Skill | Activation | Requires | What it does |
-| --- | --- | --- | --- |
-| `diagnosing-bugs` | auto | | Reproduce, separate symptoms from the root cause, make the smallest fix that explains the evidence, verify the original failure is gone. |
-| `checking-blast-radius` | auto | | Find what a change could break elsewhere, and prove or disprove the one or two assumptions it depends on. Includes a checklist of surfaces where changes leak. |
-| `verifying-changes` | auto | | Produce the smallest meaningful proof that a changed behavior works, rather than running everything. |
-| `reviewing-changes` | auto | `git` | Review the actual diff for correctness, regressions, missing behavior, scope mistakes, and security where relevant, with a location and failure scenario for every finding. |
-| `filing-pr` | auto | `git`, `gh`, network | Check for an existing PR, follow title conventions, lead with the problem, include verification evidence, open the PR, return its URL. |
-| `babysitting-pr` | auto | `git`, `gh`, network | Monitor CI and review feedback, fix verified issues, keep scope, and stop at a defined done state (required checks green, feedback resolved, no merge blocker). |
-| `resolving-conflicts` | auto | `git` | Resolve merge/rebase conflicts by understanding both sides' intent, then verify and finish the operation. |
-| `interviewing-requirements` | manual | | Ask a few high-value questions (after checking the repository first) until there is a shared, actionable plan. Uses structured questions when the provider offers them, plain text otherwise. |
-| `simplifying-explanations` | manual | | Re-explain code, an error, or a previous answer at a simpler level. |
+| Skill | Pack | Activation | Requires | What it does |
+| --- | --- | --- | --- | --- |
+| `diagnosing-bugs` | core | auto | | Reproduce, separate symptoms from the root cause, make the smallest fix that explains the evidence, verify the original failure is gone. |
+| `checking-blast-radius` | core | auto | | Find what a change could break elsewhere, and prove or disprove the one or two assumptions it depends on. Activates when you ask about impact, or before finishing a change to a public API, shared contract, migration, or cross-package interface; not for local edits. Includes a checklist of surfaces where changes leak. |
+| `verifying-changes` | core | auto | | Produce the smallest meaningful proof that a changed behavior works, rather than running everything. Not for writing a test suite for existing code. |
+| `reviewing-changes` | core | auto | `git` (network optional) | Review the actual diff for correctness, regressions, missing behavior, scope mistakes, and security where relevant, with a location and failure scenario for every finding. Judging a story against its acceptance criteria is `reviewing-story`'s job. |
+| `resolving-conflicts` | core | auto | `git` | Resolve merge, rebase, cherry-pick, or stash conflicts by understanding both sides' intent, then verify and finish the operation. |
+| `filing-pr` | github | auto | `git`, `gh`, network | Check for an existing PR, follow title conventions, lead with the problem, include verification evidence, open the PR, return its URL. Includes the story ID when the work is tied to an [Agile Work](/work) story. If `gh` cannot create the PR, hands you the drafted title and description instead. |
+| `babysitting-pr` | github | auto | `git`, `gh`, network | Monitor CI and review feedback, fix verified issues, keep scope, and stop at a defined done state (required checks green, feedback resolved, no merge blocker). Falls back to bounded polling on hosts without a blocking watch or background tasks. |
+| `interviewing-requirements` | communication | manual | | Ask a few high-value questions (after checking the repository first) until there is a shared, actionable plan. Uses structured questions when the provider offers them, plain text otherwise. |
+| `simplifying-explanations` | communication | manual | | Re-explain code, a concept, an error, or a previous answer at a simpler level. |
+| `creating-epics` | agile | auto | | Create or refine an outcome-level [Agile Work](/work) epic: problem, outcome, scope, non-goals, success signals. No stories unless asked. |
+| `writing-stories` | agile | auto | | Break an epic or requirement into vertical-slice stories with observable acceptance criteria and only real dependencies. |
+| `working-story` | agile | auto | | Implement a story from its acceptance criteria through verification; check only verified criteria; end in the right status. |
+| `reviewing-story` | agile | auto | | Review an implementation against its story criterion by criterion, and refuse to close a story that is not delivered. |
+| `recording-decisions` | agile | auto | | Record a decision that has been made (context, decision, reasons, consequences) in the Work `04-decisions/` folder when Work is enabled, otherwise in the repository's existing ADR directory, following its format. Supersedes old records instead of rewriting them. |
 
 Invoke manual skills by name, for example "use the interviewing-requirements skill and grill me about the onboarding redesign", `/interviewing-requirements` in Claude Code, or `$interviewing-requirements` in Codex.
+
+## Interaction contracts
+
+Each skill declares `capabilities.userInteraction`, which decides whether the project's [question preference](/concepts/question-preferences) applies to it:
+
+| `userInteraction` | Skills |
+| --- | --- |
+| `none` (no overlay) | `checking-blast-radius`, `verifying-changes`, `reviewing-changes`, `simplifying-explanations`, `reviewing-story` |
+| `optional` | `diagnosing-bugs`, `filing-pr`, `babysitting-pr`, `resolving-conflicts`, `creating-epics`, `writing-stories`, `working-story`, `recording-decisions` |
+| `required` | `interviewing-requirements` |
 
 ## Packs
 
 | Pack | Skills | Notes |
 | --- | --- | --- |
-| `@agileflow/core` | `diagnosing-bugs`, `checking-blast-radius`, `verifying-changes`, `reviewing-changes` | Installed by `agileflow init --yes`. |
-| `@agileflow/github` | `filing-pr`, `babysitting-pr`, `resolving-conflicts` | Pull request workflows through `gh` or your provider's GitHub tooling. |
+| `@agileflow/core` | `diagnosing-bugs`, `checking-blast-radius`, `verifying-changes`, `reviewing-changes`, `resolving-conflicts` | Everyday engineering workflows. Installed by `agileflow init --yes`. |
+| `@agileflow/github` | `filing-pr`, `babysitting-pr` | Pull request workflows for GitHub repositories. Requires the GitHub CLI (`gh`), authenticated, with network access. |
 | `@agileflow/communication` | `interviewing-requirements`, `simplifying-explanations` | Manually invoked interaction styles. |
+| `@agileflow/agile` | `creating-epics`, `writing-stories`, `working-story`, `reviewing-story`, `recording-decisions` | [Agile Work](/work/skills) workflows. Offered by `agileflow work init`. `recording-decisions` also works without Work (it writes to your ADR directory), so you can add it on its own with `agileflow add recording-decisions`. |
+
+Every pack entry uses a `^1` range.
 
 ```bash
 agileflow add @agileflow/github
