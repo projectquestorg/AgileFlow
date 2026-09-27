@@ -1,0 +1,24 @@
+{
+  "name": "@agileflow/babysitting-pr",
+  "version": "1.1.2",
+  "integrity": "sha256-8DVIUvsdLSFul7oOfUUaGtNn6uGrrizxfFAmd/yaAkI=",
+  "url": "packages/@agileflow/babysitting-pr/1.1.2.json",
+  "metadata": {
+    "description": "Monitor a pull request through CI and review feedback, fixing real failures and verified review findings until required checks are green and no actionable feedback or merge blocker remains. Use when the user asks to watch, monitor, shepherd, babysit, or keep an eye on a PR, or to handle whatever CI and reviewers raise on an open PR until it is ready or green. Not for opening a new PR or doing a one-off code review.",
+    "activation": "auto",
+    "files": 6,
+    "references": [],
+    "scripts": [],
+    "requirements": {
+      "commands": [
+        "git",
+        "gh"
+      ],
+      "network": "required"
+    }
+  },
+  "compatibility": {
+    "agentSkills": true,
+    "bundleFormat": 1
+  }
+}

@@ -3,11 +3,12 @@
   "skills": [
     {
       "name": "@agileflow/babysitting-pr",
-      "description": "Monitor a pull request through CI and review feedback, fixing real failures and verified review findings until required checks are green and no actionable feedback or merge blocker remains. Use when the user asks to watch, monitor, shepherd, or babysit a PR until it is ready or green. Not for opening a new PR or doing a one-off code review.",
-      "latest": "1.1.1",
+      "description": "Monitor a pull request through CI and review feedback, fixing real failures and verified review findings until required checks are green and no actionable feedback or merge blocker remains. Use when the user asks to watch, monitor, shepherd, babysit, or keep an eye on a PR, or to handle whatever CI and reviewers raise on an open PR until it is ready or green. Not for opening a new PR or doing a one-off code review.",
+      "latest": "1.1.2",
       "versions": [
         "1.0.0",
-        "1.1.1"
+        "1.1.1",
+        "1.1.2"
       ]
     },
     {
@@ -65,9 +66,10 @@
     {
       "name": "@agileflow/resolving-conflicts",
       "description": "Resolve git merge, rebase, cherry-pick, or stash conflicts by understanding the intent of both sides and producing a combined result that preserves both behaviors where compatible, then verifying and completing the operation. Use when a merge or rebase stops with conflicts, files contain conflict markers, or the user asks to fix, resolve, or get through merge conflicts.",
-      "latest": "1.0.0",
+      "latest": "1.0.1",
       "versions": [
-        "1.0.0"
+        "1.0.0",
+        "1.0.1"
       ]
     },
     {

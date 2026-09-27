@@ -1,7 +1,7 @@
 schema: 1
 package:
   name: "@agileflow/babysitting-pr"
-  version: "1.1.1"
+  version: "1.1.2"
 activation:
   mode: auto
 requirements:

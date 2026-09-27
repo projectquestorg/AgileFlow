@@ -1,6 +1,6 @@
 ---
 name: babysitting-pr
-description: Monitor a pull request through CI and review feedback, fixing real failures and verified review findings until required checks are green and no actionable feedback or merge blocker remains. Use when the user asks to watch, monitor, shepherd, or babysit a PR until it is ready or green. Not for opening a new PR or doing a one-off code review.
+description: Monitor a pull request through CI and review feedback, fixing real failures and verified review findings until required checks are green and no actionable feedback or merge blocker remains. Use when the user asks to watch, monitor, shepherd, babysit, or keep an eye on a PR, or to handle whatever CI and reviewers raise on an open PR until it is ready or green. Not for opening a new PR or doing a one-off code review.
 ---
 
 # Babysitting a PR

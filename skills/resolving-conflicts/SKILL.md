@@ -18,7 +18,7 @@ Merge intent, not text. Neither side is right by default.
    - If both modify the same logic, write a combined version that preserves both behaviors.
    - If they genuinely contradict (one side deletes what the other extends, or they encode incompatible behavior), stop and ask the user which intent wins, explaining the trade-off. When structured user-question tooling is available, prefer it for this choice; otherwise ask concisely in normal text.
 4. **Handle non-textual conflicts correctly:**
-   - Lockfiles and generated files: take one side, then regenerate with the project's tool rather than hand-merging.
+   - Lockfiles and generated files: never edit their conflict markers by hand. Take one side (`git checkout --ours <file>` or `--theirs`), resolve the manifest it comes from (for example `package.json`) first, then regenerate with the project's tool (`npm install`, `pnpm install`, `yarn install`, `cargo generate-lockfile`, the codegen script) and stage the result. Hand-merge only if regeneration is impossible here, and say so in the report.
    - Renames/deletions: check whether the other side's edits need to move to the new location.
    - Check for semantic conflicts that git did not flag: a renamed function still called by the old name in newly merged code, changed signatures, duplicate imports or definitions.
 5. **Verify.** Search for leftover markers (`<<<<<<<`, `=======`, `>>>>>>>`) across the repository, then run the build/type-check and the tests relevant to the conflicted files.
@@ -27,6 +27,7 @@ Merge intent, not text. Neither side is right by default.
 ## Constraints
 
 - Never blindly resolve with `--ours`/`--theirs` or "accept all" for a whole file unless you have confirmed one side's change is fully superseded.
+- Never hand-merge a lockfile or generated file when the tool that produces it can run.
 - Do not widen scope: no refactors, formatting sweeps, or unrelated fixes while resolving.
 - Do not run `git merge --abort`, `git rebase --abort`, `git reset --hard`, or force-push without explicit permission.
 - Do not commit with failing verification without telling the user.

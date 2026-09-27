@@ -3,7 +3,8 @@
 export const OFFICIAL_PINS: Record<string, Record<string, string>> = {
   "@agileflow/babysitting-pr": {
     "1.0.0": "sha256-lZzuxxX/sL/ZfAA/lbbbmtMmMbV8leV/rspPoTn8LaY=",
-    "1.1.1": "sha256-/cvtgmO1qdbRbRVmPlPryPHJQlGWhpYh+Wx9+21YWD4="
+    "1.1.1": "sha256-/cvtgmO1qdbRbRVmPlPryPHJQlGWhpYh+Wx9+21YWD4=",
+    "1.1.2": "sha256-8DVIUvsdLSFul7oOfUUaGtNn6uGrrizxfFAmd/yaAkI="
   },
   "@agileflow/checking-blast-radius": {
     "1.0.0": "sha256-VyIb+9zFN1mOS1WY2E4T6rc2J7/b0WOri5tV7Cm+aN8=",
@@ -28,7 +29,8 @@ export const OFFICIAL_PINS: Record<string, Record<string, string>> = {
     "1.0.0": "sha256-hLSm0hKZJAoE4Ktpd/8XqlyHJjM+aXm4FJmtaAzCKHk="
   },
   "@agileflow/resolving-conflicts": {
-    "1.0.0": "sha256-QFYa6A9L13y5NGqR1XasOcHdiLtJcjL50aY7+A1UQcs="
+    "1.0.0": "sha256-QFYa6A9L13y5NGqR1XasOcHdiLtJcjL50aY7+A1UQcs=",
+    "1.0.1": "sha256-hhhVqfgGgatupwW0Co0N5SXT2lCWHy0k3FS17LxANhI="
   },
   "@agileflow/reviewing-changes": {
     "1.0.0": "sha256-RpTDg6JXFdPNAcf1Uy5oEShHD6q9ARqNX5oLhYO9N2Q=",
