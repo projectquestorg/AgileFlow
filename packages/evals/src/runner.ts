@@ -557,6 +557,7 @@ async function executeRun(ctx: RunContext, runIndex: number): Promise<RunResult>
         model: options.model,
         timeoutMs: options.timeoutMs ?? 300000,
         env: runEnv,
+        sandboxCommands: Object.keys(scenario.bin ?? {}),
       });
     } catch (err) {
       transcript = emptyTranscript(driver.id, (err as Error).message);

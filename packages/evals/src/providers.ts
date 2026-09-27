@@ -17,6 +17,8 @@ export interface EvalRunInput {
   model?: string;
   timeoutMs: number;
   env: Record<string, string | undefined>;
+  /** Commands the scenario supplies as sandbox stand-ins (its `bin:` block); full runs may call them without asking. */
+  sandboxCommands?: string[];
 }
 
 export interface ToolCall {
@@ -162,6 +164,46 @@ export function parseClaudeStream(stdout: string): Omit<Transcript, 'provider' |
   };
 }
 
+/** Claude Code print-mode arguments for an eval run. */
+export function claudeArgs(input: EvalRunInput): string[] {
+  const prompt = input.invocation === 'explicit' ? `/${input.skillId} ${input.prompt}` : input.prompt;
+  const args = [
+    '-p',
+    prompt,
+    '--output-format',
+    'stream-json',
+    '--verbose',
+    '--max-turns',
+    input.mode === 'activation' ? '8' : '30',
+    '--permission-mode',
+    input.mode === 'activation' ? 'default' : 'acceptEdits',
+  ];
+  // Activation runs must not change the sandbox; unapproved tools are denied in print mode.
+  if (input.mode === 'activation') args.push('--disallowedTools', 'Edit', 'Write', 'NotebookEdit');
+  // Full runs may verify their work without stopping to ask for permission,
+  // so "the agent asked the user" measures real questions, not approvals.
+  if (input.mode === 'full') {
+    args.push(
+      '--allowedTools',
+      'Bash(npm test:*)',
+      'Bash(npm install:*)',
+      'Bash(node --test:*)',
+      'Bash(git status:*)',
+      'Bash(git diff:*)',
+      'Bash(git log:*)',
+      'Bash(git show:*)',
+      'Bash(git add:*)',
+      'Bash(git commit:*)',
+      'Bash(git rebase:*)',
+      'Bash(git merge:*)',
+      'Bash(git push:*)',
+      ...(input.sandboxCommands ?? []).map((c) => `Bash(${c}:*)`),
+    );
+  }
+  if (input.model) args.push('--model', input.model);
+  return args;
+}
+
 export const claudeDriver: EvalDriver = {
   id: 'claude',
   displayName: 'Claude Code',
@@ -171,33 +213,7 @@ export const claudeDriver: EvalDriver = {
   },
   explicitPrompt: (id, prompt) => `/${id} ${prompt}`,
   async run(input) {
-    const prompt = input.invocation === 'explicit' ? this.explicitPrompt(input.skillId, input.prompt) : input.prompt;
-    const args = [
-      '-p',
-      prompt,
-      '--output-format',
-      'stream-json',
-      '--verbose',
-      '--max-turns',
-      input.mode === 'activation' ? '8' : '30',
-      '--permission-mode',
-      input.mode === 'activation' ? 'default' : 'acceptEdits',
-    ];
-    // Activation runs must not change the sandbox; unapproved tools are denied in print mode.
-    if (input.mode === 'activation') args.push('--disallowedTools', 'Edit', 'Write', 'NotebookEdit');
-    // Full runs may verify their work without stopping to ask for permission,
-    // so "the agent asked the user" measures real questions, not approvals.
-    if (input.mode === 'full') {
-      args.push(
-        '--allowedTools',
-        'Bash(npm test:*)',
-        'Bash(node --test:*)',
-        'Bash(git status:*)',
-        'Bash(git diff:*)',
-        'Bash(git log:*)',
-      );
-    }
-    if (input.model) args.push('--model', input.model);
+    const args = claudeArgs(input);
     const res = await runProcess('claude', args, { cwd: input.cwd, env: input.env, timeoutMs: input.timeoutMs });
     const parsed = parseClaudeStream(res.stdout);
     // Using up the turn budget is a finished run (scored), not a crash.

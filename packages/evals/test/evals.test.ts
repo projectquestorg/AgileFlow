@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  claudeArgs,
   claudeDriver,
   codexDriver,
   geminiDriver,
@@ -118,6 +119,18 @@ describe('transcript parsing', () => {
     const outOfTurns = { ...slash, explicitSkill: 'simplifying-explanations', exitCode: 1 };
     expect(claudeDriver.activated(base({ ...outOfTurns, resultSubtype: 'error_max_turns' }), 'simplifying-explanations')).toBe(true);
     expect(claudeDriver.activated(base(outOfTurns), 'simplifying-explanations')).toBe(false);
+  });
+
+  it('Claude: full runs pre-approve scenario stand-ins and local git writes; activation stays read-only', () => {
+    const input = { cwd: '/x', prompt: 'p', skillId: 's', invocation: 'implicit' as const, timeoutMs: 1, env: {} };
+    const full = claudeArgs({ ...input, mode: 'full', sandboxCommands: ['gh'] });
+    expect(full).toContain('Bash(gh:*)');
+    expect(full).toContain('Bash(git add:*)');
+    expect(full).toContain('Bash(npm install:*)');
+    const activation = claudeArgs({ ...input, mode: 'activation', sandboxCommands: ['gh'] });
+    expect(activation).not.toContain('Bash(gh:*)');
+    expect(activation).toEqual(expect.arrayContaining(['--disallowedTools', 'Edit', 'Write']));
+    expect(claudeArgs({ ...input, mode: 'full', invocation: 'explicit' })[1]).toBe('/s p');
   });
 
   it('Codex: reading SKILL.md counts as activation', () => {
