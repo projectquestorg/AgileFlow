@@ -5,6 +5,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [5.0.0-alpha.1] - 2026-09-27
+
+Portable skill manager with Agile Work and hardened installs.
+
 AgileFlow v5: portable workflows for coding agents. A clean break from v4.
 
 ### Added

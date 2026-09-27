@@ -1,6 +1,6 @@
 {
   "name": "agileflow",
-  "version": "5.0.0-alpha.0",
+  "version": "5.0.0-alpha.1",
   "description": "Portable workflows for coding agents: install, update, fork, and evaluate Agent Skills across Codex, Claude Code, Cursor, OpenCode, and Gemini CLI",
   "keywords": [
     "agent-skills",
