@@ -1,0 +1,15 @@
+schema: 1
+package:
+  name: "@agileflow/diagnosing-bugs"
+  version: "1.0.1"
+activation:
+  mode: auto
+requirements:
+  commands: []
+  network: none
+capabilities:
+  modifiesFiles: possible
+  longRunning: false
+  userInteraction: optional
+compatibility:
+  agentSkills: true

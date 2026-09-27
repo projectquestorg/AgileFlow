@@ -3,9 +3,7 @@
     "allow": [
       "Bash(npm run build:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(node scripts/agileflow-welcome.js:*)",
-      "Bash(bash scripts/agileflow-statusline.sh:*)"
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
