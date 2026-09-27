@@ -217,7 +217,9 @@ export const claudeDriver: EvalDriver = {
     if (t.toolCalls.some((c) => skillPathRe(id).test(c.input))) return true;
     // In print mode an explicit `/skill` prompt expands the skill without a
     // stream event; it loads exactly when Claude registered that command.
-    if (t.explicitSkill === id && t.exitCode === 0 && t.slashCommands?.includes(id)) return true;
+    // Running out of turns afterwards still means the skill was loaded.
+    const finished = t.exitCode === 0 || t.resultSubtype === 'error_max_turns';
+    if (t.explicitSkill === id && finished && t.slashCommands?.includes(id)) return true;
     return t.userMessages.some((m) => m.includes(`<command-name>/${id}</command-name>`) || m.includes(`skills/${id}`));
   },
 };

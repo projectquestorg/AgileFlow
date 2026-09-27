@@ -115,6 +115,9 @@ describe('transcript parsing', () => {
     const slash = parseClaudeStream(lines({ type: 'system', subtype: 'init', skills: ['x'], slash_commands: ['simplifying-explanations'] }));
     expect(claudeDriver.activated(base({ ...slash, explicitSkill: 'simplifying-explanations' }), 'simplifying-explanations')).toBe(true);
     expect(claudeDriver.activated(base({ ...slash, explicitSkill: 'other' }), 'other')).toBe(false);
+    const outOfTurns = { ...slash, explicitSkill: 'simplifying-explanations', exitCode: 1 };
+    expect(claudeDriver.activated(base({ ...outOfTurns, resultSubtype: 'error_max_turns' }), 'simplifying-explanations')).toBe(true);
+    expect(claudeDriver.activated(base(outOfTurns), 'simplifying-explanations')).toBe(false);
   });
 
   it('Codex: reading SKILL.md counts as activation', () => {
