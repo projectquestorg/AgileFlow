@@ -127,6 +127,7 @@ describe('transcript parsing', () => {
     expect(full).toContain('Bash(gh:*)');
     expect(full).toContain('Bash(git add:*)');
     expect(full).toContain('Bash(npm install:*)');
+    expect(full).toContain('Bash(node:*)');
     const activation = claudeArgs({ ...input, mode: 'activation', sandboxCommands: ['gh'] });
     expect(activation).not.toContain('Bash(gh:*)');
     expect(activation).toEqual(expect.arrayContaining(['--disallowedTools', 'Edit', 'Write']));

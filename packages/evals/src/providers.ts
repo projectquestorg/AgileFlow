@@ -188,6 +188,7 @@ export function claudeArgs(input: EvalRunInput): string[] {
       'Bash(npm test:*)',
       'Bash(npm install:*)',
       'Bash(node --test:*)',
+      'Bash(node:*)',
       'Bash(git status:*)',
       'Bash(git diff:*)',
       'Bash(git log:*)',
