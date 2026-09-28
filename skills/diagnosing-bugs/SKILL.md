@@ -13,7 +13,7 @@ Establish evidence before changing code.
 2. **Inspect** the relevant code and runtime evidence: stack traces, logs, recent commits touching the area (`git log -p` on the suspect files is often the fastest lead for regressions).
 3. **Separate symptoms from causes.** The line that throws is often not the line that is wrong. Trace the bad value or state back to where it was introduced.
 4. **Test the most plausible hypotheses** with cheap experiments (a targeted log, a narrowed test case, a bisect) before editing production code. Discard hypotheses the evidence contradicts.
-5. **Fix the smallest root cause** that explains all of the evidence. If the fix only makes the symptom disappear, keep going.
+5. **Fix the smallest root cause** that explains all of the evidence. If the fix only makes the symptom disappear, keep going. When more than one fix is reasonable and they trade off differently (security, behavior users see, compatibility, cost), that is a decision, not a detail: name the options and the trade-off before editing, then ask or choose according to the project's question preference, and say which option you took and why.
 6. **Verify** the original failure no longer reproduces, using the same reproduction from step 1.
 7. **Add focused regression coverage** when it meaningfully protects the fix and the project has a test setup for that area.
 
