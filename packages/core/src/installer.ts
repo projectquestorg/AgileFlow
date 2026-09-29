@@ -1,19 +1,21 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import semver from 'semver';
-import { InteractionPreferenceSchema, type Activation, type LockEntry, type SkillSpec } from './config';
+import { InteractionPreferenceSchema, type Activation, type InteractionPreference, type LockEntry, type SkillSpec } from './config';
 import { OperationError, settledValue, startLimited, type OperationEvent } from './errors';
 import { pathExists, toPosix, type TreeFile } from './fs';
-import { matchesRenderedHash, renderedHashOf } from './hash';
+import { matchesRenderedHash, renderedRecordOf } from './hash';
 import { applyChanges, type ApplyResult } from './links';
-import { inspectSkill, readSkillTree } from './ownership';
-import { packageActivation, renderSkill } from './render';
+import { assertReplaceable, inspectSkill, readSkillTree, type SkillSnapshot } from './ownership';
+import { packageActivation, RENDERER_REVISION, renderInputsFor, renderSkill } from './render';
 import { scanSkill, type RiskFinding } from './scan';
+import { reviewTrust, type TrustReview } from './trust';
 import { isSameDir, skillDir, skillRelPath, type ScopeTarget } from './scope';
 import { COMMIT_RE } from './config';
 import { defaultRange, parseSource, resolvePathSource } from './source';
 import { readSyncState, writeSyncState, type SyncState } from './state';
 import { MAX_NAME_LENGTH, SKILL_NAME_RE, summarizeTree, type SkillSummary } from './skill';
-import { commitSkillWrites, type SkillWrite } from './transaction';
+import { commitSkillWrites, committedBefore, type SkillWrite } from './transaction';
 import type { FetchedPackage, PlannedChange, ProviderContext, ResolvedSkill } from './types';
 import { loadWorkspace, saveLock, type Services, type Workspace } from './workspace';
 
@@ -38,10 +40,27 @@ export function effectiveActivation(spec: SkillSpec | undefined, fallback: Activ
   return spec?.activation ?? fallback;
 }
 
-/** Third-party content: anything that is not an official `@agileflow` registry package or a local skill. */
-export function isExternalSource(source: string): boolean {
+export const NEEDS_APPROVAL = 'third-party change needs approval';
+
+/**
+ * Third-party content that `sync` only writes with approval: git sources and
+ * non-official registries. Path sources are exempt because their content is
+ * part of the repository being synced.
+ */
+function syncNeedsApproval(services: Services, entry: LockEntry, approved: string | undefined): boolean {
+  if (parseSource(entry.source).kind === 'path') return false;
+  if (!isExternalSource(entry.source, services.fetcher.officialRegistry !== false)) return false;
+  return approved !== entry.integrity;
+}
+
+/**
+ * Third-party content: anything that is not an official `@agileflow` registry
+ * package or a local skill. `@agileflow/*` names only count as official when
+ * the registry was not chosen by the repository (`officialRegistry`).
+ */
+export function isExternalSource(source: string, officialRegistry = true): boolean {
   const ref = parseSource(source);
-  return !(ref.kind === 'registry' && ref.name.startsWith('@agileflow/'));
+  return !(officialRegistry && ref.kind === 'registry' && ref.name.startsWith('@agileflow/'));
 }
 
 // ---------------------------------------------------------------------------
@@ -65,13 +84,19 @@ export function renderFor(
   });
 }
 
-/** The lock entry recording `rendered` as the installed content of `pkg`. */
+/**
+ * The lock entry recording `rendered` as the installed content of `pkg`:
+ * the installed-file record (hash, rule version, executable files), this
+ * CLI's renderer revision, and the render inputs (`activation` and the
+ * question overlay `interactionPreference` produced).
+ */
 export function lockEntryFor(
   id: string,
   pkg: FetchedPackage,
   rendered: TreeFile[],
   activation: Activation,
-  spec?: SkillSpec,
+  spec: SkillSpec | undefined,
+  interactionPreference: InteractionPreference,
 ): LockEntry {
   const gitRef = spec?.ref && parseSource(pkg.source).kind === 'git' ? spec.ref : undefined;
   return {
@@ -81,7 +106,9 @@ export function lockEntryFor(
     ...(gitRef ? { ref: gitRef } : {}),
     integrity: pkg.integrity,
     path: skillRelPath(id),
-    renderedHash: renderedHashOf(rendered),
+    ...renderedRecordOf(rendered),
+    renderer: RENDERER_REVISION,
+    ...renderInputsFor(pkg.files, interactionPreference),
     activation,
     ownership: 'managed',
   };
@@ -92,16 +119,84 @@ export function localLockEntry(id: string, spec: SkillSpec, activation: Activati
 }
 
 /**
- * True when `entry.renderedHash` was produced with a question preference
- * other than the current one: the render difference is a preference change
- * (apply it), not a different AgileFlow version's renderer (leave it).
+ * Legacy entries (no recorded render inputs): true when `entry.renderedHash`
+ * was produced with a question preference other than the current one, so
+ * the render difference is a preference change (apply it), not a different
+ * AgileFlow version's renderer (leave it).
  */
 function renderedWithOtherPreference(services: Services, ws: Workspace, id: string, pkg: FetchedPackage, entry: LockEntry): boolean {
   return InteractionPreferenceSchema.options.some(
     (preference) =>
       preference !== ws.questionPreference &&
-      matchesRenderedHash(renderFor(services, ws, id, pkg, entry.activation, preference), entry.renderedHash),
+      matchesRenderedHash(renderFor(services, ws, id, pkg, entry.activation, preference), entry, { execBits: true }),
   );
+}
+
+/**
+ * True when the configuration asks for a different render than the lock
+ * recorded (activation or question overlay changed): apply it. Entries with
+ * recorded inputs (`renderer` present) compare them; legacy entries fall back
+ * to reproducing the hash with the other preferences.
+ */
+export function renderInputsChanged(
+  services: Services,
+  ws: Workspace,
+  id: string,
+  pkg: FetchedPackage,
+  entry: LockEntry,
+  activation: Activation,
+): boolean {
+  if (activation !== entry.activation) return true;
+  if (entry.renderer === undefined) {
+    // Reproducing the hash with the current settings means nothing changed,
+    // even when other preferences would render the same (no overlay applies).
+    if (matchesRenderedHash(renderFor(services, ws, id, pkg, activation), entry, { execBits: true })) return false;
+    return renderedWithOtherPreference(services, ws, id, pkg, entry);
+  }
+  return renderInputsFor(pkg.files, ws.questionPreference).questionOverlay !== entry.questionOverlay;
+}
+
+/**
+ * Info text for a clean skill whose lock records another renderer than this
+ * CLI's, or null when the renderers agree. Nothing is rewritten for it:
+ * `agileflow update` lists the re-render and applies it on request.
+ */
+export function rendererDrift(entry: LockEntry): string | null {
+  if (entry.renderer === RENDERER_REVISION) return null;
+  if (entry.renderer === undefined) {
+    return 'rendered by another AgileFlow version (renderer not recorded); left as committed. `agileflow update` re-renders it with this CLI';
+  }
+  if (entry.renderer > RENDERER_REVISION) {
+    return `rendered by AgileFlow renderer ${entry.renderer}; this CLI uses renderer ${RENDERER_REVISION}. Left as committed; upgrade AgileFlow to reproduce it`;
+  }
+  return `rendered by AgileFlow renderer ${entry.renderer}; this CLI uses renderer ${RENDERER_REVISION}. Left as committed; \`agileflow update\` re-renders it with this CLI`;
+}
+
+/**
+ * True when `files` are exactly what this CLI renders for the locked package
+ * and recorded inputs, and that render is not the locked one: a copy restored
+ * by a CLI whose renderer differs from the one the lock records. Not a user
+ * edit, so `check` and `update` treat it as clean. When this CLI reproduces
+ * the lock, any difference is an edit. `execBits` as for `inspectSkill`.
+ */
+export function isOwnRender(
+  services: Services,
+  ws: Workspace,
+  id: string,
+  entry: LockEntry,
+  pkg: FetchedPackage,
+  files: TreeFile[],
+  options: { execBits?: boolean } = {},
+): boolean {
+  if (entry.ownership !== 'managed' || pkg.integrity !== entry.integrity) return false;
+  const preference = entry.renderer === undefined ? ws.questionPreference : (entry.questionOverlay ?? 'provider-default');
+  try {
+    const own = renderFor(services, ws, id, pkg, entry.activation, preference);
+    if (matchesRenderedHash(own, entry, { execBits: true })) return false;
+    return matchesRenderedHash(files, renderedRecordOf(own), options);
+  } catch {
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -239,6 +334,8 @@ export function compareConfigToLock(services: Services, ws: Workspace): LockMism
 // ---------------------------------------------------------------------------
 
 export interface SyncReport {
+  /** Third-party writes that were not approved (left as they are). */
+  needsApproval?: PendingApproval[];
   materialized: string[];
   rerendered: string[];
   removed: string[];
@@ -260,10 +357,25 @@ export interface SyncOptions {
    * they could).
    */
   mismatch?: 'throw' | 'report';
-  /** Re-render clean skills whose rendering changed with the CLI version (`update`). */
-  refresh?: boolean;
   /** Report what would change without writing anything (`sync --dry-run`). */
   dryRun?: boolean;
+  /**
+   * Write third-party content this machine has not installed before (a
+   * teammate's lock change, a fresh clone). Without it, and without
+   * `confirmExternal` agreeing, such skills are kept as they are with
+   * `NEEDS_APPROVAL`.
+   */
+  approveExternal?: boolean;
+  /** Interactive review of the pending third-party writes; true approves all of them. */
+  confirmExternal?: (pending: PendingApproval[]) => Promise<boolean>;
+}
+
+export interface PendingApproval {
+  id: string;
+  source: string;
+  version: string;
+  resolved?: string;
+  trust: TrustReview;
 }
 
 /**
@@ -302,6 +414,15 @@ export async function syncWorkspace(services: Services, ws: Workspace, options: 
   }
   let lockChanged = false;
   const writes: SkillWrite[] = [];
+  const previous = await readSyncState(services.ctx, ws.scope);
+  // Skills whose locked content is on disk after this run (verified clean or
+  // written): only these are recorded as installed, and so approved, here.
+  const verified = new Set<string>();
+  // Skills written with a render that differs from the lock (this CLI's
+  // renderer): what is really on disk, so this machine recognizes its own copy.
+  const written = new Map<string, string>();
+  // Third-party writes wait here until approved (see `syncNeedsApproval`).
+  const gated: Array<{ write: SkillWrite; pending: PendingApproval; bucket: 'materialized' | 'rerendered' }> = [];
 
   // Download what the loop below needs in parallel (bounded), then decide per skill.
   const states = new Map<string, Awaited<ReturnType<typeof inspectSkill>>>();
@@ -360,7 +481,27 @@ export async function syncWorkspace(services: Services, ws: Workspace, options: 
       continue;
     }
 
-    if (state.status === 'modified') {
+    const machineRecord = previous?.skills[id];
+    const lockMovedOn =
+      state.status === 'modified' &&
+      !state.unhashed?.length &&
+      !!machineRecord?.renderedHash &&
+      (machineRecord.lockedHash ?? machineRecord.renderedHash) !== entry.renderedHash &&
+      matchesRenderedHash((await readSkillTree(ws.scope, id)) ?? [], machineRecord.renderedHash);
+    // A copy this CLI restored with its own renderer (the lock records another
+    // renderer's output) is AgileFlow's content, not a local modification.
+    if (state.status === 'modified' && !lockMovedOn && !state.unhashed?.length && state.files && entry.ownership === 'managed') {
+      const own = await services.fetcher
+        .fetchLocked(id, entry, ws.scope.root, { cacheOnly: true })
+        .then((pkg) => isOwnRender(services, ws, id, entry, pkg, state.files!))
+        .catch(() => false);
+      if (own) {
+        verified.add(id);
+        written.set(id, renderedRecordOf(state.files).renderedHash);
+        continue;
+      }
+    }
+    if (state.status === 'modified' && !lockMovedOn) {
       report.kept.push({
         id,
         reason: state.unhashed?.length
@@ -376,10 +517,9 @@ export async function syncWorkspace(services: Services, ws: Workspace, options: 
       } else if (!options.missingOnly) {
         try {
           const pkg = await services.fetcher.fetchLocked(id, entry, ws.scope.root, { cacheOnly: true });
-          if (
-            !matchesRenderedHash(renderFor(services, ws, id, pkg, wantActivation), entry.renderedHash) &&
-            renderedWithOtherPreference(services, ws, id, pkg, entry)
-          ) {
+          const legacyUnchanged =
+            entry.renderer === undefined && matchesRenderedHash(renderFor(services, ws, id, pkg, wantActivation), entry, { execBits: true });
+          if (!legacyUnchanged && renderInputsChanged(services, ws, id, pkg, entry, wantActivation)) {
             report.events.push({
               level: 'warn',
               skill: id,
@@ -398,7 +538,10 @@ export async function syncWorkspace(services: Services, ws: Workspace, options: 
       continue;
     }
 
-    if (options.missingOnly && state.status === 'clean') continue;
+    if (options.missingOnly && state.status === 'clean') {
+      verified.add(id);
+      continue;
+    }
 
     let pkg: FetchedPackage;
     try {
@@ -414,6 +557,7 @@ export async function syncWorkspace(services: Services, ws: Workspace, options: 
       } else if (state.status === 'clean') {
         // Offline with an empty cache: the files on disk are already correct
         // unless settings changed, which we cannot re-render without the package.
+        verified.add(id);
         report.events.push({ level: 'warn', skill: id, message: `could not load locked package to re-verify (${e.message})` });
       } else {
         report.events.push({ level: 'error', skill: id, message: `could not install: ${e.message}` });
@@ -427,26 +571,81 @@ export async function syncWorkspace(services: Services, ws: Workspace, options: 
       report.events.push({ level: 'error', skill: id, message: `could not render: ${(err as Error).message}` });
       continue;
     }
-    if (state.status === 'clean' && entry.enabled !== false) {
-      if (matchesRenderedHash(rendered, entry.renderedHash)) continue;
-      if (wantActivation === entry.activation && !options.refresh && !renderedWithOtherPreference(services, ws, id, pkg, entry)) {
-        // Only the renderer differs (a teammate's AgileFlow version): leave the
-        // committed files alone instead of ping-ponging them; `update` refreshes.
+    // The lock is authoritative unless the configuration asks for another
+    // render. A render that differs only because this CLI's renderer does
+    // (a teammate on another AgileFlow version) never rewrites the lock, so
+    // CLIs cannot ping-pong the committed files; `update` adopts it on request.
+    const inputsChanged = renderInputsChanged(services, ws, id, pkg, entry, wantActivation);
+    if (!inputsChanged) {
+      const { enabled: _enabled, ...kept } = entry;
+      const reproduces = matchesRenderedHash(rendered, entry, { execBits: true });
+      if (state.status === 'clean' && entry.enabled !== false) {
+        verified.add(id);
+        if (state.modeDrift && !options.dryRun) {
+          await repairModes(ws.scope, id, entry);
+          report.events.push({ level: 'info', skill: id, message: 'executable bits differed from agileflow.lock; restored' });
+        }
+        if (!reproduces) {
+          const drift = rendererDrift(entry);
+          if (drift) report.events.push({ level: 'info', skill: id, message: drift });
+        }
+        continue;
+      }
+      // Missing, enabled again, or replaced by a teammate's lock change:
+      // restore it and keep the locked entry.
+      const restore: SkillWrite = { id, files: rendered, next: kept, ...(lockMovedOn ? { expect: state.snapshot } : {}) };
+      if (syncNeedsApproval(services, entry, machineRecord?.integrity)) {
+        gated.push({ write: restore, pending: await pendingFor(ws, id, entry, pkg), bucket: lockMovedOn ? 'rerendered' : 'materialized' });
+        continue;
+      }
+      writes.push(restore);
+      if (!reproduces) written.set(id, renderedRecordOf(rendered).renderedHash);
+      if (lockMovedOn) report.rerendered.push(id);
+      else report.materialized.push(id);
+      if (!reproduces) {
         report.events.push({
           level: 'info',
           skill: id,
-          message: 'rendered by a different AgileFlow version; `agileflow update` refreshes it',
+          message:
+            `${rendererDrift(entry) ?? 'the locked render could not be reproduced'}. ` +
+            'Restored with this CLI\'s renderer and agileflow.lock left unchanged, so the copy differs from the lock until everyone uses the same renderer.',
         });
-        continue;
+      }
+      continue;
+    }
+    const rerender: SkillWrite = {
+      id,
+      files: rendered,
+      next: { ...lockEntryFor(id, pkg, rendered, wantActivation, undefined, ws.questionPreference), ...(entry.ref ? { ref: entry.ref } : {}) },
+      ...(lockMovedOn ? { expect: state.snapshot } : {}),
+    };
+    const bucket = state.status === 'missing' || state.status === 'disabled' ? 'materialized' : 'rerendered';
+    if ((state.status !== 'clean' || lockMovedOn) && syncNeedsApproval(services, entry, machineRecord?.integrity)) {
+      gated.push({ write: rerender, pending: await pendingFor(ws, id, entry, pkg), bucket });
+      continue;
+    }
+    writes.push(rerender);
+    report[bucket].push(id);
+  }
+
+  if (gated.length) {
+    const approved =
+      !!options.approveExternal || (!options.dryRun && !!options.confirmExternal && (await options.confirmExternal(gated.map((g) => g.pending))));
+    for (const g of gated) {
+      if (approved) {
+        writes.push(g.write);
+        if (g.write.files && !matchesRenderedHash(g.write.files, g.write.next ?? undefined)) {
+          written.set(g.write.id, renderedRecordOf(g.write.files).renderedHash);
+        }
+        report[g.bucket].push(g.write.id);
+      } else {
+        report.kept.push({ id: g.write.id, reason: NEEDS_APPROVAL });
       }
     }
-    writes.push({ id, files: rendered, next: { ...lockEntryFor(id, pkg, rendered, wantActivation), ...(entry.ref ? { ref: entry.ref } : {}) } });
-    if (state.status === 'missing' || state.status === 'disabled') report.materialized.push(id);
-    else report.rerendered.push(id);
+    if (!approved) report.needsApproval = gated.map((g) => g.pending);
   }
 
   // Stale outputs: skills this machine materialized earlier that the lock no longer lists.
-  const previous = await readSyncState(services.ctx, ws.scope);
   const deletedIds: string[] = [...(options.removedIds ?? [])];
   const processed = new Set<string>();
   if (previous) {
@@ -467,7 +666,7 @@ export async function syncWorkspace(services: Services, ws: Workspace, options: 
         ownership: 'managed',
       });
       if (state.status === 'clean') {
-        writes.push({ id, files: null, next: null });
+        writes.push({ id, files: null, next: null, expect: state.snapshot });
         report.removed.push(id);
         deletedIds.push(id);
       } else {
@@ -486,18 +685,53 @@ export async function syncWorkspace(services: Services, ws: Workspace, options: 
     return report;
   }
   try {
-    if (writes.length) await commitSkillWrites(services, ws, writes);
-    else if (lockChanged || !ws.lockExists) await saveLock(ws);
+    if (writes.length) {
+      // Replace only what was inspected above: an edit made during the downloads is kept.
+      for (const w of writes) w.expect ??= states.get(w.id)?.snapshot;
+      const committed = await commitSkillWrites(services, ws, writes);
+      for (const id of committed.done) verified.add(id);
+      report.events.push(...committed.events);
+      const skipped = new Set(committed.skipped);
+      for (const key of ['materialized', 'rerendered', 'removed', 'disabled'] as const) {
+        report[key] = report[key].filter((id) => !skipped.has(id));
+      }
+    } else if (lockChanged || !ws.lockExists) await saveLock(ws);
   } catch (err) {
     report.events.push({ level: 'error', message: `sync stopped: ${(err as Error).message}` });
-    // Successful writes were recorded; report what failed instead of losing the report.
-    const done = new Set(Object.keys(ws.lock.resolved));
-    report.materialized = report.materialized.filter((id) => done.has(id));
-    report.rerendered = report.rerendered.filter((id) => done.has(id));
+    // Successful writes were recorded; report only those instead of the plan.
+    const done = new Set(committedBefore(err) ?? []);
+    for (const key of ['materialized', 'rerendered', 'removed', 'disabled'] as const) {
+      report[key] = report[key].filter((id) => done.has(id));
+    }
+    for (const id of done) verified.add(id);
   }
   report.exposure = await exposeProviders(services, ws, { removedIds: [...new Set(deletedIds)] });
-  await recordSyncState(services, ws, { previous, processed });
+  await recordSyncState(services, ws, { previous, processed, verified, written });
   return report;
+}
+
+/** Set each file's executable bit to what the lock recorded (content is unchanged). */
+async function repairModes(scope: ScopeTarget, id: string, entry: LockEntry): Promise<void> {
+  const want = new Set(entry.executables ?? []);
+  for (const file of (await readSkillTree(scope, id)) ?? []) {
+    if (file.executable === want.has(file.path)) continue;
+    const abs = path.join(skillDir(scope, id), ...file.path.split('/'));
+    const mode = (await fs.promises.stat(abs)).mode;
+    await fs.promises.chmod(abs, want.has(file.path) ? mode | 0o111 : mode & ~0o111);
+  }
+}
+
+/** What approving a third-party sync write means, compared with what this machine has installed. */
+async function pendingFor(ws: Workspace, id: string, entry: LockEntry, pkg: FetchedPackage): Promise<PendingApproval> {
+  const installed = await readSkillTree(ws.scope, id).catch(() => null);
+  const after = { source: pkg.source, files: pkg.files };
+  return {
+    id,
+    source: entry.source,
+    version: entry.version,
+    ...(entry.resolved ? { resolved: entry.resolved } : {}),
+    trust: installed ? reviewTrust({ source: entry.source, files: installed }, after, 'installed') : reviewTrust(null, after),
+  };
 }
 
 /**
@@ -508,7 +742,7 @@ export async function syncWorkspace(services: Services, ws: Workspace, options: 
 export async function recordSyncState(
   services: Services,
   ws: Workspace,
-  options: { previous?: SyncState | null; processed?: Set<string> } = {},
+  options: { previous?: SyncState | null; processed?: Set<string>; verified?: Set<string>; written?: Map<string, string> } = {},
 ): Promise<void> {
   const previous = options.previous === undefined ? await readSyncState(services.ctx, ws.scope) : options.previous;
   const skills: SyncState['skills'] = {};
@@ -518,7 +752,22 @@ export async function recordSyncState(
   }
   for (const [id, entry] of Object.entries(ws.lock.resolved)) {
     if (entry.ownership !== 'managed') continue;
-    skills[id] = { path: entry.path, ...(entry.renderedHash ? { renderedHash: entry.renderedHash } : {}) };
+    // Only content verified on disk in this run is recorded as installed (and
+    // so approved). Anything else (skipped, disabled, failed, waiting for
+    // approval) keeps this machine's previous record, so the next sync still
+    // asks and still recognizes the files it installed.
+    if (!options.verified?.has(id)) {
+      const kept = previous?.skills[id];
+      skills[id] = kept ?? { path: entry.path, ...(entry.renderedHash ? { renderedHash: entry.renderedHash } : {}) };
+      continue;
+    }
+    const renderedHash = options.written?.get(id) ?? entry.renderedHash;
+    skills[id] = {
+      path: entry.path,
+      ...(renderedHash ? { renderedHash } : {}),
+      ...(renderedHash !== entry.renderedHash && entry.renderedHash ? { lockedHash: entry.renderedHash } : {}),
+      ...(entry.integrity ? { integrity: entry.integrity } : {}),
+    };
   }
   await writeSyncState(services.ctx, ws.scope, { version: 1, root: ws.scope.root, skills });
 }
@@ -546,47 +795,24 @@ export interface PreparedSkill {
   risks: RiskFinding[];
   /** The exact files that will be written (empty for local skills). */
   rendered: TreeFile[];
+  /** What was at the skill path when it was prepared; the install is skipped if that changes before writing. */
+  expect?: SkillSnapshot;
 }
 
 /**
  * Refuse to install over anything AgileFlow does not own: a hand-written
  * skill directory, a locally owned skill, or a managed skill with local
- * modifications. Shared by `add` and `update`.
+ * modifications (`assertReplaceable`). Returns what is at the skill path,
+ * so the write can confirm nothing changed in between.
  */
-export async function assertInstallable(services: Services, ws: Workspace, id: string, spec: SkillSpec): Promise<void> {
+export async function assertInstallable(services: Services, ws: Workspace, id: string, spec: SkillSpec): Promise<SkillSnapshot | undefined> {
   if (!SKILL_NAME_RE.test(id) || id.length > MAX_NAME_LENGTH) {
     throw new OperationError(`Invalid skill name "${id}"`, [
       'Skill names must be lowercase letters, digits, and single hyphens (max 64 characters).',
     ]);
   }
-  if (isSelfSource(ws.scope, id, spec, services.ctx.homeDir, services.ctx.platform)) return;
-  const entry = ws.lock.resolved[id];
-  const rel = toPosix(path.relative(ws.scope.root, skillDir(ws.scope, id)));
-  if (!entry) {
-    if (await pathExists(skillDir(ws.scope, id))) {
-      throw new OperationError(`${rel} already exists and is not managed by AgileFlow`, [
-        'AgileFlow never overwrites skills it does not own. Rename or move that directory first.',
-      ]);
-    }
-    return;
-  }
-  if (entry.ownership === 'local') {
-    if (await pathExists(skillDir(ws.scope, id))) {
-      throw new OperationError(`${id} is locally owned (${rel}); AgileFlow will not replace it`, [
-        `Remove it from AgileFlow first: \`agileflow remove ${id}\` (your files are kept), then move them aside.`,
-      ]);
-    }
-    return;
-  }
-  const state = await inspectSkill(ws.scope, id, { ...entry, enabled: undefined });
-  if (state.status === 'modified') {
-    throw new OperationError(`${id} has local modifications`, [
-      ...(state.unhashed?.length ? [`It contains files AgileFlow does not track: ${state.unhashed.join(', ')}`] : []),
-      `Keep them: \`agileflow fork ${id}\``,
-      `Discard them: \`agileflow remove ${id} --force\`, then add again`,
-      `Inspect: \`agileflow diff ${id}\``,
-    ]);
-  }
+  if (isSelfSource(ws.scope, id, spec, services.ctx.homeDir, services.ctx.platform)) return undefined;
+  return (await assertReplaceable(ws.scope, id, ws.lock.resolved[id])).snapshot;
 }
 
 export async function prepareAdd(
@@ -597,6 +823,7 @@ export async function prepareAdd(
 ): Promise<PreparedSkill[]> {
   const prepared: PreparedSkill[] = [];
   const seen = new Map<string, string>();
+  const onDisk = new Map<string, SkillSnapshot | undefined>();
   for (const req of requests) {
     const other = seen.get(req.id);
     if (other !== undefined) {
@@ -608,7 +835,7 @@ export async function prepareAdd(
         `Use \`agileflow update ${req.id}\` to change its version.`,
       ]);
     }
-    await assertInstallable(services, ws, req.id, req.spec);
+    onDisk.set(req.id, await assertInstallable(services, ws, req.id, req.spec));
   }
   for (const req of requests) {
     const local = isSelfSource(ws.scope, req.id, req.spec, services.ctx.homeDir, services.ctx.platform);
@@ -629,10 +856,11 @@ export async function prepareAdd(
       pkg,
       summary,
       activation,
-      external: !local && isExternalSource(req.spec.source),
+      external: !local && isExternalSource(req.spec.source, services.fetcher.officialRegistry !== false),
       local,
       risks: local ? [] : scanSkill(pkg.files),
       rendered,
+      ...(onDisk.get(req.id) ? { expect: onDisk.get(req.id) } : {}),
     });
   }
   return prepared;
@@ -652,10 +880,23 @@ export async function commitAdd(services: Services, ws: Workspace, prepared: Pre
     const spec = specForPrepared(item);
     return item.local
       ? { id: item.id, next: localLockEntry(item.id, item.spec, item.activation), spec }
-      : { id: item.id, files: item.rendered, next: lockEntryFor(item.id, item.pkg, item.rendered, item.activation, spec), spec };
+      : {
+          id: item.id,
+          files: item.rendered,
+          next: lockEntryFor(item.id, item.pkg, item.rendered, item.activation, spec, ws.questionPreference),
+          spec,
+          expect: item.expect,
+        };
   });
-  await commitSkillWrites(services, ws, writes);
-  return syncWorkspace(services, ws, { mismatch: 'report' });
+  const committed = await commitSkillWrites(services, ws, writes);
+  if (!committed.done.length) {
+    throw new OperationError(`Nothing was installed: ${committed.events.map((e) => `${e.skill} ${e.message}`).join('; ')}`, [
+      'Check what is there now (`agileflow list`), then run the command again.',
+    ]);
+  }
+  const report = await syncWorkspace(services, ws, { mismatch: 'report' });
+  report.events.unshift(...committed.events);
+  return report;
 }
 
 // ---------------------------------------------------------------------------
@@ -666,6 +907,8 @@ export interface RemoveReport {
   removed: string[];
   keptLocal: string[];
   artifacts: ApplyResult[];
+  /** Skills that changed after they were checked were left in place (error events). */
+  events: OperationEvent[];
 }
 
 export async function removeSkills(
@@ -674,7 +917,8 @@ export async function removeSkills(
   ids: string[],
   options: { force?: boolean } = {},
 ): Promise<RemoveReport> {
-  const report: RemoveReport = { removed: [], keptLocal: [], artifacts: [] };
+  const report: RemoveReport = { removed: [], keptLocal: [], artifacts: [], events: [] };
+  const onDisk = new Map<string, SkillSnapshot>();
   for (const id of ids) {
     if (!ws.lock.resolved[id] && !ws.specs[id]) {
       throw new OperationError(`${id} is not managed by AgileFlow in this scope`, [
@@ -692,17 +936,20 @@ export async function removeSkills(
           `Inspect: \`agileflow diff ${id}\``,
         ]);
       }
+      onDisk.set(id, state.snapshot);
     }
   }
   const writes: SkillWrite[] = [];
   for (const id of new Set(ids)) {
     const entry = ws.lock.resolved[id];
     if (entry?.ownership === 'local') report.keptLocal.push(id);
-    writes.push({ id, ...(entry && entry.ownership === 'managed' ? { files: null } : {}), next: null, spec: 'remove' });
-    report.removed.push(id);
+    writes.push({ id, ...(entry && entry.ownership === 'managed' ? { files: null, expect: onDisk.get(id) } : {}), next: null, spec: 'remove' });
   }
   const previous = await readSyncState(services.ctx, ws.scope);
-  await commitSkillWrites(services, ws, writes);
+  const committed = await commitSkillWrites(services, ws, writes);
+  report.removed = committed.done;
+  report.keptLocal = report.keptLocal.filter((id) => committed.done.includes(id));
+  report.events = committed.events;
   for (const id of report.removed) {
     for (const adapter of services.adapters) {
       const pctx = pctxFor(services, ws, adapter.id);

@@ -6,6 +6,7 @@ import {
   parseAddTarget,
   pathExists,
   prepareAdd,
+  reviewTrust,
   riskCounts,
   skillIdFromPackageName,
   specForPrepared,
@@ -180,6 +181,8 @@ export function describePrepared(cli: Cli, item: PreparedSkill): void {
     out.line('Requires:');
     for (const n of needs) out.line(`  ${n}`);
   }
+  const tools = reviewTrust(null, { source: item.spec.source, files: item.pkg.files }).changes.find((c) => c.aspect === 'allowed-tools');
+  if (tools) out.line(`Allowed tools: ${tools.summary}`);
   printRisks(cli, item.risks);
   if (item.external) out.line('Review source before installing untrusted skills.');
   if (item.local) out.line('Registered as a locally owned skill (AgileFlow will never overwrite it).');
@@ -327,8 +330,9 @@ export async function installRequests(
       ...external.map((p) => `${p.id}@${p.pkg.version} from ${p.spec.source}${p.pkg.resolved ? ` (${p.pkg.resolved})` : ''}`),
     ],
   };
-  const local = prepared.filter((p) => p.local);
-  const installed = prepared.filter((p) => !p.local);
+  // A skill that changed while it was reviewed was not written (its error is in the report).
+  const local = prepared.filter((p) => p.local && ws.specs[p.id]);
+  const installed = prepared.filter((p) => !p.local && ws.specs[p.id]);
   if (installed.length) {
     cli.out.line(
       `Installed ${installed.map((p) => `${p.id}@${p.pkg.version}`).join(', ')} into ${relSkillsDir(ws.scope)}`,

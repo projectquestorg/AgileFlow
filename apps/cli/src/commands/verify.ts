@@ -14,9 +14,9 @@ import {
   type RiskFinding,
   type ScopeTarget,
 } from '@agileflow/core';
-import { cachedBundlePath, type RegistryClient } from '@agileflow/registry';
+import { cachedBundlePath, SignatureError, type RegistryClient } from '@agileflow/registry';
 import type { Cli } from '../runtime';
-import { EXIT, findProject, servicesFor, UsageError } from '../runtime';
+import { EXIT, findProject, interruptedSkills, servicesFor, UsageError } from '../runtime';
 import { table } from '../ui/tables';
 import { riskLine } from './shared';
 
@@ -142,6 +142,7 @@ export async function runVerify(cli: Cli, ids: string[], options: VerifyOptions)
   const entries = Object.entries(ws.lock.resolved).filter(([id]) => !ids.length || ids.includes(id));
   for (const id of ids) if (!ws.lock.resolved[id]) throw new UsageError(`${id} is not in ${scope.kind === 'project' ? 'agileflow.lock' : 'your personal lock'}`);
 
+  const interrupted = await interruptedSkills(cli, scope);
   out.progress(`Verifying ${entries.length} skill(s)...`);
   const rows: VerifyRow[] = [];
   for (const [id, entry] of entries) {
@@ -156,7 +157,7 @@ export async function runVerify(cli: Cli, ids: string[], options: VerifyOptions)
       risks: [],
     };
     const state = await inspectSkill(scope, id, entry);
-    row.files = state.status;
+    row.files = interrupted.has(id) ? 'interrupted' : state.status;
     if (entry.ownership === 'local') {
       row.risks = state.files ? scanSkill(state.files) : [];
       row.license = state.files ? licenseOf(state.files) : undefined;
@@ -174,7 +175,7 @@ export async function runVerify(cli: Cli, ids: string[], options: VerifyOptions)
         row.pinned = registry?.isPinned(ref.name, entry.version) ?? false;
         if (options.attestations) {
           if (ref.name.startsWith('@agileflow/')) {
-            const result = await verifyAttestation(cachedBundlePath(ctx, ref.name, entry.version), ctx.env);
+            const result = await verifyAttestation(cachedBundlePath(ctx, ref.name, entry.version, registry!.base), ctx.env);
             row.attestation = result.status;
             if (result.detail) row.error = result.detail;
           } else {
@@ -191,17 +192,41 @@ export async function runVerify(cli: Cli, ids: string[], options: VerifyOptions)
     rows.push(row);
   }
 
+  // Signed registry metadata: who published the official packages, not only whether bytes match.
+  let signatures: { status: 'verified' | 'unsigned' | 'failed' | 'unavailable'; detail: string } | null = null;
+  if (registry && rows.some((r) => r.source.startsWith('@agileflow/'))) {
+    try {
+      const signed = await registry.signedMetadata();
+      signatures =
+        signed.status === 'verified'
+          ? { status: 'verified', detail: `root v${signed.root}, snapshot v${signed.snapshot.version}, expires ${signed.snapshot.expires}` }
+          : { status: 'unsigned', detail: signed.reason };
+      if (signed.status === 'verified') {
+        // Every official package in the lock must be one the publishers signed.
+        for (const r of rows.filter((x) => x.source.startsWith('@agileflow/'))) {
+          const entry = ws.lock.resolved[r.id];
+          if (entry && signed.manifest.packages[r.source]?.[r.version] !== entry.integrity) {
+            r.integrity = 'failed';
+            r.error = `${r.source}@${r.version} is not in the registry's signed manifest with the locked integrity`;
+          }
+        }
+      }
+    } catch (err) {
+      signatures = { status: err instanceof SignatureError ? 'failed' : 'unavailable', detail: (err as Error).message };
+    }
+  }
+
   const threshold = failOn === 'medium' ? ['high', 'medium'] : failOn === 'high' ? ['high'] : [];
   const riskFailures = rows.filter((r) => r.risks.some((f) => threshold.includes(f.severity)));
   const failures = rows.filter((r) => r.integrity === 'failed' || r.attestation === 'failed');
-  const ok = !failures.length && !riskFailures.length;
+  const ok = !failures.length && !riskFailures.length && signatures?.status !== 'failed';
   if (options.sbom) {
     const { cliVersion } = await import('../version');
     out.json(cycloneDx(rows, path.basename(scope.root), cliVersion()));
     return ok ? EXIT.OK : EXIT.ERROR;
   }
   if (options.json) {
-    out.json({ ok, scope: scope.kind, root: scope.root, skills: rows });
+    out.json({ ok, scope: scope.kind, root: scope.root, skills: rows, ...(signatures ? { registrySignatures: signatures } : {}) });
     return ok ? EXIT.OK : EXIT.ERROR;
   }
   if (!rows.length) {
@@ -225,13 +250,16 @@ export async function runVerify(cli: Cli, ids: string[], options: VerifyOptions)
     if (r.error) out.line(`${r.id}: ${r.error}`);
     for (const f of r.risks.filter((x) => x.severity === 'high')) out.line(`${r.id}: ${riskLine(f)}`);
   }
+  if (signatures) out.line(`Registry signatures: ${signatures.status} (${signatures.detail})`);
   if (options.attestations && rows.some((r) => r.attestation === 'unavailable')) {
     out.line('Attestations need the GitHub CLI (gh), logged in: https://cli.github.com');
   }
   out.line(
     ok
       ? `Verified ${rows.length} skill(s).`
-      : `${failures.length + riskFailures.length} skill(s) failed verification${riskFailures.length ? ` (${riskFailures.length} over the --fail-on ${failOn} threshold)` : ''}.`,
+      : signatures?.status === 'failed' && !failures.length && !riskFailures.length
+        ? 'Registry signature verification failed.'
+        : `${failures.length + riskFailures.length} skill(s) failed verification${riskFailures.length ? ` (${riskFailures.length} over the --fail-on ${failOn} threshold)` : ''}.`,
   );
   return ok ? EXIT.OK : EXIT.ERROR;
 }
