@@ -10,7 +10,7 @@ import {
   type Services,
 } from '@agileflow/core';
 import type { Cli } from '../runtime';
-import { EXIT, findProject, relSkillsDir, servicesFor } from '../runtime';
+import { EXIT, findProject, interruptedSkills, relSkillsDir, servicesFor } from '../runtime';
 import { table } from '../ui/tables';
 
 export interface ListOptions {
@@ -26,7 +26,7 @@ interface Row {
   status: string;
 }
 
-async function rowsFor(scope: ScopeTarget): Promise<{ rows: Row[]; unmanaged: string[] } | null> {
+async function rowsFor(scope: ScopeTarget, interrupted: Set<string>): Promise<{ rows: Row[]; unmanaged: string[] } | null> {
   const ws = await loadWorkspace(scope);
   if (!ws.configExists) return null;
   const rows: Row[] = [];
@@ -37,6 +37,8 @@ async function rowsFor(scope: ScopeTarget): Promise<{ rows: Row[]; unmanaged: st
     let status = 'not locked';
     if (entry) status = (await inspectSkill(scope, id, entry)).status;
     if (spec?.enabled === false) status = 'disabled';
+    // Files may already be new while the lock is still old: neither modified nor missing.
+    if (interrupted.has(id)) status = 'interrupted';
     const source = spec?.provenance?.forkedFrom
       ? `fork of ${spec.provenance.forkedFrom}`
       : describeSource(spec?.source ?? entry!.source);
@@ -48,7 +50,7 @@ async function rowsFor(scope: ScopeTarget): Promise<{ rows: Row[]; unmanaged: st
       status,
     });
   }
-  return { rows, unmanaged: await listUnmanagedSkills(scope, ids) };
+  return { rows, unmanaged: await listUnmanagedSkills(scope, [...ids, ...interrupted]) };
 }
 
 async function providerRows(cli: Cli, services: Services, scope: ScopeTarget): Promise<string[][]> {
@@ -83,7 +85,7 @@ export async function runList(cli: Cli, options: ListOptions): Promise<number> {
   const json: Record<string, unknown> = {};
   let printed = false;
   for (const { label, scope } of scopes) {
-    const data = await rowsFor(scope);
+    const data = await rowsFor(scope, await interruptedSkills(cli, scope));
     if (!data) continue;
     json[scope.kind] = data;
     if (options.json) continue;

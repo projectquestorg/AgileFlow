@@ -9,6 +9,7 @@ import { skillDir } from './scope';
 import { SKILL_FILE } from './skill';
 import { projectStateDir } from './state';
 import { readGlobalConfig } from './config';
+import { commitSkillWrites, type SkillWrite } from './transaction';
 import { setConfigValue, type Services, type Workspace } from './workspace';
 
 async function personalConfigHasSettings(file: string): Promise<boolean> {
@@ -108,16 +109,21 @@ export async function detachWorkspace(
       }
     }
   } else {
+    // Deletions go through the journal: a crash leaves each skill deleted and
+    // unlocked, or in place and locked, and one edited since the check is kept.
+    const writes: SkillWrite[] = [];
     for (const id of ids) {
       const entry = ws.lock.resolved[id]!;
       const state = await inspectSkill(ws.scope, id, { ...entry, enabled: undefined });
       if (state.status === 'clean') {
-        await removePath(skillDir(ws.scope, id));
-        report.removedSkills.push(id);
+        writes.push({ id, files: null, next: null, expect: state.snapshot });
       } else if (state.status === 'modified' || state.status === 'local') {
         report.keptModified.push(id);
       }
     }
+    const committed = await commitSkillWrites(services, ws, writes);
+    report.removedSkills.push(...committed.done);
+    report.keptModified.push(...committed.skipped);
     const removedIds = report.removedSkills;
     const snapshot = { ...ws, lock: { version: 1 as const, resolved: {} } };
     const exposure = await exposeProviders(services, snapshot, { removedIds });

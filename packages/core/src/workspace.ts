@@ -19,6 +19,7 @@ import {
   type SkillSpec,
 } from './config';
 import type { ScopeTarget } from './scope';
+import type { TransactionHooks } from './transaction';
 import type { PackageFetcher, ProviderAdapter } from './types';
 
 /** What operations need from the outside world. */
@@ -26,6 +27,8 @@ export interface Services {
   ctx: Context;
   fetcher: PackageFetcher;
   adapters: ProviderAdapter[];
+  /** Failure injection for crash-safety tests; never set by the CLI. */
+  hooks?: TransactionHooks;
 }
 
 export interface Workspace {
