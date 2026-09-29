@@ -5,6 +5,170 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security
+
+- A managed lockfile entry must record a well-formed package `integrity`; a
+  missing or malformed hash makes the lock invalid instead of letting the
+  source be trusted again.
+- `update` refuses a registry version or git commit whose content changed since
+  it was locked (published versions never change) instead of re-pinning it.
+- `@agileflow/*` packages count as official only from the default registry, the
+  user's environment, or personal config. A registry named in the project's
+  `agileflow.yaml` is third-party, so its content goes through review and
+  approval.
+- Installs and updates show what trust changes, not just the version: source,
+  description, activation, instructions, files, scripts, allowed tools,
+  network and required commands, and new scan findings. `update --dry-run`
+  shows the full third-party review, including the diff.
+- `sync` asks before writing third-party content this machine has not
+  installed before (a teammate's lock change, a fresh clone). Non-interactive
+  runs skip it with exit 3 unless `--yes`; declining is not remembered as
+  approval.
+- The package cache is kept per registry, so a registry a repository once
+  named can never supply bytes later read as official. The trust review also
+  reports frontmatter changes (and flags `hooks`, which run commands
+  automatically), and a look-alike managed notice shipped by a package is
+  scanned like any other text.
+- `work init` asks before installing an agile pack from a registry the
+  repository chose (non-interactive runs need `--yes`).
+- Registry redirects may not leave the registry's origin
+  (`AGILEFLOW_ALLOW_REDIRECTS=1` to allow).
+- Signed registry metadata: a pinned trust root of ed25519 publisher keys with
+  rotation, and a signed snapshot that binds the manifest, with rollback and
+  expiry protection. It is enforced for the official registry once the key
+  ceremony pins a root (see `PUBLISHING.md`). `verify` reports whether the
+  registry is signed.
+- `registry:check` verifies published history against the manifest at the last
+  release tag and against the integrities pinned in the CLI, so an old bundle
+  rewritten together with its hashes is caught.
+
+### Evals
+
+- Scenarios end as passed, failed, inconclusive, or not-run, with a breakdown
+  by error kind (provider, judge, isolation, setup, ungraded, ...).
+  Infrastructure errors and ungraded criteria (including `--judge none`)
+  never pass and exit 1. The JSON report is now schemaVersion 2.
+- Inconclusive runs keep their evidence: observed activation, rule checks, the
+  judge's raw reply, and the transcript. `--out` is rewritten after every
+  scenario. Ctrl-C and crashes clean up provider processes, isolated HOMEs, and
+  sandboxes, and leave a partial report.
+- A preflight checks providers, the judge, scenario files, fixtures, and setup
+  permissions before any paid run.
+- Each run records which SKILL.md it loaded; a copy from outside the sandbox is
+  an isolation error. Reports record provider CLI version, models, judge,
+  auth mode (never secrets), skill and fixture hashes, and the AgileFlow
+  version.
+- Setup and bin scripts run without `--allow-setup` only for official registry
+  packages, with no credentials in their environment. Providers get only
+  their own credentials.
+- Implicit activation, explicit invocation, and task completion are reported
+  separately.
+- `eval --compare` runs a skill's scenarios with no skill, the released
+  version, and the candidate, under matched, interleaved conditions. It
+  reports task completion, correct activation, questions asked, unnecessary
+  edits, time, tokens, and cost as deltas with 95% intervals. Each scenario and
+  the run overall get a verdict: improves, no measurable difference,
+  regresses, or inconclusive.
+- `eval --pack <name|installed>` installs a whole pack and reports which skill
+  activated for which request. `--pack --compare` flags existing skills whose
+  precision or recall a new skill worsens.
+- `heldOut: true` scenarios are reported separately by comparisons. New
+  deterministic checks: `run` (command exit code) and `maxFilesChanged`
+  rubric rules, and `assert.changes`.
+- `eval --lint`:
+  - Optional scenario `path` (happy, blocked, failure).
+  - Official skills must cover each near neighbor.
+  - New checks for `references/` files, skill IDs named in descriptions, the
+    `userInteraction` contract, and body length.
+- Nightly CI compares changed skills against their last released versions.
+
+### Changed
+
+- Crash safety: every update is re-checked immediately before each skill is
+  replaced, and a skill edited meanwhile is skipped. A batch is fully staged
+  before anything is replaced. Previous copies are kept until the lockfile is
+  written. The next command then finishes or rolls back each skill from a
+  per-skill journal and says what was not applied. `list`, `check`, `diff`, and
+  `verify` show such skills as "interrupted" instead of modified or missing.
+- One ownership check for planning and applying: a directory never becomes
+  replaceable just because its name was added to `agileflow.yaml`. Provider
+  links are replaced or removed only while they are still AgileFlow's, and
+  never fall back to a mirror over something that appeared at the path.
+- Reproducible installs:
+  - The lock records the installed-file comparison rule (`hashVersion`,
+    `executables`) and the render inputs (`renderer`, `questionOverlay`).
+  - A whole-file CRLF checkout is not a modification; CRLF on some lines is.
+  - `+x` changes count as modifications on macOS and Linux, but not on Windows
+    or with `core.fileMode=false`.
+  - Teammates on different AgileFlow versions no longer rewrite each other's
+    skills or lock. `update` lists renderer changes as re-render items.
+  - The lockfile moves to format 2 only when these fields are used; older CLIs
+    refuse format 2 instead of ignoring it.
+- `check` grades providers as enforced, advisory, or visible (not verified),
+  and `--verbose` shows per skill whether it is installed, discovered,
+  explicitly invocable, and eligible for automatic use.
+- One versioned JSON result (`schema: 1`: `applied`, `skipped`, `failed`,
+  `repaired`, `warnings`, `events`) for `add`, `remove`, `sync`, `update`,
+  `configure`, and `migrate`. JSON mode never prompts, and errors are only the
+  JSON document.
+- Faster startup: commands and their dependencies load only when used.
+- Node.js 22 or newer is required (Node 20 reached end of life).
+- `CODEX_HOME` and `CLAUDE_CONFIG_DIR` expand `~` and resolve relative paths.
+  Codex `config.toml` edits are re-checked immediately before writing.
+
+### Added
+
+- `add --adopt` brings skills already in `.agents/skills` or provider folders
+  under AgileFlow. It previews first, and a skill becomes managed only when it
+  is byte-identical to a published version; otherwise it is locally owned.
+  Skills found only in a provider folder are moved and linked back, with a
+  backup.
+- `agileflow outdated`: locked, wanted, and latest version per skill, marking
+  third-party updates; says "not verified" when offline.
+- `search` shows activation, requirements, and packs; `info` shows behavior,
+  eval scenario counts, and published eval results.
+- `create` scaffolds `references/`, a blocked-path eval, fixture and neighbor
+  hints, and a "Not for" reminder.
+- `migrate --json` and `migrate --dry-run`.
+- `sync --yes` approves third-party content this machine has not installed
+  before.
+- Agile Work:
+  - `work next` lists the stories that can start now, with the reason for each.
+  - `work evidence` records evidence per acceptance criterion; `work show`
+    reports each criterion as verified, stale, or not verified.
+  - The v4 import previews status and dependency mappings, keeps `legacy_id`
+    and `legacy_source`, uses stable IDs, and holds back conflicting items
+    unless `--prefer json|markdown` is given.
+- Opt-in `@agileflow/engineering` pack: writing-tests, refactoring-safely,
+  writing-commits, reviewing-security, profiling-performance, and
+  planning-migrations. It is not installed by default.
+- Release: the packed CLI is smoke-tested in a clean HOME and PATH before
+  tagging and publishing, and the published package is checked on Linux,
+  macOS, and Windows. npm trusted publishing (OIDC) replaces the long-lived
+  token.
+
+### Fixed
+
+- Agile Work writes are atomic and refused when the file changed since it was
+  read. `work board` and `work list` flag duplicate IDs. `check` and
+  `work new` name the exact path Git ignores. Titles with control characters
+  are rejected.
+- Skill boundaries: reviewing-changes reviews a diff for defects,
+  verifying-changes proves one behavior, reviewing-story checks acceptance
+  criteria and the Definition of Done, and writing-tests builds the test
+  suite. Every official skill has a happy path, a failure or blocked path, and
+  a tagged near-neighbor negative eval.
+- Running from source no longer cuts off large piped output.
+- Agile Work changes (`new`, `status`, `evidence`, `import`) run under the
+  project lock. Evidence paths resolve from the current directory and are
+  stored relative to the project. The v4 import never links an epic to a story.
+- Recovery never deletes a previous copy it could not restore; it keeps it
+  under `.<id>.agileflow-kept-<time>` and says where. Taking over a stale
+  scope lock can no longer leave two holders.
+- reviewing-story and working-story 1.1.0 record per-criterion acceptance
+  evidence with `agileflow work evidence`. A story is closed only when every
+  criterion has fresh evidence and the Definition of Done is met.
+
 ## [5.0.0-alpha.1] - 2026-09-27
 
 Portable skill manager with Agile Work and hardened installs.
