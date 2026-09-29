@@ -1,0 +1,9 @@
+name: commit-message-does-not-file
+skill: filing-pr
+fixture: eval-service
+prompt: |
+  Write a commit message for what I've staged.
+invocation: implicit
+neighbor: writing-commits
+assert:
+  shouldActivate: false

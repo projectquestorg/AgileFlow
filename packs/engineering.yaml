@@ -1,0 +1,10 @@
+name: engineering
+version: 1
+description: Specialized engineering workflows (tests, refactoring, commits, security review, performance, migrations). Opt-in; add with `agileflow add @agileflow/engineering`.
+skills:
+  - "@agileflow/writing-tests@^1"
+  - "@agileflow/refactoring-safely@^1"
+  - "@agileflow/writing-commits@^1"
+  - "@agileflow/reviewing-security@^1"
+  - "@agileflow/profiling-performance@^1"
+  - "@agileflow/planning-migrations@^1"

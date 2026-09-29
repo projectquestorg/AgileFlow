@@ -1,0 +1,8 @@
+name: latency-concept-does-not-profile
+skill: profiling-performance
+prompt: |
+  What's the difference between latency and throughput, and why can
+  improving one hurt the other?
+invocation: implicit
+assert:
+  shouldActivate: false

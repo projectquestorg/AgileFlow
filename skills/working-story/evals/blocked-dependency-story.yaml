@@ -74,6 +74,7 @@ setup: |
 prompt: |
   Pick up STORY-H6T2K9WB.
 invocation: implicit
+path: blocked
 assert:
   shouldActivate: true
 rubric:

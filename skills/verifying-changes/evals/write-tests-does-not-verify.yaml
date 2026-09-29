@@ -4,5 +4,6 @@ fixture: eval-service
 prompt: |
   Write unit tests for the roundCents helper in src/billing/discounts.js.
 invocation: implicit
+neighbor: writing-tests
 assert:
   shouldActivate: false

@@ -17,6 +17,11 @@
       "version": 2
     },
     {
+      "name": "@agileflow/engineering",
+      "description": "Specialized engineering workflows (tests, refactoring, commits, security review, performance, migrations). Opt-in; add with `agileflow add @agileflow/engineering`.",
+      "version": 1
+    },
+    {
       "name": "@agileflow/github",
       "description": "Pull request workflows for GitHub repositories. Requires the GitHub CLI (`gh`), authenticated, with network access.",
       "version": 2

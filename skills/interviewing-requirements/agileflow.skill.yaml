@@ -1,7 +1,7 @@
 schema: 1
 package:
   name: "@agileflow/interviewing-requirements"
-  version: "1.0.3"
+  version: "1.0.4"
 activation:
   mode: manual
 requirements:

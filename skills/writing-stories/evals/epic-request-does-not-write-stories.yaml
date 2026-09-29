@@ -4,5 +4,6 @@ fixture: agile-app
 prompt: |
   Create an epic for workspace billing.
 invocation: implicit
+neighbor: creating-epics
 assert:
   shouldActivate: false

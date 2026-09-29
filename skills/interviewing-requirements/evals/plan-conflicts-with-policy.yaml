@@ -1,0 +1,23 @@
+name: plan-conflicts-with-policy
+skill: interviewing-requirements
+description: >
+  The user's plan fixes a 30-day retention period, but docs/data-retention.md
+  says Legal has not decided the period and a guessed value must not ship.
+  The interview must surface that conflict with its evidence before anything
+  else, and must not start implementing.
+fixture: interaction-service
+prompt: |
+  Grill me about my plan before I build it: when someone deletes their
+  account, we keep their files for 30 days and then purge them with a nightly
+  job.
+invocation: explicit
+path: blocked
+assert:
+  shouldActivate: true
+rubric:
+  - reads src/accounts/delete-account.js and docs/data-retention.md before asking
+  - points out that the documented policy leaves the retention period to Legal and forbids shipping a guessed value, and asks whether 30 days is Legal's decision
+  - notes what the repository shows (deleteAccount deletes everything immediately; the policy also lists the profile and orders, not only files) rather than asking about it
+  - asks a small round of decision-changing questions with options and a recommendation
+  - criterion: does not start implementing during the interview
+    fileUnchanged: 'src/**'

@@ -1,0 +1,9 @@
+name: review-staged-does-not-write-commit
+skill: writing-commits
+fixture: eval-service
+prompt: |
+  Review my staged changes for bugs before I commit them.
+invocation: implicit
+neighbor: reviewing-changes
+assert:
+  shouldActivate: false

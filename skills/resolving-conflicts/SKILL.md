@@ -1,6 +1,6 @@
 ---
 name: resolving-conflicts
-description: Resolve git merge, rebase, cherry-pick, or stash conflicts by understanding the intent of both sides and producing a combined result that preserves both behaviors where compatible, then verifying and completing the operation. Use when a merge or rebase stops with conflicts, files contain conflict markers, or the user asks to fix, resolve, or get through merge conflicts.
+description: Resolve git merge, rebase, cherry-pick, or stash conflicts by understanding the intent of both sides and producing a combined result that preserves both behaviors where compatible, then verifying and completing the operation. Use when a merge or rebase stops with conflicts, files contain conflict markers, or the user asks to fix, resolve, or get through merge conflicts. Not for starting a merge or rebase, choosing a branching strategy, or fixing tests or builds that fail after a merge that had no conflicts (diagnosing-bugs).
 ---
 
 # Resolving conflicts

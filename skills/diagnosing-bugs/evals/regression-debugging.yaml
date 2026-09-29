@@ -63,6 +63,7 @@ setup: |
   record field passwordHash -> passwordDigest to match the new naming.'
   printf '\n## Rate limits\n\n`POST /login` is limited per client IP (see `src/rate-limit.js`).\n' >> README.md
   git commit -qam 'docs: document login rate limit'
+path: happy
 assert:
   shouldActivate: true
 rubric:

@@ -1,0 +1,10 @@
+name: bug-report-does-not-refactor
+skill: refactoring-safely
+fixture: eval-service
+prompt: |
+  Login has returned 500s since yesterday's auth refactor. Find the problem
+  and fix it.
+invocation: implicit
+neighbor: diagnosing-bugs
+assert:
+  shouldActivate: false

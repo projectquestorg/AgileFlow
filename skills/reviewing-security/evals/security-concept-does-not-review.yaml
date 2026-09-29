@@ -1,0 +1,7 @@
+name: security-concept-does-not-review
+skill: reviewing-security
+prompt: |
+  What is CSRF, and how do SameSite cookies help prevent it?
+invocation: implicit
+assert:
+  shouldActivate: false

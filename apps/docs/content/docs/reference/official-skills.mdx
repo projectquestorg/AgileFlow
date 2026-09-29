@@ -1,9 +1,9 @@
 ---
 title: Official skills and packs
-description: "The fourteen official AgileFlow skills and the four official packs."
+description: "The twenty official AgileFlow skills and the five official packs."
 ---
 
-Every official skill is small (under 60 lines), ends with an explicit "Done when" completion condition, stays provider-neutral, and ships with at least three eval scenarios, including prompts that must not trigger it.
+Every official skill is small (under 60 lines, with longer guidance in `references/` files loaded only when needed), ends with an explicit "Done when" completion condition, stays provider-neutral, and ships with at least three eval scenarios, including prompts that must not trigger it.
 
 ## Skills
 
@@ -11,17 +11,23 @@ Every official skill is small (under 60 lines), ends with an explicit "Done when
 | --- | --- | --- | --- | --- |
 | `diagnosing-bugs` | core | auto | | Reproduce, separate symptoms from the root cause, make the smallest fix that explains the evidence, verify the original failure is gone. |
 | `checking-blast-radius` | core | auto | | Find what a change could break elsewhere, and prove or disprove the one or two assumptions it depends on. Activates when you ask about impact, or before finishing a change to a public API, shared contract, migration, or cross-package interface; not for local edits. Includes a checklist of surfaces where changes leak. |
-| `verifying-changes` | core | auto | | Produce the smallest meaningful proof that a changed behavior works, rather than running everything. Not for writing a test suite for existing code. |
-| `reviewing-changes` | core | auto | `git` (network optional) | Review the actual diff for correctness, regressions, missing behavior, scope mistakes, and security where relevant, with a location and failure scenario for every finding. Judging a story against its acceptance criteria is `reviewing-story`'s job. |
+| `verifying-changes` | core | auto | | Produce the smallest meaningful proof (at most one focused proof test) that a specific changed behavior works, and report plainly when it does not. Writing or improving a test suite is `writing-tests`'s job. |
+| `reviewing-changes` | core | auto | `git` (network optional) | Review the actual diff for defects: correctness, regressions, missing behavior, scope mistakes, and security where relevant, with a location and failure scenario for every finding, or a plain "nothing significant found". Judging a story against its acceptance criteria is `reviewing-story`'s job; a dedicated security audit is `reviewing-security`'s. |
 | `resolving-conflicts` | core | auto | `git` | Resolve merge, rebase, cherry-pick, or stash conflicts by understanding both sides' intent, then verify and finish the operation. |
+| `writing-tests` | engineering | auto | | Write focused tests for existing behavior, regressions, boundaries, and failure cases in the repository's own framework; prove each regression test fails against the bug; report bugs the tests expose instead of encoding them. |
+| `refactoring-safely` | engineering | auto | | Restructure code without changing behavior: green baseline first, characterization tests where coverage is missing, small verified steps, and a stop-and-report when behavior would have to change. |
+| `writing-commits` | engineering | auto | `git` | Write commit messages from the staged diff and the repository's conventions and documented rules, with no unsupported claims; flag unrelated or accidental changes and propose a split. Commits only when asked; never pushes. |
+| `reviewing-security` | engineering | auto | | Trace untrusted input across trust boundaries to risky sinks and report confirmed findings with location, exploit path, impact, severity, and fix, or state plainly that nothing exploitable was found. Includes an attack-surface reference. |
+| `profiling-performance` | engineering | auto | | Reproducible baseline, bottleneck backed by profiling evidence, one targeted change, the same benchmark again; no speculative micro-optimizations, and deliberate costs such as password hashing are reported, not weakened. Includes a measurement reference. |
+| `planning-migrations` | engineering | auto | | Plan schema, data, and API migrations: consumers, data checks, expand-and-contract ordering, per-step validation and rollback, with every data-loss or irreversible step called out. Includes a reference of risky operations per engine. |
 | `filing-pr` | github | auto | `git`, `gh`, network | Check for an existing PR, follow title conventions, lead with the problem, include verification evidence, open the PR, return its URL. Includes the story ID when the work is tied to an [Agile Work](/work) story. If `gh` cannot create the PR, hands you the drafted title and description instead. |
 | `babysitting-pr` | github | auto | `git`, `gh`, network | Monitor CI and review feedback, fix verified issues, keep scope, and stop at a defined done state (required checks green, feedback resolved, no merge blocker). Falls back to bounded polling on hosts without a blocking watch or background tasks. |
 | `interviewing-requirements` | communication | manual | | Ask a few high-value questions (after checking the repository first) until there is a shared, actionable plan. Uses structured questions when the provider offers them, plain text otherwise. |
 | `simplifying-explanations` | communication | manual | | Re-explain code, a concept, an error, or a previous answer at a simpler level. |
 | `creating-epics` | agile | auto | | Create or refine an outcome-level [Agile Work](/work) epic: problem, outcome, scope, non-goals, success signals. No stories unless asked. |
 | `writing-stories` | agile | auto | | Break an epic or requirement into vertical-slice stories with observable acceptance criteria and only real dependencies. |
-| `working-story` | agile | auto | | Implement a story from its acceptance criteria through verification; check only verified criteria; end in the right status. |
-| `reviewing-story` | agile | auto | | Review an implementation against its story criterion by criterion, and refuse to close a story that is not delivered. |
+| `working-story` | agile | auto | | Implement a story from its acceptance criteria through verification; record evidence per criterion (`agileflow work evidence`) and check only verified criteria; end in the right status. Judging whether a story is done is `reviewing-story`'s job. |
+| `reviewing-story` | agile | auto | | Review an implementation against its story's acceptance criteria and the Definition of Done, mapping every criterion to concrete evidence (a test run, `file:line`, a PR) recorded with `agileflow work evidence`, or an explicit "not verified". Checked boxes alone and stale evidence are never proof; closes a story only when every criterion is verified. |
 | `recording-decisions` | agile | auto | | Record a decision that has been made (context, decision, reasons, consequences) in the Work `04-decisions/` folder when Work is enabled, otherwise in the repository's existing ADR directory, following its format. Supersedes old records instead of rewriting them. |
 
 Invoke manual skills by name, for example "use the interviewing-requirements skill and grill me about the onboarding redesign", `/interviewing-requirements` in Claude Code, or `$interviewing-requirements` in Codex.
@@ -32,8 +38,8 @@ Each skill declares `capabilities.userInteraction`, which decides whether the pr
 
 | `userInteraction` | Skills |
 | --- | --- |
-| `none` (no overlay) | `checking-blast-radius`, `verifying-changes`, `reviewing-changes`, `simplifying-explanations`, `reviewing-story` |
-| `optional` | `diagnosing-bugs`, `filing-pr`, `babysitting-pr`, `resolving-conflicts`, `creating-epics`, `writing-stories`, `working-story`, `recording-decisions` |
+| `none` (no overlay) | `checking-blast-radius`, `verifying-changes`, `reviewing-changes`, `reviewing-security`, `simplifying-explanations`, `reviewing-story` |
+| `optional` | `diagnosing-bugs`, `filing-pr`, `babysitting-pr`, `resolving-conflicts`, `writing-tests`, `refactoring-safely`, `writing-commits`, `profiling-performance`, `planning-migrations`, `creating-epics`, `writing-stories`, `working-story`, `recording-decisions` |
 | `required` | `interviewing-requirements` |
 
 ## Packs
@@ -42,6 +48,7 @@ Each skill declares `capabilities.userInteraction`, which decides whether the pr
 | --- | --- | --- |
 | `@agileflow/core` | `diagnosing-bugs`, `checking-blast-radius`, `verifying-changes`, `reviewing-changes`, `resolving-conflicts` | Everyday engineering workflows. Installed by `agileflow init --yes`. |
 | `@agileflow/github` | `filing-pr`, `babysitting-pr` | Pull request workflows for GitHub repositories. Requires the GitHub CLI (`gh`), authenticated, with network access. |
+| `@agileflow/engineering` | `writing-tests`, `refactoring-safely`, `writing-commits`, `reviewing-security`, `profiling-performance`, `planning-migrations` | Specialized engineering workflows. Opt-in: not installed by `agileflow init --yes`. |
 | `@agileflow/communication` | `interviewing-requirements`, `simplifying-explanations` | Manually invoked interaction styles. |
 | `@agileflow/agile` | `creating-epics`, `writing-stories`, `working-story`, `reviewing-story`, `recording-decisions` | [Agile Work](/work/skills) workflows. Offered by `agileflow work init`. `recording-decisions` also works without Work (it writes to your ADR directory), so you can add it on its own with `agileflow add recording-decisions`. |
 
@@ -49,4 +56,5 @@ Every pack entry uses a `^1` range.
 
 ```bash
 agileflow add @agileflow/github
+agileflow add @agileflow/engineering
 ```

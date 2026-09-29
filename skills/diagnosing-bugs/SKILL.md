@@ -1,6 +1,6 @@
 ---
 name: diagnosing-bugs
-description: Diagnose and fix reproducible defects, regressions, failing tests, crashes, and unexpected behavior by reproducing, isolating the root cause, and making the smallest fix that explains the evidence. Use when the user reports something broken, a test or build is failing, behavior changed unexpectedly, or they ask for root-cause analysis. Do not use for general conceptual questions or new feature work.
+description: Diagnose and fix reproducible defects, regressions, failing tests, crashes, and unexpected behavior by reproducing, isolating the root cause, and making the smallest fix that explains the evidence. Use when the user reports something broken, a test or build is failing, behavior changed unexpectedly, or they ask for root-cause analysis. Not for confirming that a change just made works (verifying-changes), writing tests for code that works (writing-tests), general conceptual questions, or new feature work.
 ---
 
 # Diagnosing bugs

@@ -1,7 +1,7 @@
 schema: 1
 package:
   name: "@agileflow/diagnosing-bugs"
-  version: "1.0.3"
+  version: "1.0.4"
 activation:
   mode: auto
 requirements:

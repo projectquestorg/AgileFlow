@@ -6,6 +6,7 @@ prompt: |
   member and then that member can't remove anyone, and nobody can change
   roles. We need owners to be able to promote a member to owner.
 invocation: implicit
+path: happy
 assert:
   shouldActivate: true
 rubric:

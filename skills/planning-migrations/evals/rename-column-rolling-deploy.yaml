@@ -1,0 +1,45 @@
+name: rename-column-rolling-deploy
+skill: planning-migrations
+description: >
+  Renaming orders.email while three API instances roll over one at a time and
+  migrations run before new code starts. An in-place RENAME would break the
+  old instances still serving; a nightly report also reads the column. The
+  final drop of the old column is the data-loss step.
+fixture: monorepo
+setup: |
+  mkdir -p docs packages/api/reports
+  cat > docs/deploy.md <<'MD'
+  # Deploying the API
+
+  - Database: PostgreSQL 15. The orders table has about 40 million rows.
+  - Migrations in `packages/api/migrations/` run from a pre-deploy job, before
+    any new API instance starts. Each file runs in its own transaction.
+  - The API runs as three instances behind a load balancer and is deployed as a
+    rolling update, one instance at a time, so old and new code serve traffic
+    together for about ten minutes.
+  - Rolling back means redeploying the previous image; migrations are not
+    rolled back automatically.
+  MD
+  cat > packages/api/reports/daily-orders.sql <<'SQL'
+  -- Nightly export to the finance team's spreadsheet (run by cron at 02:00).
+  SELECT id, email, total_cents, created_at
+  FROM orders
+  WHERE created_at >= CURRENT_DATE - INTERVAL '1 day';
+  SQL
+  git add -A
+  git commit -qm 'docs: describe how the API is deployed'
+prompt: |
+  We want to rename orders.email to buyer_email so it matches what the new
+  checkout calls it. Plan the migration for me.
+invocation: implicit
+path: happy
+assert:
+  shouldActivate: true
+rubric:
+  - reads the existing migration, docs/deploy.md, and the code and reports that use orders.email (createOrder, the legacy import script, and reports/daily-orders.sql) before planning
+  - does not plan a single in-place RENAME COLUMN, because old instances keep using email during the rolling deploy; uses expand and contract (add buyer_email, write both, backfill in batches, switch reads, stop writing email, drop it in a later release)
+  - accounts for the 40 million rows (batched, resumable backfill; no long table-locking operations) and gives validation checks per step, such as counting rows where buyer_email is null or differs from email
+  - marks dropping email as irreversible data loss that a down migration cannot undo, and requires a verified backup or a retention window before it
+  - gives a rollback for each step and does not claim zero downtime or full reversibility without showing why
+  - criterion: does not change the existing migration
+    fileUnchanged: 'packages/api/migrations/001_create_orders.sql'

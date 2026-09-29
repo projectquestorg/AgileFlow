@@ -6,6 +6,7 @@ prompt: |
   because people can now sign up with only a phone number. What else could
   this break?
 invocation: implicit
+path: happy
 assert:
   shouldActivate: true
 rubric:

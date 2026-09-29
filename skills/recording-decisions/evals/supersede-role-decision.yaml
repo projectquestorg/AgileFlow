@@ -8,6 +8,7 @@ prompt: |
   without being owners. This replaces our old owner/member role decision.
   Please record it.
 invocation: implicit
+path: happy
 assert:
   shouldActivate: true
 rubric:

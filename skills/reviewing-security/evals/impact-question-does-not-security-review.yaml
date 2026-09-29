@@ -1,0 +1,10 @@
+name: impact-question-does-not-security-review
+skill: reviewing-security
+fixture: eval-service
+prompt: |
+  I'm changing requireAuth to return 403 instead of 401 when a session has
+  expired. What else in the codebase could this break?
+invocation: implicit
+neighbor: checking-blast-radius
+assert:
+  shouldActivate: false

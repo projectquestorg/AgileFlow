@@ -1,0 +1,108 @@
+name: open-pr-with-gh
+skill: filing-pr
+description: >
+  A feature branch with conventional-commit history, a local bare remote, and
+  a scripted `gh` that behaves like an authenticated GitHub CLI: no PR exists
+  for the branch yet, and `gh pr create` records its arguments in
+  .git/eval-pr-create and prints the new PR's URL.
+fixture: eval-service
+setup: |
+  git init -q --bare .git/eval-remote.git
+  git remote add origin "$PWD/.git/eval-remote.git"
+  printf 'coverage/\n' >> .gitignore
+  git commit -qam 'chore: ignore coverage output'
+  git push -q origin main
+  git checkout -q -b fix/upload-retry
+  cat > src/uploader.js <<'JS'
+  /**
+   * Uploads files to the CDN with HTTP PUT `${baseUrl}/${path}`.
+   * deploy.js takes any object with `upload(path, contents)`, so tests can pass a fake.
+   * A 5xx response is retried once; the CDN returns 503 briefly during its own deploys.
+   */
+  export function createHttpUploader({ baseUrl = process.env.DEPLOY_URL, fetchImpl = globalThis.fetch } = {}) {
+    if (!baseUrl) throw new Error('DEPLOY_URL is not set');
+    return {
+      async upload(path, contents) {
+        const url = `${baseUrl.replace(/\/$/, '')}/${path}`;
+        let res = await fetchImpl(url, { method: 'PUT', body: contents });
+        if (res.status >= 500) res = await fetchImpl(url, { method: 'PUT', body: contents });
+        if (!res.ok) throw new Error(`upload of ${path} failed: HTTP ${res.status}`);
+      },
+    };
+  }
+  JS
+  cat > test/uploader.test.js <<'JS'
+  import { test } from 'node:test';
+  import assert from 'node:assert/strict';
+  import { createHttpUploader } from '../src/uploader.js';
+
+  test('a 503 is retried once', async () => {
+    const statuses = [503, 200];
+    const uploader = createHttpUploader({ baseUrl: 'https://cdn.invalid', fetchImpl: async () => ({ ok: statuses[0] === 200, status: statuses.shift() }) });
+    await uploader.upload('a.txt', 'x');
+    assert.equal(statuses.length, 0);
+  });
+
+  test('a 404 is not retried', async () => {
+    let calls = 0;
+    const uploader = createHttpUploader({ baseUrl: 'https://cdn.invalid', fetchImpl: async () => (calls++, { ok: false, status: 404 }) });
+    await assert.rejects(uploader.upload('a.txt', 'x'), /HTTP 404/);
+    assert.equal(calls, 1);
+  });
+  JS
+  git add -A
+  git commit -qm 'fix(deploy): retry an upload once on a 5xx response'
+bin:
+  gh: |
+    #!/bin/sh
+    # Scripted GitHub CLI: authenticated, no PR for the branch yet.
+    top=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+    branch=$(git -C "$top" rev-parse --abbrev-ref HEAD)
+    case "$1 $2" in
+      "auth status")
+        echo "github.com: logged in as eval-user"
+        ;;
+      "repo view")
+        printf '{"nameWithOwner":"example/eval-service","defaultBranchRef":{"name":"main"},"url":"https://github.com/example/eval-service"}\n'
+        ;;
+      "pr view")
+        if [ -f "$top/.git/eval-pr-create" ]; then
+          printf '{"number":58,"state":"OPEN","headRefName":"%s","baseRefName":"main","url":"https://github.com/example/eval-service/pull/58"}\n' "$branch"
+        else
+          echo "no pull requests found for branch \"$branch\"" >&2
+          exit 1
+        fi
+        ;;
+      "pr list")
+        if [ -f "$top/.git/eval-pr-create" ]; then
+          printf '[{"number":58,"headRefName":"%s","url":"https://github.com/example/eval-service/pull/58"}]\n' "$branch"
+        else
+          echo '[]'
+        fi
+        ;;
+      "pr create")
+        printf '%s\n' "$@" > "$top/.git/eval-pr-create"
+        echo "https://github.com/example/eval-service/pull/58"
+        ;;
+      *)
+        echo "gh: '$*' is not available in this evaluation" >&2
+        exit 1
+        ;;
+    esac
+prompt: |
+  Open a PR for this branch.
+invocation: implicit
+path: happy
+assert:
+  shouldActivate: true
+rubric:
+  - checks the current branch, the base (main), and the commits and diff against it before writing
+  - checks whether a PR already exists for the branch before creating one
+  - the description leads with the problem (uploads failing on the CDN's brief 503s), summarizes the fix, and includes only verification that was actually run
+  - returns https://github.com/example/eval-service/pull/58 to the user
+  - criterion: creates the PR with gh
+    command: '\bgh\b.*\bpr\b.*\bcreate\b'
+  - criterion: the title follows the conventional-commit history
+    fileContains:
+      path: .git/eval-pr-create
+      pattern: '^(--title=)?fix\(deploy\)'

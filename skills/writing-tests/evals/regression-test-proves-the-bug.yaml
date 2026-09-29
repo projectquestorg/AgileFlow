@@ -1,0 +1,32 @@
+name: regression-test-proves-the-bug
+skill: writing-tests
+description: >
+  The last commit fixes CSV cells that contain a carriage return (they were not
+  quoted) but adds no test. A useful regression test fails against the parent
+  commit's src/export/index.js and passes against the fix.
+fixture: eval-service
+setup: |
+  sed 's|return /\[",\\n\]/.test(s)|return /[",\\r\\n]/.test(s)|' src/export/index.js > export.tmp
+  mv export.tmp src/export/index.js
+  grep -q '\[",\\r\\n\]' src/export/index.js
+  git commit -qam 'fix(export): quote CSV cells that contain a carriage return
+
+  Spreadsheet imports split rows on a bare CR inside an unquoted cell.'
+prompt: |
+  My last commit fixed the CSV export bug where a value containing a carriage
+  return wasn't quoted. Add a regression test for it.
+invocation: implicit
+path: happy
+assert:
+  shouldActivate: true
+rubric:
+  - reads the fix commit to learn what changed before writing the test
+  - adds the test with node:test and node:assert/strict next to the existing export tests, without adding a test framework or dependency
+  - asserts the exact quoted output for a value containing a carriage return, not just that the call does not throw
+  - runs the new test against the code before the fix (for example by temporarily restoring the parent commit's src/export/index.js) and shows it failing, then shows it passing with the fix
+  - restores the fix and reports the fail-before and pass-after evidence
+  - fileChanged: 'test/**'
+  - criterion: the fix in src/ is left exactly as committed
+    fileUnchanged: 'src/**'
+  - criterion: no test framework is installed
+    noCommand: '\bnpm\b.*\b(i|install|add)\b.*\b(jest|vitest|mocha|ava|chai)\b'

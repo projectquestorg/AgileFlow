@@ -4,5 +4,6 @@ fixture: agile-app
 prompt: |
   Review STORY-M9V4C6TE and tell me whether it's actually done.
 invocation: implicit
+neighbor: reviewing-story
 assert:
   shouldActivate: false

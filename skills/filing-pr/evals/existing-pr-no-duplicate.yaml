@@ -43,6 +43,7 @@ prompt: |
   I pushed the fix for the flaky upload test. Please submit a pull request
   for it.
 invocation: implicit
+path: blocked
 assert:
   shouldActivate: true
 rubric:

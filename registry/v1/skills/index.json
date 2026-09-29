@@ -4,16 +4,102 @@
     {
       "name": "@agileflow/babysitting-pr",
       "description": "Monitor a pull request through CI and review feedback, fixing real failures and verified review findings until required checks are green and no actionable feedback or merge blocker remains. Use when the user asks to watch, monitor, shepherd, babysit, or keep an eye on a PR, or to handle whatever CI and reviewers raise on an open PR until it is ready or green. Not for opening a new PR or doing a one-off code review.",
-      "latest": "1.1.2",
+      "latest": "1.1.3",
       "versions": [
         "1.0.0",
         "1.1.1",
-        "1.1.2"
+        "1.1.2",
+        "1.1.3"
       ]
     },
     {
       "name": "@agileflow/checking-blast-radius",
-      "description": "Identify what a proposed or completed code change could break elsewhere by tracing its consumers and proving the load-bearing assumptions. Use when the user asks about blast radius, downstream impact, regression risk, or \"what else could this break\", or before finishing or merging a change that alters a public API, a shared schema or contract, a database migration, or an interface used across packages. Not for local edits with only nearby callers, for reviewing a diff for bugs in general, or for explaining the concept.",
+      "description": "Identify what a proposed or completed code change could break elsewhere by tracing its consumers and proving the load-bearing assumptions. Use when the user asks about blast radius, downstream impact, regression risk, or \"what else could this break\", or before finishing or merging a change that alters a public API, a shared schema or contract, a database migration, or an interface used across packages. Not for local edits with only nearby callers, for reviewing a diff for bugs in general (reviewing-changes), for planning how to roll out or roll back a migration (planning-migrations), or for explaining the concept.",
+      "latest": "1.0.3",
+      "versions": [
+        "1.0.0",
+        "1.0.1",
+        "1.0.2",
+        "1.0.3"
+      ]
+    },
+    {
+      "name": "@agileflow/creating-epics",
+      "description": "Create or refine an AgileFlow Work epic, one outcome-level body of work with its problem, outcome, scope, non-goals, and success signals. Use when the user asks to create, draft, or refine an epic, or to frame a multi-story initiative or roadmap item as an epic. Not for splitting an epic into stories or writing a single story (writing-stories), implementing work, or explaining what an epic is.",
+      "latest": "1.0.2",
+      "versions": [
+        "1.0.1",
+        "1.0.2"
+      ]
+    },
+    {
+      "name": "@agileflow/diagnosing-bugs",
+      "description": "Diagnose and fix reproducible defects, regressions, failing tests, crashes, and unexpected behavior by reproducing, isolating the root cause, and making the smallest fix that explains the evidence. Use when the user reports something broken, a test or build is failing, behavior changed unexpectedly, or they ask for root-cause analysis. Not for confirming that a change just made works (verifying-changes), writing tests for code that works (writing-tests), general conceptual questions, or new feature work.",
+      "latest": "1.0.4",
+      "versions": [
+        "1.0.0",
+        "1.0.2",
+        "1.0.3",
+        "1.0.4"
+      ]
+    },
+    {
+      "name": "@agileflow/filing-pr",
+      "description": "Open a pull request for the current branch with a title that follows repository conventions and a description that leads with the problem, summarizes the solution, and includes verification evidence, then return the PR URL. Use when the user asks to file, open, create, raise, or submit a pull request (PR). Not for reviewing an existing PR (reviewing-changes), monitoring one through CI (babysitting-pr), or only writing a commit message (writing-commits).",
+      "latest": "1.2.1",
+      "versions": [
+        "1.0.0",
+        "1.2.0",
+        "1.2.1"
+      ]
+    },
+    {
+      "name": "@agileflow/interviewing-requirements",
+      "description": "Interview the user in small rounds of high-value questions to pin down requirements and stress-test a plan before implementation, after first checking the repository for facts it can answer. Use only when the user explicitly asks to be interviewed, questioned, or grilled about a plan, or says things like \"ask me questions\", \"stress-test this plan\", \"help me decide by asking me questions\", or \"question me about this\". Do not activate for ordinary implementation requests.",
+      "latest": "1.0.4",
+      "versions": [
+        "1.0.0",
+        "1.0.2",
+        "1.0.3",
+        "1.0.4"
+      ]
+    },
+    {
+      "name": "@agileflow/planning-migrations",
+      "description": "Plan a database schema, data, or API migration before it runs - compatibility between old and new code, clients, and data, validation of existing data, deployment order (expand, migrate, contract), backfills, and per-step recovery - stating explicitly which steps lose data or cannot be reversed. Use when the user asks to plan, sequence, roll out, roll back, or de-risk a migration, a schema change such as renaming, retyping, or dropping a column or table, a backfill, or a breaking API change. Not for listing everything a finished change could break (checking-blast-radius), recording a decision already made (recording-decisions), or resolving git merge conflicts.",
+      "latest": "1.0.0",
+      "versions": [
+        "1.0.0"
+      ]
+    },
+    {
+      "name": "@agileflow/profiling-performance",
+      "description": "Make slow or resource-hungry code faster with measurements instead of guesses, by establishing a reproducible baseline, finding the bottleneck with profiling evidence, making a targeted change, and measuring again to report before and after numbers. Use when the user says something is slow, times out, or uses too much CPU or memory, or asks to profile, benchmark, speed up, or optimize code. Not for fixing incorrect results (diagnosing-bugs), restructuring code without a performance goal (refactoring-safely), or explaining performance concepts.",
+      "latest": "1.0.0",
+      "versions": [
+        "1.0.0"
+      ]
+    },
+    {
+      "name": "@agileflow/recording-decisions",
+      "description": "Record a technical or product decision that has been made as a short, durable decision record (ADR) with its context, the decision, the reasons and rejected alternatives, and its consequences, in the AgileFlow Work decisions folder when Work is enabled or in the repository's existing ADR directory otherwise. Use when the user asks to record, document, or write up a decision or an ADR, or to supersede an earlier decision. Not for debating or comparing options before a decision exists, for epics, stories, or plans, or for general documentation.",
+      "latest": "1.0.1",
+      "versions": [
+        "1.0.0",
+        "1.0.1"
+      ]
+    },
+    {
+      "name": "@agileflow/refactoring-safely",
+      "description": "Restructure existing code (extract, rename, move, split, deduplicate, or untangle it) without changing its intended behavior, by pinning that behavior with existing or new characterization tests first, changing it in small verified steps, and stopping to report when behavior would have to change. Use when the user asks to refactor, restructure, clean up, reorganize, extract, split, deduplicate, or reduce the complexity of working code. Not for fixing bugs (diagnosing-bugs), adding features, or re-explaining something more simply (simplifying-explanations).",
+      "latest": "1.0.0",
+      "versions": [
+        "1.0.0"
+      ]
+    },
+    {
+      "name": "@agileflow/resolving-conflicts",
+      "description": "Resolve git merge, rebase, cherry-pick, or stash conflicts by understanding the intent of both sides and producing a combined result that preserves both behaviors where compatible, then verifying and completing the operation. Use when a merge or rebase stops with conflicts, files contain conflict markers, or the user asks to fix, resolve, or get through merge conflicts. Not for starting a merge or rebase, choosing a branching strategy, or fixing tests or builds that fail after a merge that had no conflicts (diagnosing-bugs).",
       "latest": "1.0.2",
       "versions": [
         "1.0.0",
@@ -22,108 +108,84 @@
       ]
     },
     {
-      "name": "@agileflow/creating-epics",
-      "description": "Create or refine an AgileFlow Work epic, one outcome-level body of work with its problem, outcome, scope, non-goals, and success signals. Use when the user asks to create, draft, or refine an epic, or to frame a multi-story initiative or roadmap item as an epic. Not for splitting an epic into stories, writing a single story, implementing work, or explaining what an epic is.",
-      "latest": "1.0.1",
-      "versions": [
-        "1.0.1"
-      ]
-    },
-    {
-      "name": "@agileflow/diagnosing-bugs",
-      "description": "Diagnose and fix reproducible defects, regressions, failing tests, crashes, and unexpected behavior by reproducing, isolating the root cause, and making the smallest fix that explains the evidence. Use when the user reports something broken, a test or build is failing, behavior changed unexpectedly, or they ask for root-cause analysis. Do not use for general conceptual questions or new feature work.",
-      "latest": "1.0.3",
+      "name": "@agileflow/reviewing-changes",
+      "description": "Review the actual diff of a change, branch, or pull request for defects - correctness bugs, regressions, scope mistakes, missing behavior, and security issues where relevant - and report prioritized findings, or say plainly that none were found. Use when the user asks to review, critique, or look over code changes, a diff, a commit, a branch, or a PR, typically before merging. Not for explaining unfamiliar code, writing new features, proving by running it that a specific behavior works (verifying-changes), judging a story against its acceptance criteria (reviewing-story), or a dedicated security review or audit (reviewing-security).",
+      "latest": "1.0.2",
       "versions": [
         "1.0.0",
-        "1.0.2",
-        "1.0.3"
+        "1.0.1",
+        "1.0.2"
       ]
     },
     {
-      "name": "@agileflow/filing-pr",
-      "description": "Open a pull request for the current branch with a title that follows repository conventions and a description that leads with the problem, summarizes the solution, and includes verification evidence, then return the PR URL. Use when the user asks to file, open, create, raise, or submit a pull request (PR). Not for reviewing an existing PR or monitoring one through CI.",
-      "latest": "1.2.0",
-      "versions": [
-        "1.0.0",
-        "1.2.0"
-      ]
-    },
-    {
-      "name": "@agileflow/interviewing-requirements",
-      "description": "Interview the user in small rounds of high-value questions to pin down requirements and stress-test a plan before implementation, after first checking the repository for facts it can answer. Use only when the user explicitly asks to be interviewed, questioned, or grilled about a plan, or says things like \"ask me questions\", \"stress-test this plan\", \"help me decide by asking me questions\", or \"question me about this\". Do not activate for ordinary implementation requests.",
-      "latest": "1.0.3",
-      "versions": [
-        "1.0.0",
-        "1.0.2",
-        "1.0.3"
-      ]
-    },
-    {
-      "name": "@agileflow/recording-decisions",
-      "description": "Record a technical or product decision that has been made as a short, durable decision record (ADR) with its context, the decision, the reasons and rejected alternatives, and its consequences, in the AgileFlow Work decisions folder when Work is enabled or in the repository's existing ADR directory otherwise. Use when the user asks to record, document, or write up a decision or an ADR, or to supersede an earlier decision. Not for debating or comparing options before a decision exists, for epics, stories, or plans, or for general documentation.",
+      "name": "@agileflow/reviewing-security",
+      "description": "Review a change or an area of code for exploitable security weaknesses at its trust boundaries (input handling and injection, authentication and authorization, permissions, secrets, signatures and crypto, and risky execution paths such as shell, file system, deserialization, and outbound requests) and report evidence-backed findings with location, exploit path, impact, severity, and remediation, or state plainly that nothing exploitable was found. Use when the user asks for a security review or audit, a threat or vulnerability check, or whether code can be exploited or abused. Not for a general review of a diff for defects (reviewing-changes) or for explaining security concepts.",
       "latest": "1.0.0",
       "versions": [
         "1.0.0"
       ]
     },
     {
-      "name": "@agileflow/resolving-conflicts",
-      "description": "Resolve git merge, rebase, cherry-pick, or stash conflicts by understanding the intent of both sides and producing a combined result that preserves both behaviors where compatible, then verifying and completing the operation. Use when a merge or rebase stops with conflicts, files contain conflict markers, or the user asks to fix, resolve, or get through merge conflicts.",
-      "latest": "1.0.1",
-      "versions": [
-        "1.0.0",
-        "1.0.1"
-      ]
-    },
-    {
-      "name": "@agileflow/reviewing-changes",
-      "description": "Review the actual diff of a change, branch, or pull request for correctness bugs, regressions, scope mistakes, missing behavior, and security issues where relevant, and report prioritized findings. Use when the user asks to review, critique, or look over code changes, a diff, a commit, a branch, or a PR, typically before merging. Not for explaining unfamiliar code, writing new features, proving by running it that a change works, or judging whether a work item's acceptance criteria are met.",
-      "latest": "1.0.1",
-      "versions": [
-        "1.0.0",
-        "1.0.1"
-      ]
-    },
-    {
       "name": "@agileflow/reviewing-story",
-      "description": "Judge whether an AgileFlow Work story was actually delivered by checking its implementation against each acceptance criterion and the Definition of Done with evidence, then recommending or applying the right status. Use when the user asks whether a specific story is done, asks to review a story's implementation, or asks to close or accept a story. Not for a general review of a diff or PR that is not tied to a story, or for implementing the story.",
-      "latest": "1.0.1",
+      "description": "Judge whether an AgileFlow Work story was actually delivered by checking its implementation against each acceptance criterion and the Definition of Done with evidence, then recommending or applying the right status. Use when the user asks whether a specific story is done or complete, asks to review a story's implementation, or asks to close or accept a story. Not for a general review of a diff or PR for defects that is not about a story's criteria (reviewing-changes), or for implementing or continuing the story (working-story).",
+      "latest": "1.1.0",
       "versions": [
-        "1.0.1"
+        "1.0.1",
+        "1.1.0"
       ]
     },
     {
       "name": "@agileflow/simplifying-explanations",
       "description": "Re-explain code, a concept, an error, or a previous answer at a simpler level for someone less familiar with it, using plain language, one core idea at a time, and concrete examples from the user's own context. Use only when the user explicitly asks for a simpler explanation, such as \"explain it simply\", \"ELI5\", \"explain like I'm new to this\", \"dumb it down\", or \"I don't follow, simplify\". Do not activate for ordinary explanation requests.",
-      "latest": "1.0.2",
+      "latest": "1.0.3",
       "versions": [
         "1.0.0",
-        "1.0.2"
+        "1.0.2",
+        "1.0.3"
       ]
     },
     {
       "name": "@agileflow/verifying-changes",
-      "description": "Verify that a code change really works by exercising the changed behavior directly (smallest meaningful proof, not the whole test suite). Use when the user asks to verify, confirm, prove, or make sure a change works or does what it should (e.g. \"make sure the new limit actually works\", \"confirm the flag really skips uploads\"), or when you have just changed runtime behavior and need evidence before reporting it done. Not for reviewing a diff for bugs, writing a test suite for existing code, or comment, formatting, or documentation-only edits.",
-      "latest": "1.0.1",
+      "description": "Verify that a specific behavior of a code change really works by exercising it directly (the smallest meaningful proof, at most one focused proof test, not a test suite or the whole suite), and report honestly when it does not. Use when the user asks to verify, confirm, prove, or make sure a change works or does what it should (e.g. \"make sure the new limit actually works\", \"confirm the flag really skips uploads\"), or when you have just changed runtime behavior and need evidence before reporting it done. Not for reviewing a diff for defects (reviewing-changes), writing or improving tests for existing code (writing-tests), or comment, formatting, or documentation-only edits.",
+      "latest": "1.0.2",
       "versions": [
         "1.0.0",
-        "1.0.1"
+        "1.0.1",
+        "1.0.2"
       ]
     },
     {
       "name": "@agileflow/working-story",
-      "description": "Implement a specific AgileFlow Work story end to end, from its acceptance criteria, epic, decisions, and Definition of Done through dependency checks, the smallest complete change, per-criterion verification, and an honest final status. Use when the user asks to work on, implement, pick up, continue, or finish a named story. Not for writing or splitting stories, or for reviewing whether an already implemented story is done.",
-      "latest": "1.0.1",
+      "description": "Implement a specific AgileFlow Work story end to end, from its acceptance criteria, epic, decisions, and Definition of Done through dependency checks, the smallest complete change, per-criterion verification, and an honest final status. Use when the user asks to work on, implement, pick up, continue, or finish a named story. Not for writing or splitting stories (writing-stories), or for reviewing whether an already implemented story meets its acceptance criteria and is done (reviewing-story).",
+      "latest": "1.1.0",
       "versions": [
-        "1.0.1"
+        "1.0.1",
+        "1.1.0"
+      ]
+    },
+    {
+      "name": "@agileflow/writing-commits",
+      "description": "Write accurate commit messages from the actual staged diff and the repository's commit conventions (history style, conventional commits, documented rules such as required or forbidden trailers), without claims the diff or evidence does not support, and flag unrelated or accidental staged changes with a proposed split. Use when the user asks to commit, write or suggest a commit message, or split staged work into commits. Not for opening a pull request (filing-pr), reviewing changes for bugs (reviewing-changes), or pushing.",
+      "latest": "1.0.0",
+      "versions": [
+        "1.0.0"
       ]
     },
     {
       "name": "@agileflow/writing-stories",
-      "description": "Write AgileFlow Work stories, splitting an epic or requirement into small vertical-slice stories with observable acceptance criteria and only real dependencies, or writing or refining a single story for a bug or small change. Use when the user asks to break an epic into stories, or to write, split, or refine stories or their acceptance criteria. Not for creating epics, implementing or fixing the work itself, or judging whether a story is done.",
-      "latest": "1.0.1",
+      "description": "Write AgileFlow Work stories, splitting an epic or requirement into small vertical-slice stories with observable acceptance criteria and only real dependencies, or writing or refining a single story for a bug or small change. Use when the user asks to break an epic into stories, or to write, split, or refine stories or their acceptance criteria. Not for creating epics (creating-epics), implementing or fixing the work itself (working-story), or judging whether a story is done (reviewing-story).",
+      "latest": "1.0.2",
       "versions": [
-        "1.0.1"
+        "1.0.1",
+        "1.0.2"
+      ]
+    },
+    {
+      "name": "@agileflow/writing-tests",
+      "description": "Write focused automated tests for existing behavior, bug regressions, boundaries, and failure cases in the repository's own test framework and conventions, and prove that each regression test fails against the bug it guards. Use when the user asks to write, add, or improve tests for existing code, to cover a function, module, edge case, or error path, or to add a regression test for a bug. Not for proving that one change just made works (verifying-changes), for diagnosing or fixing a bug (diagnosing-bugs), or for explaining testing concepts.",
+      "latest": "1.0.0",
+      "versions": [
+        "1.0.0"
       ]
     }
   ]

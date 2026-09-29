@@ -1,0 +1,10 @@
+name: failing-tests-after-clean-merge-does-not-resolve
+skill: resolving-conflicts
+fixture: eval-service
+prompt: |
+  I merged main into my branch and there were no conflicts, but now the
+  invoice tests fail. Fix it.
+invocation: implicit
+neighbor: diagnosing-bugs
+assert:
+  shouldActivate: false

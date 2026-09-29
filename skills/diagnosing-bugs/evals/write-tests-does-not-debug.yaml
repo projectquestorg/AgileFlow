@@ -1,0 +1,9 @@
+name: write-tests-does-not-debug
+skill: diagnosing-bugs
+fixture: eval-service
+prompt: |
+  Add tests for exportCsv covering values with commas, quotes, and newlines.
+invocation: implicit
+neighbor: writing-tests
+assert:
+  shouldActivate: false

@@ -1,0 +1,8 @@
+name: open-pr-does-not-write-commit
+skill: writing-commits
+prompt: |
+  Open a pull request for this branch.
+invocation: implicit
+neighbor: filing-pr
+assert:
+  shouldActivate: false

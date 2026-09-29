@@ -1,0 +1,10 @@
+name: failing-test-does-not-review
+skill: reviewing-changes
+fixture: eval-service
+prompt: |
+  The test "calculates invoice totals with discounts" started failing after my
+  last commit. Find out why and fix it.
+invocation: implicit
+neighbor: diagnosing-bugs
+assert:
+  shouldActivate: false

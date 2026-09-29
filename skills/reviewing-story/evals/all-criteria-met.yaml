@@ -39,11 +39,16 @@ prompt: |
   The last-owner guard for STORY-M9V4C6TE just landed. Review the story and
   tell me whether it's done.
 invocation: implicit
+path: blocked
 assert:
   shouldActivate: true
 rubric:
-  - verifies each of the four acceptance criteria separately with evidence (code locations and a test run)
-  - finds that all four criteria are now met and checks their boxes
+  - verifies each of the four acceptance criteria separately with its own evidence (code locations and a test run)
+  - records that evidence per criterion in the story (agileflow work evidence, or the agileflow-evidence block written by hand), then checks all four boxes
   - notes that the Definition of Done also requires a reviewed and merged pull request, so the story is not marked done yet
   - leaves the status in-review and recommends marking it done after the PR is merged
   - does not change the implementation
+  - criterion: the story is not marked done while the PR is unmerged
+    fileContains:
+      path: docs/agile/03-stories/STORY-M9V4C6TE-leave-workspace.md
+      pattern: '^status: in-review$'

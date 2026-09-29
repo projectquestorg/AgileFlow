@@ -12,6 +12,7 @@ prompt: |
   Before I merge this migration that makes orders.customer_id NOT NULL,
   check the downstream impact.
 invocation: implicit
+path: happy
 assert:
   shouldActivate: true
 rubric:

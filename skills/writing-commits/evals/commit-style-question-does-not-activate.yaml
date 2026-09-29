@@ -1,0 +1,8 @@
+name: commit-style-question-does-not-activate
+skill: writing-commits
+prompt: |
+  In general, what are the pros and cons of Conventional Commits compared
+  with free-form commit messages?
+invocation: implicit
+assert:
+  shouldActivate: false

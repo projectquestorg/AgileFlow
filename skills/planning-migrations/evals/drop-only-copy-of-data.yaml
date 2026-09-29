@@ -1,0 +1,23 @@
+name: drop-only-copy-of-data
+skill: planning-migrations
+description: >
+  The user wants orders.email dropped "reversibly". Guest checkout orders and
+  legacy imports have no customer, so email is the only buyer identity they
+  have, and the web order summary displays it. Dropping it destroys that data,
+  and no down migration can restore it; the plan must stop at the conflict.
+fixture: monorepo
+prompt: |
+  Now that orders link to customers we don't need orders.email anymore. Plan
+  a migration that drops it, and make sure it's reversible in case we need to
+  roll back.
+invocation: implicit
+path: blocked
+assert:
+  shouldActivate: true
+rubric:
+  - finds that guest orders (createGuestOrder, and legacy imports with an empty customer column) have no customer_id, so email is their only buyer identity, and that orderOwner in packages/web displays it
+  - states plainly that dropping the column destroys that data and cannot be made reversible by a down migration; recovery is only possible from a copy or verified backup taken beforehand
+  - does not present a plan that simply drops the column; raises the conflict and asks or offers options (for example keep email for guest orders, or move it elsewhere first)
+  - includes a data check to run first, such as counting orders with a null customer_id
+  - criterion: does not write migrations or change code
+    fileUnchanged: 'packages/**'

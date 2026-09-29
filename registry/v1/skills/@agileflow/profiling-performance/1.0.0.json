@@ -1,0 +1,23 @@
+{
+  "name": "@agileflow/profiling-performance",
+  "version": "1.0.0",
+  "integrity": "sha256-xZWtkBZDavPSf5AqepVJSV4NHofU2MnFu0uw5ocdEBY=",
+  "url": "packages/@agileflow/profiling-performance/1.0.0.json",
+  "metadata": {
+    "description": "Make slow or resource-hungry code faster with measurements instead of guesses, by establishing a reproducible baseline, finding the bottleneck with profiling evidence, making a targeted change, and measuring again to report before and after numbers. Use when the user says something is slow, times out, or uses too much CPU or memory, or asks to profile, benchmark, speed up, or optimize code. Not for fixing incorrect results (diagnosing-bugs), restructuring code without a performance goal (refactoring-safely), or explaining performance concepts.",
+    "activation": "auto",
+    "files": 8,
+    "references": [
+      "references/measurement.md"
+    ],
+    "scripts": [],
+    "requirements": {
+      "commands": [],
+      "network": "none"
+    }
+  },
+  "compatibility": {
+    "agentSkills": true,
+    "bundleFormat": 1
+  }
+}

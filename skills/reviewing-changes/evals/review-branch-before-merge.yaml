@@ -91,6 +91,7 @@ setup: |
   mv sessions.tmp src/auth/sessions.js
   git add -A
   git commit -qm 'feat(billing): support promo codes on invoices'
+path: happy
 assert:
   shouldActivate: true
 rubric:

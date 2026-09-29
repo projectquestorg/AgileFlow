@@ -1,6 +1,6 @@
 ---
 name: working-story
-description: Implement a specific AgileFlow Work story end to end, from its acceptance criteria, epic, decisions, and Definition of Done through dependency checks, the smallest complete change, per-criterion verification, and an honest final status. Use when the user asks to work on, implement, pick up, continue, or finish a named story. Not for writing or splitting stories, or for reviewing whether an already implemented story is done.
+description: Implement a specific AgileFlow Work story end to end, from its acceptance criteria, epic, decisions, and Definition of Done through dependency checks, the smallest complete change, per-criterion verification, and an honest final status. Use when the user asks to work on, implement, pick up, continue, or finish a named story. Not for writing or splitting stories (writing-stories), or for reviewing whether an already implemented story meets its acceptance criteria and is done (reviewing-story).
 ---
 
 # Working a story
@@ -16,7 +16,7 @@ The story says where done is; the codebase says how to get there. Implement the 
 5. **Inspect the codebase** around the behavior the story describes, and follow its existing patterns.
 6. **Implement the smallest complete solution** that satisfies every acceptance criterion and constraint. No scope creep: note unrelated problems instead of fixing them.
 7. **Verify against every acceptance criterion** with evidence: run the relevant tests, add tests for new behavior, or exercise the behavior directly. Compiling is not evidence.
-8. **Check a criterion (`- [x]`) only after verifying it.** Leave anything you could not verify unchecked and say why.
+8. **Record the evidence, then check the box.** For each verified criterion, record what proved it: `agileflow work evidence <id> --criterion <n> --kind test|inspection|manual --ref <test name, file:line, or what was checked> [--file <implementation file>]` (without the CLI, write the story's evidence block as described in `references/evidence.md`). Then check it (`- [x]`); recording evidence never checks boxes. Leave anything you could not verify unchecked, with no evidence, and say why. The reviewer (reviewing-story) re-checks this evidence; stale evidence counts as not verified.
 9. **Move to the right final state** using the Definition of Done and project context: `in-review` when a PR review or merge is still required, `done` only when every criterion is verified and nothing else in the Definition of Done remains. If you cannot finish, leave it `in-progress` (or `blocked`) and report what remains.
 
 ## Constraints
@@ -24,8 +24,8 @@ The story says where done is; the codebase says how to get there. Implement the 
 - Planning questions belong to story writing. Once a story is `ready`, ask only when a missing product decision truly blocks the work, and point out that the story was not ready.
 - Do not automatically create a PR, decision records, implementation plans, progress logs, status files, or release notes, and do not run every audit or test suite you can find. Use other installed skills (verifying, filing a PR) only when relevant or asked.
 - Edit only this story's file among the Agile artifacts; one agent owns one story at a time.
-- Keep the story as written: in the frontmatter change only `status` (and `depends_on` when step 3 shows it is wrong); in the body only check verified criteria.
+- Keep the story as written: in the frontmatter change only `status` (and `depends_on` when step 3 shows it is wrong); in the body only check verified criteria and add evidence records.
 
 ## Done when
 
-The requested behavior is implemented, each acceptance criterion is either checked with evidence or explicitly reported as unverified, and the story's status reflects reality (`in-review`, `done`, `blocked`, or still `in-progress` with what remains).
+The requested behavior is implemented, each acceptance criterion is either checked with recorded evidence or explicitly reported as not verified, and the story's status reflects reality (`in-review`, `done`, `blocked`, or still `in-progress` with what remains).

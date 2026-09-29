@@ -1,0 +1,10 @@
+name: security-audit-does-not-review
+skill: reviewing-changes
+fixture: eval-service
+prompt: |
+  Do a security audit of the payment webhook endpoint: could an attacker
+  forge or replay payments?
+invocation: implicit
+neighbor: reviewing-security
+assert:
+  shouldActivate: false

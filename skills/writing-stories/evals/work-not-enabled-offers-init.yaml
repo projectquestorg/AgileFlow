@@ -1,0 +1,23 @@
+name: work-not-enabled-offers-init
+skill: writing-stories
+description: >
+  The repository has no AgileFlow Work workspace (no agileflow.yaml, no
+  docs/agile). The right result says so and offers `agileflow work init`
+  instead of inventing a docs/agile tree or story files.
+fixture: eval-service
+prompt: |
+  Write stories for adding promo codes to invoices: customers enter a code at
+  checkout and get a percentage off.
+invocation: implicit
+path: blocked
+assert:
+  shouldActivate: true
+rubric:
+  - checks for an AgileFlow Work workspace (agileflow.yaml and its work settings, or docs/agile) before writing anything
+  - tells the user that Work is not set up in this repository and suggests agileflow work init (or asks whether to set it up)
+  - does not invent a docs/agile folder structure or story files without the workspace
+  - does not implement promo codes
+  - criterion: no Work files are fabricated
+    fileUnchanged: 'docs/**'
+  - criterion: no code is written
+    fileUnchanged: 'src/**'

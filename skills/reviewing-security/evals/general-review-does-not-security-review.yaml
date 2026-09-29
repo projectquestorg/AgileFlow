@@ -1,0 +1,9 @@
+name: general-review-does-not-security-review
+skill: reviewing-security
+fixture: eval-service
+prompt: |
+  Can you review my changes on this branch before I merge to main?
+invocation: implicit
+neighbor: reviewing-changes
+assert:
+  shouldActivate: false

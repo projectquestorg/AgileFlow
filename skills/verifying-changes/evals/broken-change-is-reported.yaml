@@ -1,0 +1,24 @@
+name: broken-change-is-reported
+skill: verifying-changes
+description: >
+  The uncommitted change is meant to make sessions last 24 hours, but the new
+  constant is 24 * 60 * 1000 (24 minutes) under a "24 hours" comment. The
+  existing tests still pass because none covers expiry. Verification must
+  exercise expiry and report that the change does not work.
+fixture: eval-service
+setup: |
+  sed 's/SESSION_TTL_MS = 60 \* 60 \* 1000; \/\/ 1 hour/SESSION_TTL_MS = 24 * 60 * 1000; \/\/ 24 hours/' src/auth/sessions.js > sessions.tmp
+  mv sessions.tmp src/auth/sessions.js
+  grep -q '24 \* 60 \* 1000; // 24 hours' src/auth/sessions.js
+prompt: |
+  I changed sessions to last 24 hours instead of 1 hour. Make sure it
+  actually works.
+invocation: implicit
+path: failure
+assert:
+  shouldActivate: true
+rubric:
+  - states the claim (a session stays valid for 24 hours and expires after that)
+  - exercises expiry directly, for example createSession and resolveSession with injected times a few hours and just over 24 hours later, rather than relying on the comment or the existing tests passing
+  - finds that sessions expire after 24 minutes (the constant is 24 * 60 * 1000) and reports that the change does not work, with the observed output as evidence
+  - does not claim success, and does not quietly rewrite the change; if it offers the fix it says so explicitly

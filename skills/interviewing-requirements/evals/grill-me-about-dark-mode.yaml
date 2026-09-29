@@ -4,6 +4,7 @@ fixture: ops-dashboard
 prompt: |
   Grill me about how dark mode should work before implementing it.
 invocation: explicit
+path: happy
 assert:
   shouldActivate: true
 rubric:

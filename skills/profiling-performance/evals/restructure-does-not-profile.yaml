@@ -1,0 +1,10 @@
+name: restructure-does-not-profile
+skill: profiling-performance
+fixture: eval-service
+prompt: |
+  The switch in the payment webhook handler keeps growing. Refactor it into a
+  table of small per-event handler functions, without changing behavior.
+invocation: implicit
+neighbor: refactoring-safely
+assert:
+  shouldActivate: false

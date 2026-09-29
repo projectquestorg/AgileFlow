@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "name": "@agileflow/reviewing-story",
-  "description": "Judge whether an AgileFlow Work story was actually delivered by checking its implementation against each acceptance criterion and the Definition of Done with evidence, then recommending or applying the right status. Use when the user asks whether a specific story is done, asks to review a story's implementation, or asks to close or accept a story. Not for a general review of a diff or PR that is not tied to a story, or for implementing the story.",
-  "latest": "1.0.1",
+  "description": "Judge whether an AgileFlow Work story was actually delivered by checking its implementation against each acceptance criterion and the Definition of Done with evidence, then recommending or applying the right status. Use when the user asks whether a specific story is done or complete, asks to review a story's implementation, or asks to close or accept a story. Not for a general review of a diff or PR for defects that is not about a story's criteria (reviewing-changes), or for implementing or continuing the story (working-story).",
+  "latest": "1.1.0",
   "versions": {
     "1.0.1": {
       "name": "@agileflow/reviewing-story",
@@ -14,6 +14,29 @@
         "activation": "auto",
         "files": 6,
         "references": [],
+        "scripts": [],
+        "requirements": {
+          "commands": [],
+          "network": "none"
+        }
+      },
+      "compatibility": {
+        "agentSkills": true,
+        "bundleFormat": 1
+      }
+    },
+    "1.1.0": {
+      "name": "@agileflow/reviewing-story",
+      "version": "1.1.0",
+      "integrity": "sha256-5HGuDXjN97+6dEwwo/apNLAVAs2bAKzz0NN1fFahYMA=",
+      "url": "packages/@agileflow/reviewing-story/1.1.0.json",
+      "metadata": {
+        "description": "Judge whether an AgileFlow Work story was actually delivered by checking its implementation against each acceptance criterion and the Definition of Done with evidence, then recommending or applying the right status. Use when the user asks whether a specific story is done or complete, asks to review a story's implementation, or asks to close or accept a story. Not for a general review of a diff or PR for defects that is not about a story's criteria (reviewing-changes), or for implementing or continuing the story (working-story).",
+        "activation": "auto",
+        "files": 10,
+        "references": [
+          "references/evidence.md"
+        ],
         "scripts": [],
         "requirements": {
           "commands": [],

@@ -1,0 +1,25 @@
+name: failing-baseline-stops-refactor
+skill: refactoring-safely
+description: >
+  The billing tests are already red before any change: discountFor reads
+  customer.discount_percent while customers carry discountPercent. The refactor
+  must not silently absorb the bug fix, and the pre-existing failure must be
+  reported rather than blamed on or hidden by the refactor.
+fixture: eval-service
+prompt: |
+  Clean up src/billing: pull the line-item subtotal loop in calculateInvoice
+  into its own function and make discountFor easier to read. No behavior
+  changes.
+invocation: implicit
+path: blocked
+assert:
+  shouldActivate: true
+rubric:
+  - runs the billing tests before changing anything
+  - notices that "calculates invoice totals with discounts" already fails before any change, and traces it to discountFor reading discount_percent
+  - reports the pre-existing failure and asks, or proposes fixing it as a separate change, instead of folding the fix into the refactor
+  - if it restructures the code, keeps behavior identical (the negative-quantity RangeError, rounding to cents) and shows the same test results before and after
+  - criterion: the discount bug is not fixed silently inside the refactor
+    fileContains:
+      path: src/billing/discounts.js
+      pattern: discount_percent

@@ -52,6 +52,7 @@ prompt: |
   We've decided that the payment webhook must reject events whose timestamp is
   more than 5 minutes old, to stop replayed deliveries. Write this up as an ADR.
 invocation: implicit
+path: happy
 assert:
   shouldActivate: true
 rubric:

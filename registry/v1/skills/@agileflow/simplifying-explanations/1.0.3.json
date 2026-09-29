@@ -1,0 +1,21 @@
+{
+  "name": "@agileflow/simplifying-explanations",
+  "version": "1.0.3",
+  "integrity": "sha256-G07Sqd4KyR2Kf888aF3ZtwQaaBLNP7C3gr6/7wN6azo=",
+  "url": "packages/@agileflow/simplifying-explanations/1.0.3.json",
+  "metadata": {
+    "description": "Re-explain code, a concept, an error, or a previous answer at a simpler level for someone less familiar with it, using plain language, one core idea at a time, and concrete examples from the user's own context. Use only when the user explicitly asks for a simpler explanation, such as \"explain it simply\", \"ELI5\", \"explain like I'm new to this\", \"dumb it down\", or \"I don't follow, simplify\". Do not activate for ordinary explanation requests.",
+    "activation": "manual",
+    "files": 8,
+    "references": [],
+    "scripts": [],
+    "requirements": {
+      "commands": [],
+      "network": "none"
+    }
+  },
+  "compatibility": {
+    "agentSkills": true,
+    "bundleFormat": 1
+  }
+}

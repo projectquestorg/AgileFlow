@@ -1,0 +1,10 @@
+name: refine-criteria-does-not-review-story
+skill: reviewing-story
+fixture: agile-app
+prompt: |
+  The acceptance criteria on STORY-R3N7M2QA are vague about whitespace-only
+  names. Refine the story's criteria.
+invocation: implicit
+neighbor: writing-stories
+assert:
+  shouldActivate: false
