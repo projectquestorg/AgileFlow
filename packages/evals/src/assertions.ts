@@ -56,15 +56,22 @@ export function buildJudgePrompt(prompt: string, rubric: string[], transcript: T
   ].join('\n');
 }
 
+/**
+ * The first JSON object in the judge's reply. Judges sometimes wrap the object
+ * in prose or code fences that contain braces of their own, so every `{` is
+ * tried as a start, with the widest parsable span first.
+ */
 function extractJson(text: string): Record<string, unknown> {
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  if (start === -1 || end <= start) throw new JudgeError('judge returned no JSON');
-  try {
-    const value = JSON.parse(text.slice(start, end + 1)) as unknown;
-    if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
-  } catch {
-    // fall through
+  if (text.indexOf('{') === -1) throw new JudgeError('judge returned no JSON');
+  for (let start = text.indexOf('{'); start !== -1; start = text.indexOf('{', start + 1)) {
+    for (let end = text.lastIndexOf('}'); end > start; end = text.lastIndexOf('}', end - 1)) {
+      try {
+        const value = JSON.parse(text.slice(start, end + 1)) as unknown;
+        if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+      } catch {
+        // try a narrower span
+      }
+    }
   }
   throw new JudgeError('judge returned invalid JSON');
 }

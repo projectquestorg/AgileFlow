@@ -134,6 +134,15 @@ describe('transcript parsing', () => {
     expect(claudeArgs({ ...input, mode: 'full', invocation: 'explicit' })[1]).toBe('/s p');
   });
 
+  it('judge output: finds the JSON object even when surrounding prose contains braces', () => {
+    const rubric = ['a', 'b'];
+    const json = '{"items":[{"criterion":"a","pass":true,"reason":"ok"},{"criterion":"b","pass":false,"reason":"no"}]}';
+    expect(parseJudgeOutput(`Grades for {the run}:\n${json}\nNote: {none}`, rubric).map((i) => i.pass)).toEqual([true, false]);
+    expect(parseJudgeOutput('```json\n' + json + '\n```', rubric)).toHaveLength(2);
+    expect(() => parseJudgeOutput('no json here', rubric)).toThrow(/no JSON/);
+    expect(() => parseJudgeOutput('{not json}', rubric)).toThrow(/invalid JSON/);
+  });
+
   it('Codex: reading SKILL.md counts as activation', () => {
     const t = parseCodexStream(
       lines(
