@@ -6,6 +6,7 @@ import { createSandbox, exists, FIXTURES_DIR, isSymlink, read, SKILLS_DIR, snaps
 
 /** Published version of diagnosing-bugs in the catalog these tests install. */
 const DB = YAML.parse(fs.readFileSync(path.join(SKILLS_DIR, 'diagnosing-bugs', 'agileflow.skill.yaml'), 'utf8')).package.version as string;
+const IR = YAML.parse(fs.readFileSync(path.join(SKILLS_DIR, 'interviewing-requirements', 'agileflow.skill.yaml'), 'utf8')).package.version as string;
 
 let sb: Sandbox;
 afterEach(() => sb?.cleanup());
@@ -308,7 +309,7 @@ describe('list and shims', () => {
     await sb.af(['init', '--skills', 'diagnosing-bugs,interviewing-requirements']);
     const res = await sb.af(['list']);
     expect(res.stdout).toMatch(new RegExp(`diagnosing-bugs\\s+${DB.replace(/\./g, '\\.')}\\s+auto\\s+official\\s+clean`));
-    expect(res.stdout).toMatch(/interviewing-requirements\s+1\.0\.2\s+manual\s+official\s+clean/);
+    expect(res.stdout).toMatch(new RegExp(`interviewing-requirements\\s+${IR.replace(/\./g, '\\.')}\\s+manual\\s+official\\s+clean`));
     expect(res.stdout).toContain('Not managed by AgileFlow (left untouched): my-team-release, strange-custom-tool');
     expect(res.stdout).toMatch(/Codex\s+native \.agents\/skills\n/);
     expect(res.stdout).toMatch(/Claude\s+linked \.claude\/skills \(not detected\)/);
