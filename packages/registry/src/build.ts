@@ -34,6 +34,14 @@ export interface BuildOptions {
   pinsFile?: string;
   /** Package scope every skill is published under (default `@agileflow`); `@myorg` for a team registry. */
   scope?: string;
+  /**
+   * Manifest of the last release (read from version control, not from
+   * `outDir`). Every version it lists must still be published with the same
+   * integrity, so history cannot be rewritten together with its own hashes.
+   */
+  baseline?: RegistryManifest;
+  /** Integrities already pinned into the CLI; pins may be added but never changed. */
+  pinned?: Record<string, Record<string, string>>;
 }
 
 export interface BuildResult {
@@ -96,6 +104,22 @@ export function renderPinsModule(manifest: RegistryManifest): string {
     '// Integrities of every official package version published before this CLI was built.\n' +
     `export const OFFICIAL_PINS: Record<string, Record<string, string>> = ${JSON.stringify(official, null, 2)};\n`
   );
+}
+
+/** Every name@version in `expected` must still be in `manifest` with the same integrity. */
+function checkAgainst(
+  manifest: RegistryManifest,
+  expected: Record<string, Record<string, string>>,
+  label: string,
+  errors: string[],
+): void {
+  for (const [name, versions] of Object.entries(expected)) {
+    for (const [version, integrity] of Object.entries(versions)) {
+      const now = manifest.packages[name]?.[version];
+      if (!now) errors.push(`${name}@${version}: in ${label} but no longer published (published versions are immutable)`);
+      else if (now !== integrity) errors.push(`${name}@${version}: integrity differs from ${label} (published versions are immutable)`);
+    }
+  }
 }
 
 /**
@@ -224,6 +248,7 @@ export async function buildRegistry(options: BuildOptions): Promise<BuildResult>
         },
         ...(license ? { license } : {}),
         ...(compatibility ? { compatibility } : {}),
+        evals: { scenarios: files.filter((f) => /^evals\/[^/]+\.ya?ml$/.test(f.path)).length },
       },
       compatibility: { agentSkills: sidecar.compatibility?.agentSkills ?? true, bundleFormat: 1 },
     };
@@ -278,10 +303,17 @@ export async function buildRegistry(options: BuildOptions): Promise<BuildResult>
       continue;
     }
     await verifyHistory(options.outDir, name, previous, result.errors);
+    for (const [version, integrity] of Object.entries(manifest.packages[name] ?? {})) {
+      if (previous.versions[version]?.integrity !== integrity) {
+        result.errors.push(`${name}@${version}: manifest and skill index disagree`);
+      }
+    }
     result.warnings.push(`${name}: no longer in skills/; published versions stay available but unlisted`);
   }
   outputs.set('v1/skills/index.json', json(skillIndex));
   manifest.packages = Object.fromEntries(Object.entries(manifest.packages).sort(([a], [b]) => (a < b ? -1 : 1)));
+  if (options.baseline) checkAgainst(manifest, options.baseline.packages, 'the release baseline', result.errors);
+  if (options.pinned) checkAgainst(manifest, options.pinned, 'the integrity pinned in the CLI', result.errors);
 
   const packIndex: RegistryPackIndex = { schema: 1, packs: [] };
   let packFiles: string[] = [];

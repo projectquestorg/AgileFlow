@@ -3,3 +3,5 @@ export * from './integrity';
 export * from './sources';
 export * from './build';
 export * from './official-pins';
+export * from './signing';
+export * from './trust-root';
