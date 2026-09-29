@@ -54,10 +54,10 @@ describe('--json errors', () => {
     expect(bad.stderr).toBe('');
     expect(JSON.parse(bad.stdout)).toEqual({
       ok: false,
-      error: { message: '"bogus" is not a story status', hints: ['Valid: backlog, ready, in-progress, in-review, blocked, done, cancelled'] },
+      error: { code: 'error', message: '"bogus" is not a story status', hints: ['Valid: backlog, ready, in-progress, in-review, blocked, done, cancelled'] },
     });
     const missing = JSON.parse((await sb.af(['work', 'show', 'ZZZZ', '--json'])).stdout);
-    expect(missing).toEqual({ ok: false, error: { message: 'No work item matches "ZZZZ"', hints: ['List items with `agileflow work list`.'] } });
+    expect(missing).toEqual({ ok: false, error: { code: 'error', message: 'No work item matches "ZZZZ"', hints: ['List items with `agileflow work list`.'] } });
     const type = JSON.parse((await sb.af(['work', 'list', '--type', 'bug', '--json'])).stdout);
     expect(type.error.message).toBe('--type must be epic, story, or decision (got "bug")');
 
@@ -67,6 +67,7 @@ describe('--json errors', () => {
     expect(JSON.parse(off.stdout)).toEqual({
       ok: false,
       error: {
+        code: 'usage',
         message: 'AgileFlow Work is not enabled in this project',
         hints: ['Run `agileflow work init` to set up the Agile workspace (docs/agile by default).'],
       },
@@ -126,13 +127,24 @@ describe('terminal output safety', () => {
   it('control characters in titles are replaced in text output and kept (escaped) in JSON', async () => {
     const sb = await workSandbox();
     const title = 'esc \u001b[31mRED\u001b[0m\u0007';
-    const id = await create(sb, 'story', title, '--status', 'ready');
+    // `work new` refuses such titles; hand-edited files can still contain them.
+    const id = 'STORY-AAAAAAA7';
+    fs.mkdirSync(path.join(sb.project, STORIES), { recursive: true });
+    fs.writeFileSync(path.join(sb.project, STORIES, `${id}.md`), `---\nschema: 1\ntype: story\nid: ${id}\ntitle: ${JSON.stringify(title)}\nstatus: ready\n---\n\n# t\n`);
+    fs.writeFileSync(
+      path.join(sb.project, STORIES, 'STORY-AAAAAAA6.md'),
+      '---\nschema: 1\ntype: story\nid: STORY-AAAAAAA6\ntitle: finished\nstatus: done\n---\n\n## Acceptance Criteria\n\n- [ ] crit \u001b]0;pwned\u0007 done\n',
+    );
     for (const args of [['work', 'list'], ['work', 'show', id, '--body'], ['work', 'board']]) {
       const res = await sb.af(args);
       expect(res.stdout, args.join(' ')).not.toMatch(/[\u0000-\u0008\u000b-\u001f]/);
       expect(res.stdout, args.join(' ')).toContain('esc ?[31mRED?[0m?');
     }
     expect((await json<{ title: string }>(sb, ['work', 'show', id])).title).toBe(title);
+    // `check` prints criteria and titles from files too: no raw ESC or BEL.
+    const check = await sb.af(['check']);
+    expect(check.stdout).toContain('crit ?]0;pwned? done');
+    expect(check.stdout).not.toMatch(/[\u0000-\u0008\u000b-\u001f]/);
   });
 });
 

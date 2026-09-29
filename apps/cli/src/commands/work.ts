@@ -4,6 +4,7 @@ import {
   findProjectRoot,
   globalScope,
   loadWorkspace,
+  OperationError,
   packMembers,
   pathExists,
   prepareAdd,
@@ -48,7 +49,20 @@ import {
   readyToStart,
   storyReadiness,
   WorkError,
+  capList,
+  describeIgnoredWorkPaths,
+  duplicateIds,
+  evaluateEvidence,
+  EVIDENCE_KINDS,
+  findIgnoredPaths,
+  getStory,
+  nextStories,
+  readV4Backlog,
+  recordEvidence,
   type Artifact,
+  type ImportPreference,
+  type NextCandidate,
+  type StoryEvidence,
   type ArtifactType,
   type Decision,
   type Epic,
@@ -57,9 +71,10 @@ import {
   type WorkScan,
 } from '@agileflow/work';
 import type { Cli } from '../runtime';
-import { EXIT, projectScopeForCreate, servicesFor, splitList, UsageError } from '../runtime';
+import { EXIT, mutate, projectScopeForCreate, servicesFor, splitList, UsageError } from '../runtime';
 import type { Output } from '../ui/output';
 import { table } from '../ui/tables';
+import { describePrepared } from './shared';
 
 /** The Agile workflow skills (the `@agileflow/agile` pack). */
 export const AGILE_SKILLS = ['creating-epics', 'writing-stories', 'working-story', 'reviewing-story', 'recording-decisions'];
@@ -94,6 +109,20 @@ async function loadWork(cli: Cli): Promise<LoadedWork> {
     throw new UsageError(`Work is enabled but ${paths.root}/ does not exist`, ['Run `agileflow work init` to create it.']);
   }
   return { scope, paths, scan };
+}
+
+/**
+ * Run a Work change under the project lock, like every other changing
+ * command. The workspace is scanned inside the lock, so concurrent Work
+ * commands see each other's writes, and the content-hash check before each
+ * write cannot race another AgileFlow process.
+ */
+async function mutateWork<T>(cli: Cli, fn: (work: LoadedWork) => Promise<T>): Promise<T> {
+  const root = await findProjectRoot(cli.ctx.cwd, { homeDir: cli.ctx.homeDir });
+  const scope = root ? projectScope(root) : null;
+  // Report "not enabled" without taking the lock.
+  if (!scope || !(await workSettings(scope))) await loadWork(cli);
+  return mutate(cli, scope!, async () => fn(await loadWork(cli)));
 }
 
 const upper = (s: string) => s.replace(/-/g, ' ').toUpperCase();
@@ -134,20 +163,44 @@ function errorHints(err: unknown): string[] {
 
 /**
  * Run a work subcommand. With --json, every error is printed as JSON on stdout
- * (`{"ok":false,"error":{"message":"...","hints":[...]}}`) and the exit code
+ * (`{"ok":false,"error":{"code":"...","message":"...","hints":[...]}}`) and the exit code
  * is 1. Without --json, Work errors become UsageErrors for the CLI's handler.
  */
+/** The same `error.code` classification the CLI's top-level handler uses (apps/cli/src/index.ts). */
+function errorCode(err: unknown): string {
+  const name = (err as Error)?.name;
+  if (name === 'UsageError') return 'usage';
+  if (name === 'IntegrityError') return 'integrity';
+  if (name === 'ConfigError') return 'config';
+  if (['OperationError', 'WorkError', 'RegistryError'].includes(name)) return 'error';
+  if ((err as NodeJS.ErrnoException)?.code) return 'system';
+  return 'internal';
+}
+
 async function guarded(cli: Cli, json: boolean | undefined, fn: () => Promise<number>): Promise<number> {
   try {
     return await fn();
   } catch (err) {
     if ((err as Error)?.name === 'CancelledError') throw err;
     if (json) {
-      cli.out.json({ ok: false, error: { message: (err as Error)?.message ?? String(err), hints: errorHints(err) } });
+      cli.out.json({ ok: false, error: { code: errorCode(err), message: (err as Error)?.message ?? String(err), hints: errorHints(err) } });
       return EXIT.ERROR;
     }
-    if (err instanceof WorkError) throw new UsageError(err.message, err.hints);
+    // Messages and hints can carry file names and titles: never print their control characters.
+    if (err instanceof WorkError) throw new UsageError(clean(err.message), err.hints.map(clean));
     throw err;
+  }
+}
+
+/**
+ * Duplicate IDs are shown, never hidden or merged: a warning on stderr (also
+ * with --json, where stdout stays one JSON document) naming every file.
+ */
+function warnDuplicates(cli: Cli, duplicates: Array<{ id: string; paths: string[] }>): void {
+  for (const d of duplicates) {
+    cli.out.warn(
+      clean(`${d.id} is used by ${d.paths.length} files (duplicate ID): ${d.paths.join(', ')}. Commands refuse to change it until every copy but one has a new ID.`),
+    );
   }
 }
 
@@ -173,6 +226,7 @@ function summary(scan: WorkScan, a: Artifact): Record<string, unknown> {
     base.related = a.related ?? [];
   }
   if (a.type !== 'decision' && a.legacy_id) base.legacy_id = a.legacy_id;
+  if (a.type !== 'decision' && a.legacy_source) base.legacy_source = a.legacy_source;
   return base;
 }
 
@@ -234,19 +288,8 @@ async function workInit(cli: Cli, options: WorkInitOptions): Promise<number> {
     out.line(`  ${paths.root}`);
   }
 
-  // Work files are shared through Git. Warn (never refuse) when the root is ignored.
-  const warnings: string[] = [];
-  const ignored = await findIgnoredWorkPaths(paths);
-  if (ignored?.length) {
-    const rule = ignored[0]!;
-    const top = paths.root.split('/')[0]!;
-    const dirRule = top !== paths.root && rule.pattern.replace(/^\//, '').replace(/\/$/, '') === top;
-    warnings.push(
-      `${paths.root}/ is ignored by Git (${rule.source}: ${rule.pattern}), so epics and stories would not be committed or shared. ` +
-        `Pick another --root, or change ${rule.source.replace(/:\d+$/, '')} so it no longer matches` +
-        (dirRule ? ` (a directory rule like \`${rule.pattern}\` cannot be re-included; use \`/${top}/*\` plus \`!/${paths.root}/\`).` : '.'),
-    );
-  }
+  // Work files are shared through Git. Warn (never refuse) when the root, or part of it, is ignored.
+  const warnings = describeIgnoredWorkPaths(paths, (await findIgnoredWorkPaths(paths)) ?? []);
   if (!options.json) for (const w of warnings) out.warn(w);
 
   const adopting = inspection.exists && !current;
@@ -270,6 +313,7 @@ async function workInit(cli: Cli, options: WorkInitOptions): Promise<number> {
   // Skills: the Agile pack, unless declined. Resolve before writing anything.
   const services = await servicesFor(ctx, scope);
   let requests: AddRequest[] = [];
+  let approvedExternal = new Set<string>();
   if (options.skills !== false) {
     const available = await agileRequests(services);
     const installed = (await pathExists(scope.configPath)) ? (await loadWorkspace(scope)).specs : {};
@@ -285,36 +329,71 @@ async function workInit(cli: Cli, options: WorkInitOptions): Promise<number> {
     } else {
       requests = candidates;
     }
-    if (requests.length) await prepareAdd(services, await loadWorkspace(scope), requests);
+    if (requests.length) {
+      const prepared = await prepareAdd(services, await loadWorkspace(scope), requests);
+      const external = prepared.filter((p) => p.external);
+      // Same rule as `add`: third-party content (for example an agile pack
+      // from a registry this repository chose) needs an explicit yes.
+      if (external.length && !options.yes) {
+        if (!prompter.interactive || options.json) {
+          throw new OperationError(`Refusing to install third-party content without confirmation: ${external.map((p) => p.id).join(', ')}`, [
+            'Review it with `agileflow info <source>`, then rerun with --yes, or pass --no-skills.',
+          ]);
+        }
+        for (const item of external) describePrepared(cli, item);
+        if (!(await prompter.confirm('Install the third-party skills shown above?', false))) {
+          out.line('Nothing was changed.');
+          return EXIT.OK;
+        }
+      }
+      approvedExternal = new Set(external.map((p) => `${p.id}@${p.pkg.integrity}`));
+    }
   }
   if (prompter.interactive && !options.yes && !(await prompter.confirm('Continue?', true))) {
     out.line('Nothing was changed.');
     return EXIT.OK;
   }
 
-  // 1. configure Work
-  const personal = await readGlobalConfig(globalScope(ctx).configPath).catch(() => null);
-  await editScopeConfig(
-    scope,
-    (doc) => {
-      doc.setIn(['work', 'enabled'], true);
-      doc.setIn(['work', 'root'], paths.root);
-    },
-    { questionPreference: personal?.defaults?.questionPreference ?? 'provider-default' },
-  );
-  // 2. create the workspace (never overwrites)
-  const created = await initWorkspace(paths);
-  // 3. add the Agile skills
-  let installedSkills: string[] = [];
-  const ws = await loadWorkspace(scope);
-  if (requests.length) {
-    const prepared = await prepareAdd(services, ws, requests);
-    await commitAdd(services, ws, prepared);
-    installedSkills = prepared.map((p) => `${p.id}@${p.pkg.version}`);
-  } else if (!ws.lockExists) {
-    // A project created by `work init` alone still gets its (empty) lockfile.
-    await saveLock(ws);
-  }
+  // Everything that writes runs under the project lock (like every other
+  // changing command), after recovering any write an earlier crash interrupted.
+  const { created, installedSkills } = await mutate(cli, scope, async () => {
+    // Another command may have enabled Work while this one was asking questions.
+    const now = (await pathExists(scope.configPath)) ? await readProjectConfig(scope.configPath) : null;
+    const nowRoot = now?.work?.enabled ? (now.work.root ?? DEFAULT_WORK_ROOT) : null;
+    if (nowRoot && resolveWorkPaths(scope.root, nowRoot).root !== paths.root) {
+      throw new UsageError(`Work was enabled with root ${nowRoot} while this command was running`, ['Nothing was changed by this command.']);
+    }
+    // 1. configure Work
+    const personal = await readGlobalConfig(globalScope(ctx).configPath).catch(() => null);
+    await editScopeConfig(
+      scope,
+      (doc) => {
+        doc.setIn(['work', 'enabled'], true);
+        doc.setIn(['work', 'root'], paths.root);
+      },
+      { questionPreference: personal?.defaults?.questionPreference ?? 'provider-default' },
+    );
+    // 2. create the workspace (never overwrites)
+    const created = await initWorkspace(paths);
+    // 3. add the Agile skills
+    let installedSkills: string[] = [];
+    const ws = await loadWorkspace(scope);
+    if (requests.length) {
+      const prepared = await prepareAdd(services, ws, requests);
+      const unreviewed = prepared.filter((p) => p.external && !approvedExternal.has(`${p.id}@${p.pkg.integrity}`));
+      if (unreviewed.length) {
+        throw new OperationError(`Third-party content changed while this command was running: ${unreviewed.map((p) => p.id).join(', ')}`, [
+          'Nothing was installed. Run `agileflow work init` again to review it.',
+        ]);
+      }
+      await commitAdd(services, ws, prepared);
+      installedSkills = prepared.map((p) => `${p.id}@${p.pkg.version}`);
+    } else if (!ws.lockExists) {
+      // A project created by `work init` alone still gets its (empty) lockfile.
+      await saveLock(ws);
+    }
+    return { created, installedSkills };
+  });
 
   if (options.json) {
     cli.out.json({ root: paths.root, adopted: adopting, created: created.created, kept: created.kept, skills: installedSkills, warnings });
@@ -355,23 +434,33 @@ export async function runWorkNew(cli: Cli, type: string, options: WorkNewOptions
       throw new UsageError(`Unknown work type "${type}"`, ['Use: agileflow work new epic|story|decision --title "..."']);
     }
     if (!options.title?.trim()) throw new UsageError('--title is required', [`agileflow work new ${type} --title "..."`]);
-    const { scan } = await loadWork(cli);
-    const created = await createArtifact(scan, {
-      type: type as ArtifactType,
-      title: options.title,
-      status: options.status,
-      priority: options.priority,
-      horizon: options.horizon,
-      epic: options.epic,
-      dependsOn: options.dependsOn?.flatMap(splitList),
-      related: options.related?.flatMap(splitList),
-    });
+    const { created, paths } = await mutateWork(cli, async ({ scan, paths }) => ({
+      paths,
+      created: await createArtifact(scan, {
+        type: type as ArtifactType,
+        title: options.title!,
+        status: options.status,
+        priority: options.priority,
+        horizon: options.horizon,
+        epic: options.epic,
+        dependsOn: options.dependsOn?.flatMap(splitList),
+        related: options.related?.flatMap(splitList),
+      }),
+    }));
+    // Work files are shared through Git: warn (never refuse) when this one would be ignored.
+    const ignored = (await findIgnoredPaths(paths.projectRoot, [created.path])) ?? [];
+    const warnings = ignored.map(
+      (i) =>
+        `${created.path} is ignored by Git (${i.source}: ${i.pattern}), so it would not be committed or shared. ` +
+        `Change ${i.source.replace(/:\d+$/, '')} so it no longer matches.`,
+    );
     if (options.json) {
-      cli.out.json({ id: created.id, type: created.type, path: created.path });
+      cli.out.json({ id: created.id, type: created.type, path: created.path, warnings });
     } else {
       const out = textOut(cli.out);
       out.line(`Created ${created.id}`);
       out.line(created.path);
+      for (const w of warnings) out.warn(w);
     }
     return EXIT.OK;
   });
@@ -428,11 +517,15 @@ export async function runWorkList(cli: Cli, options: WorkListOptions): Promise<n
       : (options.ready ? readyToStart(scan, { epic: epicId }) : listStories(scan, { epic: epicId })).filter((s) => !status || s.status === status);
     const decisions = types.includes('decision') ? listDecisions(scan).filter((d) => !status || d.status === status) : [];
 
+    const duplicates = duplicateIds(scan);
+    const duplicated = new Set(duplicates.map((d) => d.id));
+    warnDuplicates(cli, duplicates);
     if (options.json) {
-      cli.out.json([...epics, ...stories, ...decisions].map((a) => summary(scan, a)));
+      cli.out.json([...epics, ...stories, ...decisions].map((a) => ({ ...summary(scan, a), ...(duplicated.has(a.id) ? { duplicateId: true } : {}) })));
       return EXIT.OK;
     }
     const out = textOut(cli.out);
+    const dupMark = (a: Artifact) => (duplicated.has(a.id) ? '  (duplicate ID)' : '');
     if (!epics.length && !stories.length && !decisions.length) {
       if (options.ready) out.line('No stories can be started now (none are ready or backlog with every dependency done).');
       else out.line(status || epicId ? 'No matching work items.' : 'No work items yet. Create one with `agileflow work new epic|story|decision --title "..."`.');
@@ -450,7 +543,7 @@ export async function runWorkList(cli: Cli, options: WorkListOptions): Promise<n
             ['ID', 'STATUS', 'PRIORITY', 'STORIES', 'TITLE'],
             group.map((e) => {
               const p = epicProgress(scan, e.id);
-              return [e.id, e.status, e.priority ?? '-', `${p.done}/${p.total} done`, clean(e.title)];
+              return [e.id, e.status, e.priority ?? '-', `${p.done}/${p.total} done`, clean(e.title) + dupMark(e)];
             }),
           ).map((l) => `  ${l}`),
         );
@@ -465,7 +558,7 @@ export async function runWorkList(cli: Cli, options: WorkListOptions): Promise<n
           ['ID', 'STATUS', 'PRIORITY', 'EPIC', 'CRITERIA', 'TITLE'],
           stories.map((s) => {
             const c = acceptanceCriteria(s.body);
-            return [s.id, s.status, s.priority ?? '-', s.epic ?? '-', c.total ? `${c.checked}/${c.total}` : '-', clean(s.title)];
+            return [s.id, s.status, s.priority ?? '-', s.epic ?? '-', c.total ? `${c.checked}/${c.total}` : '-', clean(s.title) + dupMark(s)];
           }),
         ).map((l) => `  ${l}`),
       ]);
@@ -473,7 +566,7 @@ export async function runWorkList(cli: Cli, options: WorkListOptions): Promise<n
     if (decisions.length) {
       sections.push([
         'Decisions',
-        ...table(['ID', 'STATUS', 'TITLE'], decisions.map((d) => [d.id, d.status, clean(d.title)])).map((l) => `  ${l}`),
+        ...table(['ID', 'STATUS', 'TITLE'], decisions.map((d) => [d.id, d.status, clean(d.title) + dupMark(d)])).map((l) => `  ${l}`),
       ]);
     }
     sections.forEach((lines, i) => {
@@ -497,8 +590,9 @@ const find = (scan: WorkScan, id: string) => artifactsWithId(scan, id)[0];
 
 export async function runWorkShow(cli: Cli, id: string, options: WorkShowOptions): Promise<number> {
   return guarded(cli, options.json, async () => {
-    const { scan } = await loadWork(cli);
+    const { scan, paths } = await loadWork(cli);
     const artifact = getArtifact(scan, id);
+    const evidence = artifact.type === 'story' ? await evaluateEvidence(paths.projectRoot, artifact.body) : null;
 
     if (options.json) {
       const data: Record<string, unknown> = { ...summary(scan, artifact), body: artifact.body };
@@ -506,6 +600,7 @@ export async function runWorkShow(cli: Cli, id: string, options: WorkShowOptions
         data.dependencies = dependenciesForStory(scan, artifact).map((d) => ({ id: d.id, title: d.story?.title ?? null, status: d.story?.status ?? null }));
         data.dependents = dependentsOfStory(scan, artifact.id).map((s) => ({ id: s.id, title: s.title, status: s.status }));
         data.acceptanceCriteria = acceptanceCriteria(artifact.body);
+        data.evidence = evidenceJson(evidence!);
         data.decisions = relatedDecisions(scan, artifact).map((d) => ({ id: d.id, title: d.title, status: d.status }));
       } else if (artifact.type === 'epic') {
         data.stories = storiesForEpic(scan, artifact.id).map((s) => ({ id: s.id, title: s.title, status: s.status, priority: s.priority ?? null, ...storyReadiness(scan, s) }));
@@ -524,7 +619,7 @@ export async function runWorkShow(cli: Cli, id: string, options: WorkShowOptions
     const out = textOut(cli.out);
     out.line(artifact.id);
     out.line(artifact.title);
-    if (artifact.type === 'story') showStory(out, scan, artifact);
+    if (artifact.type === 'story') showStory(out, scan, artifact, evidence!);
     else if (artifact.type === 'epic') showEpic(out, scan, artifact);
     else showDecision(out, scan, artifact);
     out.line(`Path:      ${artifact.path}`);
@@ -544,7 +639,7 @@ function relatedDecisions(scan: WorkScan, story: Story): Decision[] {
   return scan.decisions.filter((d) => mentioned.has(d.id) || d.related?.some((r) => ids.has(r)));
 }
 
-function showStory(out: TextOut, scan: WorkScan, story: Story): void {
+function showStory(out: TextOut, scan: WorkScan, story: Story, evidence: StoryEvidence): void {
   const epic = story.epic ? find(scan, story.epic) : undefined;
   out.line(`Status:    ${story.status}`);
   out.line(`Priority:  ${story.priority ?? '-'}`);
@@ -567,9 +662,44 @@ function showStory(out: TextOut, scan: WorkScan, story: Story): void {
     out.line('Decisions:');
     for (const d of decisions) out.line(`  ${d.id}  ${d.title}  (${d.status})`);
   }
-  const c = acceptanceCriteria(story.body);
   out.line('Acceptance Criteria:');
-  out.line(c.total ? `  ${c.checked} / ${c.total} complete` : '  none written yet');
+  showEvidence(out, evidence);
+}
+
+function evidenceJson(e: StoryEvidence): Record<string, unknown> {
+  return { counts: e.counts, criteria: e.criteria, orphans: e.orphans, problems: e.problems };
+}
+
+const short = (sha?: string) => (sha ? sha.slice(0, 8) : null);
+
+/** Per-criterion evidence: verified / stale / not verified. A checked box alone is never shown as proof. */
+function showEvidence(out: TextOut, e: StoryEvidence): void {
+  if (!e.criteria.length) out.line('  none written yet');
+  else {
+    const checked = e.criteria.filter((c) => c.checked).length;
+    const parts = [
+      e.counts.verified ? `${e.counts.verified} verified` : '',
+      e.counts.stale ? `${e.counts.stale} stale` : '',
+      e.counts['not-verified'] ? `${e.counts['not-verified']} not verified` : '',
+    ].filter(Boolean);
+    out.line(`  ${checked} / ${e.criteria.length} checked; evidence: ${parts.join(', ')}`);
+  }
+  for (const c of e.criteria) {
+    const state = c.status === 'not-verified' ? (c.checked ? 'not verified: checked, no evidence' : 'not verified') : c.status;
+    out.line(`  [${c.checked ? 'x' : ' '}] ${c.index}. ${c.text}  (${state})`);
+    for (const r of c.records) out.line(`         ${evidenceLine(r)}`);
+  }
+  if (e.orphans.length) {
+    out.line('  Evidence for criteria that no longer exist (edited or removed):');
+    for (const r of e.orphans) out.line(`    "${r.criterion}": ${evidenceLine(r)}`);
+  }
+  for (const p of e.problems) out.warn(p);
+}
+
+function evidenceLine(r: StoryEvidence['orphans'][number]): string {
+  const at = [short(r.commit) ? `at ${short(r.commit)}` : '', r.recorded ? r.recorded.slice(0, 10) : ''].filter(Boolean).join(', ');
+  const changed = r.changed.length ? `; changed since: ${capList(r.changed, 3, ', ')}` : '';
+  return `${r.kind} ${r.ref}${at ? ` (${at})` : ''}${r.note ? ` - ${r.note}` : ''}${changed}`;
 }
 
 function showEpic(out: TextOut, scan: WorkScan, epic: Epic): void {
@@ -617,9 +747,7 @@ export interface WorkStatusOptions {
 
 export async function runWorkStatus(cli: Cli, id: string, status: string, options: WorkStatusOptions): Promise<number> {
   return guarded(cli, options.json, async () => {
-    const { scan } = await loadWork(cli);
-    const artifact = getArtifact(scan, id);
-    const change = await setStatus(scan, artifact, status, { force: options.force });
+    const change = await mutateWork(cli, ({ scan }) => setStatus(scan, getArtifact(scan, id), status, { force: options.force }));
     if (options.json) {
       cli.out.json(change);
       return EXIT.OK;
@@ -640,6 +768,9 @@ export async function runWorkBoard(cli: Cli, options: { json?: boolean }): Promi
   return guarded(cli, options.json, async () => {
     const { scan } = await loadWork(cli);
     const board = buildBoard(scan);
+    const duplicates = duplicateIds(scan);
+    const duplicated = new Set(duplicates.map((d) => d.id));
+    warnDuplicates(cli, duplicates);
     const brief = (s: Story) => ({
       id: s.id,
       title: s.title,
@@ -667,6 +798,7 @@ export async function runWorkBoard(cli: Cli, options: { json?: boolean }): Promi
         })),
         standalone: board.standalone.map((c) => ({ status: c.status, stories: c.stories.map(brief) })),
         readyToStart: readyToStart(scan).map((s) => s.id),
+        duplicates,
         warnings: board.warnings.map((w) => ({
           story: w.story.id,
           dependsOn: w.dependency.id,
@@ -689,14 +821,16 @@ export async function runWorkBoard(cli: Cli, options: { json?: boolean }): Promi
     const storyLines = (columns: typeof board.standalone, indent: string) => {
       for (const col of columns) {
         out.line(`${indent}${upper(col.status)}`);
-        for (const s of col.stories) out.line(`${indent}  ${s.id}  ${pad(s.title, titleWidth)}  ${s.priority ?? ''}`.trimEnd());
+        for (const s of col.stories) {
+          out.line(`${indent}  ${s.id}  ${pad(s.title, titleWidth)}  ${s.priority ?? ''}${duplicated.has(s.id) ? '  (duplicate ID)' : ''}`.trimEnd());
+        }
       }
     };
     for (const group of board.groups) {
       out.line(group.horizon === 'unscheduled' ? 'NO HORIZON' : upper(group.horizon));
       for (const e of group.epics) {
         const done = `${e.progress.done}/${e.progress.total - e.progress.cancelled} done`;
-        out.line(`${e.epic.id}  ${pad(e.epic.title, titleWidth + 2)}  ${pad(e.epic.status, 8)}  ${done}`);
+        out.line(`${e.epic.id}  ${pad(e.epic.title, titleWidth + 2)}  ${pad(e.epic.status, 8)}  ${done}${duplicated.has(e.epic.id) ? '  (duplicate ID)' : ''}`);
         if (!e.columns.length) out.line('  (no open stories)');
         storyLines(e.columns, '  ');
       }
@@ -718,6 +852,151 @@ export async function runWorkBoard(cli: Cli, options: { json?: boolean }): Promi
 }
 
 // ---------------------------------------------------------------------------
+// work next
+// ---------------------------------------------------------------------------
+
+export interface WorkNextOptions {
+  epic?: string;
+  limit?: string;
+  explain?: boolean;
+  json?: boolean;
+}
+
+/**
+ * `agileflow work next`: stories that can be picked up now, best first, with
+ * the reasons. Read-only: nothing is assigned, started, or written.
+ */
+export async function runWorkNext(cli: Cli, options: WorkNextOptions): Promise<number> {
+  return guarded(cli, options.json, async () => {
+    const { scan } = await loadWork(cli);
+    let limit = 5;
+    if (options.limit !== undefined) {
+      limit = Number(options.limit);
+      if (!Number.isInteger(limit) || limit < 1) throw new UsageError(`--limit must be a positive whole number (got "${options.limit}")`);
+    }
+    const epic = options.epic ? resolvePartialId(options.epic, scan.epics.map((e) => e.id), 'epic') : undefined;
+    const result = nextStories(scan, { epic, limit, explain: options.explain });
+    warnDuplicates(cli, duplicateIds(scan));
+    const item = (c: NextCandidate) => ({
+      id: c.story.id,
+      title: c.story.title,
+      status: c.story.status,
+      priority: c.story.priority ?? null,
+      epic: c.story.epic ?? null,
+      path: c.story.path,
+      depends_on: c.dependsOn,
+      unblocks: c.unblocks,
+      reasons: c.reasons,
+    });
+    if (options.json) {
+      cli.out.json({
+        ...(epic ? { epic } : {}),
+        eligible: result.eligible.map(item),
+        totalEligible: result.totalEligible,
+        ...(options.explain ? { notEligible: result.notEligible.map(item) } : {}),
+        totalNotEligible: result.totalNotEligible,
+      });
+      return EXIT.OK;
+    }
+    const out = textOut(cli.out);
+    const scope = epic ? ` in ${epic}` : '';
+    if (!result.eligible.length) {
+      out.line(`No story${scope} can be started now.`);
+      if (result.totalNotEligible && !options.explain) {
+        out.line(`${result.totalNotEligible} open stor${result.totalNotEligible === 1 ? 'y is' : 'ies are'} not eligible; \`agileflow work next --explain\` shows why.`);
+      }
+    } else {
+      out.line(`Next${scope} (${result.eligible.length} of ${result.totalEligible} eligible)`);
+      result.eligible.forEach((c, i) => {
+        out.line(`  ${i + 1}. ${c.story.id}  ${c.story.priority ?? '-'}  ${c.story.title}`);
+        out.line(`     ${c.reasons.join('; ')}`);
+      });
+    }
+    if (options.explain && result.notEligible.length) {
+      out.line();
+      out.line(`Not eligible (${result.notEligible.length} of ${result.totalNotEligible})`);
+      for (const c of result.notEligible) {
+        out.line(`  ${c.story.id}  ${c.story.status}  ${c.story.priority ?? '-'}  ${c.story.title}`);
+        out.line(`     ${c.reasons.join('; ')}`);
+      }
+    }
+    out.line();
+    out.line('Nothing was assigned or started. Start one with `agileflow work status <id> in-progress`.');
+    return EXIT.OK;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// work evidence
+// ---------------------------------------------------------------------------
+
+export interface WorkEvidenceOptions {
+  criterion?: string;
+  kind?: string;
+  ref?: string;
+  note?: string;
+  file?: string[];
+  json?: boolean;
+}
+
+/**
+ * `agileflow work evidence <story>`: show per-criterion evidence, or record
+ * evidence for one criterion (--criterion, --kind, --ref). Recording edits
+ * only the story's agileflow-evidence block; it never checks boxes or
+ * changes the status.
+ */
+export async function runWorkEvidence(cli: Cli, id: string, options: WorkEvidenceOptions): Promise<number> {
+  return guarded(cli, options.json, async () => {
+    const recording = options.criterion !== undefined || options.kind !== undefined || options.ref !== undefined;
+    if (recording) {
+      const missing = (['criterion', 'kind', 'ref'] as const).filter((k) => options[k] === undefined).map((k) => `--${k}`);
+      if (missing.length) {
+        throw new UsageError(`Recording evidence needs ${missing.join(', ')}`, [
+          `agileflow work evidence ${clean(id)} --criterion <n|text> --kind ${EVIDENCE_KINDS.join('|')} --ref <test, file:line, or PR URL> [--note "..."] [--file <path>]`,
+        ]);
+      }
+      const { story, recorded } = await mutateWork(cli, async ({ scan }) => {
+        const story = getStory(scan, id);
+        const recorded = await recordEvidence(scan, story, {
+          criterion: options.criterion!,
+          kind: options.kind!,
+          ref: options.ref!,
+          note: options.note,
+          files: options.file?.flatMap(splitList),
+          // Paths on the command line are relative to where it runs.
+          cwd: cli.ctx.cwd,
+        });
+        return { story, recorded };
+      });
+      if (options.json) {
+        cli.out.json(recorded);
+        return EXIT.OK;
+      }
+      const out = textOut(cli.out);
+      out.line(`${recorded.replaced ? 'Updated' : 'Recorded'} evidence for ${story.id} criterion ${recorded.criterion.index}: ${recorded.criterion.text}`);
+      out.line(`  ${recorded.record.kind} ${recorded.record.ref}${recorded.record.commit ? ` at ${short(recorded.record.commit)}` : ''}`);
+      const files = Object.keys(recorded.record.files ?? {});
+      out.line(files.length ? `  Staleness is checked against: ${files.join(', ')}` : '  No files hashed: this evidence cannot go stale automatically (add --file <path> for the code it covers).');
+      out.line(recorded.path);
+      return EXIT.OK;
+    }
+    const { scan, paths } = await loadWork(cli);
+    const story = getStory(scan, id);
+    const evidence = await evaluateEvidence(paths.projectRoot, story.body);
+    if (options.json) {
+      cli.out.json({ id: story.id, path: story.path, ...evidenceJson(evidence) });
+      return EXIT.OK;
+    }
+    const out = textOut(cli.out);
+    out.line(story.id);
+    out.line(story.title);
+    out.line('Acceptance Criteria:');
+    showEvidence(out, evidence);
+    return EXIT.OK;
+  });
+}
+
+// ---------------------------------------------------------------------------
 // work import v4
 // ---------------------------------------------------------------------------
 
@@ -725,6 +1004,8 @@ export interface WorkImportOptions {
   /** Show the plan only (the default without --yes when not interactive). */
   preview?: boolean;
   yes?: boolean;
+  /** Resolve status.json vs Markdown disagreements with this side (otherwise such items are held back). */
+  prefer?: string;
   json?: boolean;
 }
 
@@ -732,12 +1013,20 @@ export interface WorkImportOptions {
  * `agileflow work import v4`: convert a v4 backlog into Work items. Shows the
  * plan first; writes only with --yes or after confirmation. Never changes or
  * deletes the v4 files; re-running skips items already imported (legacy_id).
+ * Items whose status.json and Markdown disagree are held back unless
+ * --prefer json|markdown picks a side.
  */
 export async function runWorkImport(cli: Cli, from: string, options: WorkImportOptions): Promise<number> {
   return guarded(cli, options.json, async () => {
     if (from?.trim().toLowerCase() !== 'v4') throw new UsageError(`Cannot import from "${from}"`, ['Supported: agileflow work import v4']);
-    const { scan, paths } = await loadWork(cli);
-    const plan = await planV4Import(scan);
+    let prefer: ImportPreference | undefined;
+    if (options.prefer !== undefined) {
+      const p = options.prefer.trim().toLowerCase();
+      if (p !== 'json' && p !== 'markdown') throw new UsageError(`--prefer must be json or markdown (got "${options.prefer}")`);
+      prefer = p;
+    }
+    const { scan, paths, scope } = await loadWork(cli);
+    const plan = await planV4Import(scan, { prefer });
     if (!plan.found) {
       throw new UsageError('No v4 backlog found', [
         'Looked for docs/05-epics/, docs/06-stories/, and docs/09-agents/status.json in the project root.',
@@ -753,31 +1042,72 @@ export async function runWorkImport(cli: Cli, from: string, options: WorkImportO
       status: p.status,
       legacyStatus: p.legacyStatus,
       priority: p.priority ?? null,
-      ...(p.type === 'story' ? { epic: p.epic ?? null, depends_on: p.dependsOn ?? [] } : {}),
+      legacyPriority: p.legacyPriority,
+      ...(p.type === 'story'
+        ? { epic: p.epic ?? null, legacyEpic: p.legacyEpic ?? null, depends_on: p.dependsOn ?? [], legacyDependsOn: p.legacyDependsOn ?? [] }
+        : {}),
       path: p.path,
       sources: p.sources,
     });
+    const duplicateNote = (d: (typeof plan.duplicates)[number]) =>
+      `legacy_id ${d.legacyId} is used by ${d.ids.length} work items (${d.paths.join(', ')}); items that refer to it are held back. Keep one and remove or re-label the others.`;
 
     if (!options.json) {
       const out = textOut(cli.out);
       out.line(`Import the v4 backlog into ${paths.root}/`);
-      out.line(`Read: ${plan.sources.join(', ')}`);
+      out.line(`Read: ${plan.sources.join(', ')} (never changed)`);
+      const deps = (ids: string[] = []) => (ids.length ? capList(ids, 3, ', ') : '-');
+      const legacyOf = new Map([...plan.epics.map((p) => [p.id, p.legacyId] as const)]);
+      for (const e of scan.epics) if (e.legacy_id) legacyOf.set(e.id, e.legacy_id);
+      const v4Status = (s: string | null) => (s === null ? '-' : clean(s));
       if (plan.epics.length) {
         out.line(`Epics (${plan.epics.length} new)`);
-        out.lines(table(['V4', 'NEW ID', 'STATUS', 'TITLE'], plan.epics.map((p) => [p.legacyId, p.id, p.status, clean(p.title)])).map((l) => `  ${l}`));
-      }
-      if (plan.stories.length) {
-        const legacyOf = new Map([...plan.epics.map((p) => [p.id, p.legacyId] as const)]);
-        for (const e of scan.epics) if (e.legacy_id) legacyOf.set(e.id, e.legacy_id);
-        out.line(`Stories (${plan.stories.length} new)`);
         out.lines(
           table(
-            ['V4', 'NEW ID', 'STATUS', 'EPIC', 'TITLE'],
-            plan.stories.map((p) => [p.legacyId, p.id, p.status, p.epic ? (legacyOf.get(p.epic) ?? p.epic) : '-', clean(p.title)]),
+            ['V4', 'NEW ID', 'V4 STATUS', 'STATUS', 'PRIORITY', 'TITLE'],
+            plan.epics.map((p) => [p.legacyId, p.id, v4Status(p.legacyStatus), p.status, p.priority ?? '-', clean(p.title)]),
           ).map((l) => `  ${l}`),
         );
       }
+      if (plan.stories.length) {
+        out.line(`Stories (${plan.stories.length} new)`);
+        out.lines(
+          table(
+            ['V4', 'NEW ID', 'V4 STATUS', 'STATUS', 'PRIORITY', 'EPIC', 'DEPENDS ON', 'TITLE'],
+            plan.stories.map((p) => [
+              p.legacyId,
+              p.id,
+              v4Status(p.legacyStatus),
+              p.status,
+              p.priority ?? '-',
+              p.epic ? (legacyOf.get(p.epic) ?? p.legacyEpic ?? p.epic) : '-',
+              deps(p.legacyDependsOn),
+              clean(p.title),
+            ]),
+          ).map((l) => `  ${l}`),
+        );
+      }
+      if (plan.remaps.length) {
+        out.line('Remapped values (v4 -> Work)');
+        for (const r of plan.remaps) {
+          out.line(`  ${r.type} ${r.field}: ${clean(r.from)} -> ${r.to}  (${r.items.length}: ${capList(r.items, 5, ', ')})`);
+        }
+      }
+      if (plan.conflicts.length) {
+        out.line(`Held back (${plan.conflicts.length}): status.json and Markdown disagree, or the item is ambiguous`);
+        for (const c of plan.conflicts) {
+          const lines = [
+            ...c.fields.map((f) => `${f.field}: status.json "${f.json}", Markdown "${f.markdown}"`),
+            ...c.reasons,
+          ];
+          lines.forEach((l, i) => out.line(`  ${i ? ' '.repeat(c.legacyId.length) : c.legacyId}  ${l}`));
+        }
+        if (plan.conflicts.some((c) => c.fields.length && !c.reasons.length)) {
+          out.line('  Nothing is guessed. Fix the v4 files so they agree, or rerun with --prefer json or --prefer markdown.');
+        }
+      }
       if (plan.skipped.length) out.line(`Already imported: ${plan.skipped.length} (skipped)`);
+      for (const d of plan.duplicates) out.warn(duplicateNote(d));
       for (const note of plan.notes) out.warn(note);
       if (!total) {
         out.line('Nothing to import.');
@@ -785,7 +1115,7 @@ export async function runWorkImport(cli: Cli, from: string, options: WorkImportO
       }
       if (!apply) {
         out.line();
-        out.line('Nothing was written. Run `agileflow work import v4 --yes` to import (new IDs are generated then).');
+        out.line(`Nothing was written. Run \`agileflow work import v4 --yes${prefer ? ` --prefer ${prefer}` : ''}\` to import (with the IDs shown above).`);
         return EXIT.OK;
       }
       if (!options.yes && !(await cli.prompter.confirm(`Create ${total} work item${total === 1 ? '' : 's'} in ${paths.root}/? The v4 files are not changed.`, true))) {
@@ -794,15 +1124,35 @@ export async function runWorkImport(cli: Cli, from: string, options: WorkImportO
       }
     }
 
-    const result = apply ? await applyV4Import(scan, plan) : { created: [] as string[] };
+    // Held under the project lock so two imports cannot write the same items twice.
+    // Applied under the project lock, re-planned from a fresh scan inside it: two
+    // imports cannot write the same items twice, and nothing is written if the
+    // plan would differ from what was shown.
+    const result = apply
+      ? await mutate(cli, scope, async () => {
+          const fresh = await loadWork(cli);
+          const again = await planV4Import(fresh.scan, { prefer });
+          const ids = (p: typeof plan) => [...p.epics, ...p.stories].map((i) => `${i.id} ${i.path}`).join('\n');
+          if (ids(again) !== ids(plan)) {
+            throw new WorkError('The workspace or the v4 backlog changed since the plan was made; nothing was written', [
+              'Run `agileflow work import v4 --preview` again.',
+            ]);
+          }
+          return applyV4Import(fresh.scan, again);
+        })
+      : { created: [] as string[] };
     if (options.json) {
       cli.out.json({
         applied: apply,
         root: paths.root,
         sources: plan.sources,
+        prefer: plan.prefer,
         epics: plan.epics.map(item),
         stories: plan.stories.map(item),
         skipped: plan.skipped,
+        conflicts: plan.conflicts,
+        remaps: plan.remaps,
+        duplicates: plan.duplicates,
         notes: plan.notes,
         created: result.created,
       });
@@ -811,6 +1161,7 @@ export async function runWorkImport(cli: Cli, from: string, options: WorkImportO
     const out = textOut(cli.out);
     out.line();
     out.line(`Imported ${plan.epics.length} epic${plan.epics.length === 1 ? '' : 's'} and ${plan.stories.length} stor${plan.stories.length === 1 ? 'y' : 'ies'} into ${paths.root}/.`);
+    if (plan.conflicts.length) out.line(`${plan.conflicts.length} held back; resolve them and run the import again (imported items are skipped).`);
     out.line('The v4 files were not changed; delete or archive them when you no longer need them.');
     out.line('Next: agileflow check, agileflow work board');
     return EXIT.OK;
@@ -832,7 +1183,8 @@ export async function workCheckSection(scope: ScopeTarget): Promise<{ title: str
   } catch (err) {
     return { title: 'Agile Work', diagnostics: [{ level: 'error', message: (err as Error).message }] };
   }
-  const result = validateWorkspace(await scanWorkspace(paths));
+  const scan = await scanWorkspace(paths);
+  const result = validateWorkspace(scan);
   const [structure, ...checks] = result.passed[0] === 'workspace structure valid' ? result.passed : [null, ...result.passed];
   if (structure) diagnostics.push({ level: 'ok', message: structure });
   const n = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
@@ -840,8 +1192,33 @@ export async function workCheckSection(scope: ScopeTarget): Promise<{ title: str
   diagnostics.push({ level: 'ok', message: result.counts.stories === 1 ? '1 story' : `${result.counts.stories} stories` });
   diagnostics.push({ level: 'ok', message: n(result.counts.decisions, 'decision') });
   for (const c of checks) if (c) diagnostics.push({ level: 'ok', message: c });
-  for (const issue of result.issues) diagnostics.push({ level: issue.level, message: issue.message, detail: issue.detail });
+  // Titles, criteria, and file names come from files anyone can edit: never print their control characters.
+  for (const issue of result.issues) diagnostics.push({ level: issue.level, message: clean(issue.message), ...(issue.detail ? { detail: issue.detail.map(clean) } : {}) });
+  if (scan.exists) {
+    for (const warning of describeIgnoredWorkPaths(paths, (await findIgnoredWorkPaths(paths)) ?? [])) diagnostics.push({ level: 'warn', message: warning });
+  }
+  const v4 = await v4BacklogHint(scope.root, scan);
+  if (v4) diagnostics.push(v4);
   return { title: 'Agile Work', diagnostics };
+}
+
+/** A pointer to `work import v4 --preview` while a v4 backlog has items that are not imported yet. */
+async function v4BacklogHint(projectRoot: string, scan: WorkScan): Promise<Diagnostic | null> {
+  let backlog: Awaited<ReturnType<typeof readV4Backlog>>;
+  try {
+    backlog = await readV4Backlog(projectRoot);
+  } catch {
+    return { level: 'info', message: 'v4 backlog found', detail: ['Preview importing it with `agileflow work import v4 --preview` (the v4 files are never changed).'] };
+  }
+  if (!backlog.found) return null;
+  const imported = new Set([...scan.epics, ...scan.stories].map((a) => a.legacy_id?.toUpperCase()).filter(Boolean));
+  const pending = [...backlog.epics.keys(), ...backlog.stories.keys()].filter((id) => !imported.has(id)).length;
+  if (!pending) return null;
+  return {
+    level: 'info',
+    message: `v4 backlog found (${backlog.sources.join(', ')}): ${pending} item${pending === 1 ? '' : 's'} not imported`,
+    detail: ['Preview importing it with `agileflow work import v4 --preview` (the v4 files are never changed).'],
+  };
 }
 
 /** Offer Work during `agileflow init` (interactive, project scope). */

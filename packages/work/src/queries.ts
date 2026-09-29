@@ -90,6 +90,13 @@ export function artifactsWithId(scan: WorkScan, id: string): Artifact[] {
   return [...(index(scan).byId.get(id) ?? [])];
 }
 
+/** IDs that more than one file uses, with those files. Commands refuse to act on them. */
+export function duplicateIds(scan: WorkScan): Array<{ id: string; paths: string[] }> {
+  const out: Array<{ id: string; paths: string[] }> = [];
+  for (const [id, list] of index(scan).byId) if (list.length > 1) out.push({ id, paths: list.map((a) => a.path) });
+  return out.sort((a, b) => (a.id < b.id ? -1 : 1));
+}
+
 /**
  * Resolve a full or partial ID to one artifact. Refuses ambiguous prefixes and
  * IDs used by more than one file (listing the files) instead of picking one.
@@ -190,6 +197,8 @@ export interface CriteriaCount {
   checked: number;
   /** Text of each unchecked criterion. */
   unchecked: string[];
+  /** Every criterion in order (a checked box is not proof; see evidence). */
+  items: Array<{ text: string; checked: boolean }>;
 }
 
 /**
@@ -222,12 +231,14 @@ export function acceptanceCriteria(body: string): CriteriaCount {
     }
     section = visible.slice(headingIdx + 1, end);
   }
-  const count: CriteriaCount = { total: 0, checked: 0, unchecked: [] };
+  const count: CriteriaCount = { total: 0, checked: 0, unchecked: [], items: [] };
   for (const line of section) {
     const m = /^\s*(?:[-*+]|\d+[.)])\s+\[([ xX])\]\s*(.*)$/.exec(line);
     if (!m) continue;
     count.total++;
-    if (m[1] === ' ') count.unchecked.push(m[2]!.trim());
+    const text = m[2]!.trim();
+    count.items.push({ text, checked: m[1] !== ' ' });
+    if (m[1] === ' ') count.unchecked.push(text);
     else count.checked++;
   }
   return count;

@@ -113,7 +113,7 @@ export function formatValue(value: unknown): string {
 }
 
 /** Frontmatter keys in the order AgileFlow writes them. */
-const KEY_ORDER = ['schema', 'type', 'id', 'title', 'status', 'priority', 'horizon', 'epic', 'depends_on', 'related', 'legacy_id'];
+const KEY_ORDER = ['schema', 'type', 'id', 'title', 'status', 'priority', 'horizon', 'epic', 'depends_on', 'related', 'legacy_id', 'legacy_source'];
 
 /** Serialize frontmatter (known keys first, in canonical order) and a body into a document. */
 export function serialize(data: Record<string, unknown>, body: string): string {

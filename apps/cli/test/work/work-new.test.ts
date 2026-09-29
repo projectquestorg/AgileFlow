@@ -23,7 +23,7 @@ describe('agileflow work new', () => {
     const sb = await workSandbox();
     const epic = await create(sb, 'epic', 'Social authentication', '--horizon', 'now', '--priority', 'p1');
     const out = await json<{ id: string; type: string; path: string }>(sb, ['work', 'new', 'story', '--epic', epic.slice(5, 9), '--title', 'Add Google sign-in']);
-    expect(Object.keys(out)).toEqual(['id', 'type', 'path']);
+    expect(Object.keys(out)).toEqual(['id', 'type', 'path', 'warnings']);
     expect(out).toMatchObject({ type: 'story', path: `docs/agile/03-stories/${out.id}-add-google-sign-in.md` });
     expect(frontmatterOf(path.join(sb.project, out.path))).toEqual({
       schema: 1,
@@ -61,6 +61,10 @@ describe('agileflow work new', () => {
       [['work', 'new', 'story', '--title', 'x', '--status', 'grooming'], '"grooming" is not a story status'],
       [['work', 'new', 'story', '--title', 'x', '--horizon', 'now'], '--horizon applies to epics only'],
       [['work', 'new', 'story', '--title', '   '], '--title is required'],
+      [['work', 'new', 'story', '--title', 'esc \u001b[31mRED\u001b[0m'], 'The title must not contain control characters'],
+      [['work', 'new', 'story', '--title', 'bell\u0007'], 'The title must not contain control characters'],
+      [['work', 'new', 'story', '--title', 'tab\there'], 'The title must not contain control characters'],
+      [['work', 'new', 'story', '--title', 'two\nlines'], 'The title must be a single line'],
     ];
     for (const [args, message] of cases) {
       const res = await sb.af(args);

@@ -1,8 +1,10 @@
 import fs from 'node:fs';
+import { evidenceProblems } from './evidence';
 import { idType } from './ids';
 import { productFile, readmeFile, relToProject, roadmapFile } from './paths';
 import { acceptanceCriteria, incompleteDependencies, isOpenStory, storiesForEpic } from './queries';
 import { allArtifacts, type WorkScan } from './scanner';
+import { capList } from './text';
 import type { Story, WorkIssue } from './types';
 
 export interface WorkValidation {
@@ -143,7 +145,8 @@ export function validateWorkspace(scan: WorkScan): WorkValidation {
   }
   for (const cycle of findDependencyCycles(scan.stories)) {
     graphProblems++;
-    issues.push({ level: 'error', message: 'dependency cycle', detail: [[...cycle, cycle[0]].join(' -> ')] });
+    // Long cycles are shortened: the first ids, then `... (N more)`.
+    issues.push({ level: 'error', message: 'dependency cycle', detail: [capList([...cycle, cycle[0]!])] });
   }
   if (!graphProblems) passed.push('dependency graph valid');
 
@@ -181,6 +184,14 @@ export function validateWorkspace(scan: WorkScan): WorkValidation {
         detail: unchecked.map((c) => `[ ] ${c}`),
         path: story.path,
       });
+    }
+  }
+
+  // Acceptance-criteria evidence blocks that do not parse or point at criteria that no longer exist
+  for (const story of scan.stories) {
+    if (!story.body.includes('agileflow-evidence')) continue;
+    for (const problem of evidenceProblems(story.body)) {
+      issues.push({ level: 'warn', message: `${story.id}: ${problem}`, path: story.path });
     }
   }
 

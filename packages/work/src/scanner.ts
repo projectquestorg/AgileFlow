@@ -3,6 +3,7 @@ import path from 'node:path';
 import { ARTIFACT_TYPES, DIRS, README_FILE } from './constants';
 import { parse, validate } from './frontmatter';
 import { artifactDir, relToProject } from './paths';
+import { contentHash } from './text';
 import type { Artifact, ArtifactType, Decision, Epic, Story, WorkIssue, WorkPaths } from './types';
 
 export interface WorkScan {
@@ -14,6 +15,20 @@ export interface WorkScan {
   decisions: Decision[];
   /** Files and directories the scanner saw but did not load, and unreadable artifacts. */
   issues: WorkIssue[];
+  /**
+   * What each artifact file looked like when it was read, keyed by its
+   * project-relative path. Writers compare against this immediately before
+   * writing and refuse when the file changed in between. Kept in memory only.
+   */
+  revisions: Map<string, FileRevision>;
+}
+
+/** A file's state when it was read. */
+export interface FileRevision {
+  /** `sha256:` plus 16 hex digits of the content. */
+  hash: string;
+  mtimeMs: number;
+  size: number;
 }
 
 async function readDir(dir: string): Promise<fs.Dirent[] | null> {
@@ -34,7 +49,7 @@ const ROOT_ALLOWED = new Set<string>([README_FILE, ...Object.values(DIRS)]);
  * repository is searched; files that do not belong are reported, not loaded.
  */
 export async function scanWorkspace(paths: WorkPaths): Promise<WorkScan> {
-  const scan: WorkScan = { paths, exists: false, epics: [], stories: [], decisions: [], issues: [] };
+  const scan: WorkScan = { paths, exists: false, epics: [], stories: [], decisions: [], issues: [], revisions: new Map() };
   const rootEntries = await readDir(paths.abs);
   if (!rootEntries) return scan;
   scan.exists = true;
@@ -80,8 +95,9 @@ export async function scanWorkspace(paths: WorkPaths): Promise<WorkScan> {
     }
     // Read with bounded concurrency; results are merged in file-name order so output stays deterministic.
     const results = await mapLimit(files, READ_CONCURRENCY, (f) => readArtifact(f.abs, f.rel, type));
-    for (const { artifact, issues } of results) {
+    for (const { artifact, issues, revision, rel } of results) {
       scan.issues.push(...issues);
+      if (revision) scan.revisions.set(rel, revision);
       if (!artifact) continue;
       if (artifact.type === 'epic') scan.epics.push(artifact);
       else if (artifact.type === 'story') scan.stories.push(artifact);
@@ -106,15 +122,35 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
   return results;
 }
 
-async function readArtifact(abs: string, rel: string, type: ArtifactType): Promise<{ artifact: Artifact | null; issues: WorkIssue[] }> {
+/** Read a file with its stat taken from the same open handle, plus its content hash. */
+export async function readWithRevision(abs: string): Promise<{ text: string; revision: FileRevision }> {
+  const handle = await fs.promises.open(abs, 'r');
+  try {
+    const stat = await handle.stat();
+    const buffer = await handle.readFile();
+    return { text: buffer.toString('utf8'), revision: { hash: contentHash(buffer), mtimeMs: stat.mtimeMs, size: buffer.length } };
+  } finally {
+    await handle.close();
+  }
+}
+
+interface ReadResult {
+  artifact: Artifact | null;
+  issues: WorkIssue[];
+  rel: string;
+  revision?: FileRevision;
+}
+
+async function readArtifact(abs: string, rel: string, type: ArtifactType): Promise<ReadResult> {
   const issues: WorkIssue[] = [];
   let text: string;
+  let revision: FileRevision;
   try {
-    text = await fs.promises.readFile(abs, 'utf8');
+    ({ text, revision } = await readWithRevision(abs));
   } catch (err) {
     const code = (err as NodeJS.ErrnoException).code ?? (err as Error).message;
     issues.push({ level: 'error', message: `${rel}: cannot be read (${code})`, path: rel, code: 'invalid' });
-    return { artifact: null, issues };
+    return { artifact: null, issues, rel };
   }
   const doc = parse(text);
   if (!doc.data) {
@@ -124,13 +160,13 @@ async function readArtifact(abs: string, rel: string, type: ArtifactType): Promi
       path: rel,
       code: 'invalid',
     });
-    return { artifact: null, issues };
+    return { artifact: null, issues, rel, revision };
   }
   const problems = validate(doc.data, type);
   for (const p of problems) {
     issues.push({ level: p.level, message: `${rel}: ${p.message}`, path: rel, code: p.level === 'error' ? 'invalid' : 'metadata' });
   }
-  if (problems.some((p) => p.level === 'error')) return { artifact: null, issues };
+  if (problems.some((p) => p.level === 'error')) return { artifact: null, issues, rel, revision };
   const artifact = { ...(doc.data as object), path: rel, body: doc.body } as Artifact;
   if (doc.titleComment) {
     issues.push({
@@ -152,7 +188,7 @@ async function readArtifact(abs: string, rel: string, type: ArtifactType): Promi
       code: 'metadata',
     });
   }
-  return { artifact, issues };
+  return { artifact, issues, rel, revision };
 }
 
 /** All artifacts in one list. */

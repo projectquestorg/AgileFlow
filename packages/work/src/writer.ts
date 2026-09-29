@@ -1,13 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { writeFileAtomic } from '@agileflow/core';
-import { ARTIFACT_TYPES, DIRS, README_FILE } from './constants';
+import { ARTIFACT_TYPES, DIRS, OPEN_STORY_STATUSES, README_FILE } from './constants';
 import { parse, patch, serialize } from './frontmatter';
 import { createId, resolvePartialId } from './ids';
 import { reviewTransition, isValidStatus, statusesFor } from './lifecycle';
 import { artifactDir, artifactFileName, productFile, readmeFile, relToProject, roadmapFile, WorkError } from './paths';
-import { allArtifacts, scanWorkspace, type WorkScan } from './scanner';
+import { storiesForEpic } from './queries';
+import { allArtifacts, readWithRevision, scanWorkspace, type FileRevision, type WorkScan } from './scanner';
 import { artifactBody, PRODUCT_TEMPLATE, README_TEMPLATE, ROADMAP_TEMPLATE } from './templates';
+import { contentHash, hasControlCharacters } from './text';
 import type { Artifact, ArtifactType, Horizon, Priority, WorkPaths } from './types';
 import { HorizonSchema, PrioritySchema } from './types';
 
@@ -154,7 +156,10 @@ export async function createArtifact(scan: WorkScan, input: NewArtifactInput): P
   const { type } = input;
   const title = input.title.trim();
   if (!title) throw new WorkError('A title is required', [`agileflow work new ${type} --title "..."`]);
-  if (/[\r\n]/.test(title)) throw new WorkError('The title must be a single line');
+  if (/[\r\n\u2028\u2029]/.test(title)) throw new WorkError('The title must be a single line');
+  if (hasControlCharacters(title)) {
+    throw new WorkError('The title must not contain control characters (such as terminal escape sequences or tabs)');
+  }
   const status = input.status ?? DEFAULT_STATUS[type];
   if (!isValidStatus(type, status)) {
     throw new WorkError(`"${status}" is not ${article(type)} ${type} status`, [`Valid: ${statusesFor(type).join(', ')}`]);
@@ -243,13 +248,10 @@ export async function setStatus(
     throw new WorkError(review.blockers.join('\n'), ['Use --force to set it anyway.']);
   }
   change.warnings = [...review.blockers, ...review.warnings];
-  const abs = path.join(scan.paths.projectRoot, ...artifact.path.split('/'));
-  const text = await fs.promises.readFile(abs, 'utf8');
-  // The review above used the scanned state; refuse if the file changed since.
-  const onDisk = parse(text).data;
-  if (onDisk?.id !== artifact.id || onDisk?.status !== artifact.status) {
-    throw new WorkError(`${artifact.path} changed on disk while this command was running`, ['Nothing was written. Run the command again.']);
-  }
+  // The review above used the scanned state. Re-read every file the decision
+  // depended on; refuse if any changed since the scan.
+  await assertInvolvedUnchanged(scan, artifact, target, review.blockers.length > 0);
+  const { abs, text, revision } = await readUnchanged(scan, artifact.path);
   let next: string;
   try {
     next = patch(text, { status: target });
@@ -258,6 +260,85 @@ export async function setStatus(
       `Nothing was written. Edit the status line in ${artifact.path} by hand, or rewrite its frontmatter as plain \`key: value\` lines.`,
     ]);
   }
-  await writeFileAtomic(abs, next);
+  await writeIfUnchanged(abs, artifact.path, revision.hash, next);
   return change;
+}
+
+// ---------------------------------------------------------------------------
+// Change detection: compare-and-write against what the scan read
+// ---------------------------------------------------------------------------
+
+export function changedOnDiskError(rel: string): WorkError {
+  return new WorkError(`${rel} changed on disk since this command read it (another command, agent, or editor)`, [
+    'Nothing was written. Run the command again.',
+  ]);
+}
+
+/**
+ * Read an artifact file for a change. Refuses when its content differs from
+ * what the scan read (or the scan never read it).
+ */
+export async function readUnchanged(scan: WorkScan, rel: string): Promise<{ abs: string; text: string; revision: FileRevision }> {
+  const abs = path.join(scan.paths.projectRoot, ...rel.split('/'));
+  const expected = scan.revisions.get(rel);
+  let fresh: { text: string; revision: FileRevision };
+  try {
+    fresh = await readWithRevision(abs);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') throw changedOnDiskError(rel);
+    throw err;
+  }
+  if (!expected || expected.hash !== fresh.revision.hash) throw changedOnDiskError(rel);
+  return { abs, ...fresh };
+}
+
+/**
+ * Atomically replace a Work file (temporary file + rename), after one last
+ * check, immediately before writing, that it still has the content hash it
+ * was read with. Nothing is written when it changed. The check and the
+ * rename are not one atomic step: callers that may run concurrently (the
+ * CLI) hold the project's scope lock around the scan and the write.
+ */
+export async function writeIfUnchanged(abs: string, rel: string, expectedHash: string, content: string): Promise<void> {
+  let current: string;
+  try {
+    current = contentHash(await fs.promises.readFile(abs));
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') throw changedOnDiskError(rel);
+    throw err;
+  }
+  if (current !== expectedHash) throw changedOnDiskError(rel);
+  await writeFileAtomic(abs, content);
+}
+
+/**
+ * Re-check, with fresh reads, the other files a blocking decision was based
+ * on: closing an epic depends on its stories (including story files created
+ * since the scan). Warnings are informational and are not re-checked; a
+ * forced change does not depend on them.
+ */
+async function assertInvolvedUnchanged(scan: WorkScan, artifact: Artifact, target: string, forced: boolean): Promise<void> {
+  if (forced || artifact.type !== 'epic' || target !== 'done') return;
+  for (const story of storiesForEpic(scan, artifact.id)) await readUnchanged(scan, story.path);
+  await assertNoNewOpenStories(scan, artifact.id);
+}
+
+/** Story files that appeared after the scan and put an open story into this epic. */
+async function assertNoNewOpenStories(scan: WorkScan, epicId: string): Promise<void> {
+  const dir = artifactDir(scan.paths, 'story');
+  let names: string[];
+  try {
+    names = await fs.promises.readdir(dir);
+  } catch {
+    return;
+  }
+  for (const name of names) {
+    if (!name.endsWith('.md') || name.startsWith('.')) continue;
+    const rel = relToProject(scan.paths, path.join(dir, name));
+    if (scan.revisions.has(rel)) continue;
+    const data = parse(await fs.promises.readFile(path.join(dir, name), 'utf8').catch(() => '')).data;
+    if (data?.epic === epicId && typeof data.status === 'string' && (OPEN_STORY_STATUSES as readonly string[]).includes(data.status)) {
+      throw changedOnDiskError(rel);
+    }
+  }
 }

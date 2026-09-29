@@ -29,6 +29,8 @@ const AnyId = z.string().regex(ANY_ID_RE, 'must be an EPIC-, STORY-, or DEC- id'
 const Title = z.string().trim().min(1, 'must not be empty');
 /** Where an imported item came from (e.g. the v4 ID `US-0042`); makes imports idempotent. */
 const LegacyId = z.string().trim().min(1, 'must not be empty');
+/** v4 files an imported item was read from (project-relative paths); the originals are never changed. */
+const LegacySource = z.array(z.string().trim().min(1, 'must not be empty'));
 
 export const PrioritySchema = z.enum(PRIORITIES);
 export const HorizonSchema = z.enum(HORIZONS);
@@ -44,6 +46,7 @@ export const EpicFrontmatterSchema = z
     horizon: HorizonSchema.optional(),
     priority: PrioritySchema.optional(),
     legacy_id: LegacyId.optional(),
+    legacy_source: LegacySource.optional(),
   })
   .strict();
 
@@ -59,6 +62,7 @@ export const StoryFrontmatterSchema = z
     epic: EpicId.optional(),
     depends_on: z.array(StoryId).optional(),
     legacy_id: LegacyId.optional(),
+    legacy_source: LegacySource.optional(),
   })
   .strict();
 
@@ -98,6 +102,8 @@ export interface Story extends ArtifactBase {
   depends_on?: string[];
   /** Set by `agileflow work import` (e.g. `US-0042`). */
   legacy_id?: string;
+  /** Set by `agileflow work import`: the v4 files the item was read from. */
+  legacy_source?: string[];
 }
 
 export interface Epic extends ArtifactBase {
@@ -110,6 +116,8 @@ export interface Epic extends ArtifactBase {
   horizon?: Horizon;
   /** Set by `agileflow work import` (e.g. `EP-0007`). */
   legacy_id?: string;
+  /** Set by `agileflow work import`: the v4 files the item was read from. */
+  legacy_source?: string[];
 }
 
 export interface Decision extends ArtifactBase {
