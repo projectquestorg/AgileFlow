@@ -21,16 +21,16 @@ The value of this skill is evidence, not a restatement of the reasoning already 
 ## Constraints
 
 - Search before concluding "no other callers". Absence of evidence from a narrow search is not evidence.
-- Distinguish **verified** (you read or ran it) from **inferred** (you reasoned about it). Label each finding.
+- Distinguish **verified** (you read or ran it) from **inferred** (you reasoned about it). Label each finding individually; a blanket "all verified" does not tell the user which claims to double-check.
 - Do not fix what you find unless the user asked for fixes. Report it; fixing may widen scope.
 - Keep it proportional. A private helper with two local callers needs a short answer, not a full sweep: one line naming the callers you checked and "no wider impact found".
 
 ## Report format
 
 - **Change:** one line.
-- **Affected consumers:** list with file paths, each marked verified or inferred.
-- **Load-bearing assumptions:** each with the evidence that proved or disproved it.
-- **Risks remaining:** what could still break and how to check it.
+- **Affected consumers:** list with file paths, each line ending in `[verified]` or `[inferred]`.
+- **Load-bearing assumptions:** each with the evidence that proved or disproved it, ending in `[verified]` or `[inferred]`.
+- **Risks remaining:** what could still break, each with the concrete check that would settle it (a query, command, or test to run). Anything that depends on data or environments the repository cannot show, such as existing production rows or deployed configuration, belongs here with the exact check to run before merging.
 
 ## Done when
 

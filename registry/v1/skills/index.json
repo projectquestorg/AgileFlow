@@ -14,10 +14,11 @@
     {
       "name": "@agileflow/checking-blast-radius",
       "description": "Identify what a proposed or completed code change could break elsewhere by tracing its consumers and proving the load-bearing assumptions. Use when the user asks about blast radius, downstream impact, regression risk, or \"what else could this break\", or before finishing or merging a change that alters a public API, a shared schema or contract, a database migration, or an interface used across packages. Not for local edits with only nearby callers, for reviewing a diff for bugs in general, or for explaining the concept.",
-      "latest": "1.0.1",
+      "latest": "1.0.2",
       "versions": [
         "1.0.0",
-        "1.0.1"
+        "1.0.1",
+        "1.0.2"
       ]
     },
     {
@@ -50,10 +51,11 @@
     {
       "name": "@agileflow/interviewing-requirements",
       "description": "Interview the user in small rounds of high-value questions to pin down requirements and stress-test a plan before implementation, after first checking the repository for facts it can answer. Use only when the user explicitly asks to be interviewed, questioned, or grilled about a plan, or says things like \"ask me questions\", \"stress-test this plan\", \"help me decide by asking me questions\", or \"question me about this\". Do not activate for ordinary implementation requests.",
-      "latest": "1.0.2",
+      "latest": "1.0.3",
       "versions": [
         "1.0.0",
-        "1.0.2"
+        "1.0.2",
+        "1.0.3"
       ]
     },
     {

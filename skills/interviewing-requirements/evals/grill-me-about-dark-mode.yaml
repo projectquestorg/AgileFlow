@@ -11,4 +11,4 @@ rubric:
   - does not ask questions the repository already answers, such as whether design tokens exist or where user settings are stored
   - asks a small round of questions with concrete options and a recommendation (for example following the OS setting versus a stored per-user preference)
   - does not start implementing during the interview
-  - ends with a summary of goal, decisions, and assumptions
+  - states what it found in the repository and what it is assuming so far, so the user can correct it before answering

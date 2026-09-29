@@ -8,7 +8,8 @@
     },
     "@agileflow/checking-blast-radius": {
       "1.0.0": "sha256-VyIb+9zFN1mOS1WY2E4T6rc2J7/b0WOri5tV7Cm+aN8=",
-      "1.0.1": "sha256-4ZXdY/zc4afnanyP8SBlASwluP0IDdQ1EutrbyHYIEs="
+      "1.0.1": "sha256-4ZXdY/zc4afnanyP8SBlASwluP0IDdQ1EutrbyHYIEs=",
+      "1.0.2": "sha256-q3z9VejmGn3fwlbzmGIb3Ws8dw8RtmSoumnK+0qqX5A="
     },
     "@agileflow/creating-epics": {
       "1.0.1": "sha256-hINvQFPRrSeGaGXn1I9WreNASbRhY5e2WLN7xXaVzuU="
@@ -24,7 +25,8 @@
     },
     "@agileflow/interviewing-requirements": {
       "1.0.0": "sha256-jnHmq9JYNNz0caIhBjlxDgKDj2Bi7dcIaGUSyJ2L8Vk=",
-      "1.0.2": "sha256-uaxjuI8DKtZgxQAXvozADFTK50A7frGN+wglZWVHuRY="
+      "1.0.2": "sha256-uaxjuI8DKtZgxQAXvozADFTK50A7frGN+wglZWVHuRY=",
+      "1.0.3": "sha256-N0qlSOO8pvJ+B3lbpQ+NuXWadjMgr/NmSgYTq+vQQ5U="
     },
     "@agileflow/recording-decisions": {
       "1.0.0": "sha256-hLSm0hKZJAoE4Ktpd/8XqlyHJjM+aXm4FJmtaAzCKHk="
