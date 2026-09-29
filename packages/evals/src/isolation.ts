@@ -1,13 +1,17 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { trackDisposer } from './cleanup';
 
 /**
  * Isolated environment for provider runs and the judge: a throwaway HOME
  * with its own XDG and AgileFlow directories, so personal skills, plugins,
  * instructions, and settings (~/.claude, ~/.agents/skills, ~/.codex, ...) never
- * reach an eval. Only each provider's known login files are copied in; API key
- * environment variables pass through unchanged.
+ * reach an eval. The caller's environment does not pass through wholesale:
+ * only system variables (PATH, locale, proxies, ...) and the provider's own
+ * configuration and credential variables do. When a provider's credential
+ * variable is set (e.g. ANTHROPIC_API_KEY) its login files are not copied;
+ * otherwise only its known login files are.
  *
  * Providers refresh OAuth tokens during a run. A refreshed credential file is
  * written back to its original location on dispose, unless the original
@@ -24,6 +28,8 @@ interface CredentialSpec {
   target: string;
   /** `filter` keeps only these top-level JSON keys; such files are never written back. */
   keep?: string[];
+  /** Keys kept when the provider authenticates from the environment instead (default: the file is skipped). */
+  keepWithEnvAuth?: string[];
 }
 
 export interface CopiedCredential {
@@ -32,12 +38,24 @@ export interface CopiedCredential {
   file: string;
 }
 
+/** How a provider authenticates in an isolated run (names only, never values). */
+export interface AuthInfo {
+  provider: string;
+  /** `env`: credential variables only; `login`: copied login files; `env+login`: both; `none`: neither found; `inherited`: not isolated (your whole environment and HOME). */
+  mode: 'env' | 'login' | 'env+login' | 'none' | 'inherited';
+  /** Credential variables passed to the provider. */
+  envVars: string[];
+  /** Login files copied into the isolated HOME (relative to it). */
+  files: string[];
+}
+
 export interface IsolatedEnv {
   /** The isolated HOME directory. */
   home: string;
   /** Environment for provider and setup processes. */
   env: Env;
   credentials: CopiedCredential[];
+  auth: AuthInfo[];
   /** Write refreshed credentials back, then delete the isolated HOME. */
   dispose(): Promise<void>;
 }
@@ -68,6 +86,73 @@ const CLEARED = [
 /** Top-level `~/.claude.json` keys that carry the login; everything else (projects, MCP servers, history) stays out. */
 const CLAUDE_CONFIG_KEYS = ['oauthAccount', 'userID', 'hasCompletedOnboarding', 'lastOnboardingVersion', 'primaryApiKey', 'customApiKeyResponses'];
 
+/** System variables every process may need; nothing else from the caller's environment passes by default. */
+const BASE_ENV = new Set([
+  'PATH', 'LANG', 'LANGUAGE', 'TERM', 'COLORTERM', 'TZ', 'TMPDIR', 'TEMP', 'TMP', 'SHELL', 'USER', 'LOGNAME', 'USERNAME',
+  'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'ALL_PROXY', 'NODE_EXTRA_CA_CERTS', 'SSL_CERT_FILE', 'SSL_CERT_DIR',
+  'SYSTEMROOT', 'SYSTEMDRIVE', 'COMSPEC', 'PATHEXT', 'WINDIR', 'PROGRAMFILES', 'PROGRAMFILES(X86)', 'PROGRAMDATA',
+  'NUMBER_OF_PROCESSORS', 'PROCESSOR_ARCHITECTURE', 'OS',
+]);
+const BASE_PREFIXES = ['LC_', 'AGILEFLOW_'];
+
+/**
+ * Per provider: variables that carry credentials (`auth`, reported by name),
+ * which of them replace the login files (`replacesLogin`), and prefixes of
+ * the provider's own configuration variables.
+ */
+const PROVIDER_ENV: Record<string, { auth: string[]; replacesLogin: string[]; prefixes: string[] }> = {
+  claude: {
+    auth: ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX'],
+    replacesLogin: ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX'],
+    prefixes: ['ANTHROPIC_', 'CLAUDE_CODE_'],
+  },
+  codex: { auth: ['CODEX_API_KEY', 'OPENAI_API_KEY'], replacesLogin: ['CODEX_API_KEY'], prefixes: ['CODEX_', 'OPENAI_'] },
+  gemini: { auth: ['GEMINI_API_KEY', 'GOOGLE_API_KEY', 'GOOGLE_APPLICATION_CREDENTIALS'], replacesLogin: [], prefixes: ['GEMINI_', 'GOOGLE_'] },
+  opencode: {
+    auth: ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'GEMINI_API_KEY', 'GOOGLE_GENERATIVE_AI_API_KEY', 'GROQ_API_KEY', 'XAI_API_KEY', 'DEEPSEEK_API_KEY', 'MISTRAL_API_KEY'],
+    replacesLogin: [],
+    prefixes: ['OPENCODE_'],
+  },
+};
+
+/** Cloud-hosted Claude needs that cloud's variables (credentials included). */
+function claudeCloudPrefixes(env: Env): string[] {
+  const out: string[] = [];
+  if (env.CLAUDE_CODE_USE_BEDROCK) out.push('AWS_');
+  if (env.CLAUDE_CODE_USE_VERTEX) out.push('GOOGLE_', 'CLOUD_ML_REGION', 'VERTEX_REGION_', 'ANTHROPIC_VERTEX_');
+  return out;
+}
+
+/** The part of `env` an isolated run of these providers receives. */
+export function allowedEnv(env: Env, providers: string[], platform: NodeJS.Platform = process.platform): Env {
+  const names = new Set<string>();
+  const prefixes = [...BASE_PREFIXES];
+  for (const p of providers) {
+    const spec = PROVIDER_ENV[p];
+    if (spec) {
+      spec.auth.forEach((n) => names.add(n));
+      prefixes.push(...spec.prefixes);
+    }
+    if (p === 'claude') prefixes.push(...claudeCloudPrefixes(env));
+  }
+  const out: Env = {};
+  for (const [key, value] of Object.entries(env)) {
+    if (value === undefined) continue;
+    // Windows variable names are case-insensitive (`Path`); proxies are often lowercase everywhere.
+    const upper = key.toUpperCase();
+    const name = platform === 'win32' || upper.endsWith('_PROXY') ? upper : key;
+    if (BASE_ENV.has(name) || names.has(name) || prefixes.some((prefix) => name.startsWith(prefix))) out[key] = value;
+  }
+  return out;
+}
+
+/** Credential variables for `provider` present in `env`, and whether they replace its login files. */
+function envAuth(provider: string, env: Env): { vars: string[]; replacesLogin: boolean } {
+  const spec = PROVIDER_ENV[provider];
+  const vars = (spec?.auth ?? []).filter((n) => env[n]);
+  return { vars, replacesLogin: vars.some((n) => spec!.replacesLogin.includes(n)) };
+}
+
 export function realHomeDir(env: Env): string {
   return env.HOME || env.USERPROFILE || os.homedir();
 }
@@ -80,7 +165,14 @@ export function credentialSpecs(provider: string, realHome: string, env: Env): C
       const globalConfig = env.CLAUDE_CONFIG_DIR ? path.join(env.CLAUDE_CONFIG_DIR, '.claude.json') : path.join(realHome, '.claude.json');
       return [
         { provider, source: path.join(configDir, '.credentials.json'), target: '.claude/.credentials.json' },
-        { provider, source: globalConfig, target: '.claude.json', keep: CLAUDE_CONFIG_KEYS },
+        {
+          provider,
+          source: globalConfig,
+          target: '.claude.json',
+          keep: CLAUDE_CONFIG_KEYS,
+          // Onboarding state and the approval of an environment API key; no stored login.
+          keepWithEnvAuth: ['userID', 'hasCompletedOnboarding', 'lastOnboardingVersion', 'customApiKeyResponses'],
+        },
       ];
     }
     case 'codex': {
@@ -151,7 +243,7 @@ export async function createIsolatedEnv(options: IsolationOptions): Promise<Isol
   await fs.promises.mkdir(home, { recursive: true, mode: 0o700 });
   await fs.promises.chmod(home, 0o700);
 
-  const env: Env = { ...options.env };
+  const env: Env = allowedEnv(options.env, options.providers, platform);
   for (const key of CLEARED) delete env[key];
   Object.assign(env, {
     HOME: home,
@@ -179,8 +271,15 @@ export async function createIsolatedEnv(options: IsolationOptions): Promise<Isol
 
   const copied: Array<{ spec: CredentialSpec; original: Buffer }> = [];
   const credentials: CopiedCredential[] = [];
+  const auth: AuthInfo[] = [];
   for (const provider of [...new Set(options.providers)]) {
+    const fromEnv = envAuth(provider, env);
+    const files: string[] = [];
+    let login = false;
     for (const spec of credentialSpecs(provider, realHome, options.env)) {
+      // Credentials in the environment replace the login files: copy only what is still needed.
+      const keep = fromEnv.replacesLogin ? spec.keepWithEnvAuth : spec.keep;
+      if (fromEnv.replacesLogin && !keep) continue;
       let original: Buffer;
       try {
         original = await fs.promises.readFile(spec.source);
@@ -188,8 +287,8 @@ export async function createIsolatedEnv(options: IsolationOptions): Promise<Isol
         continue; // not logged in this way; API key env vars may still work
       }
       const target = path.join(home, spec.target);
-      if (spec.keep) {
-        const filtered = filterJson(original.toString('utf8'), spec.keep, provider);
+      if (keep) {
+        const filtered = filterJson(original.toString('utf8'), keep, provider);
         if (filtered === null) continue;
         await writePrivate(target, filtered);
       } else {
@@ -197,31 +296,35 @@ export async function createIsolatedEnv(options: IsolationOptions): Promise<Isol
         copied.push({ spec, original });
       }
       credentials.push({ provider, file: spec.target });
+      files.push(spec.target);
+      if (!fromEnv.replacesLogin) login = true;
     }
+    const mode = fromEnv.vars.length ? (login ? 'env+login' : 'env') : login ? 'login' : 'none';
+    auth.push({ provider, mode, envVars: fromEnv.vars, files });
   }
 
   let disposed = false;
-  return {
-    home,
-    env,
-    credentials,
-    async dispose() {
-      if (disposed) return;
-      disposed = true;
-      try {
-        for (const { spec, original } of copied) {
-          const refreshed = await fs.promises.readFile(path.join(home, spec.target)).catch(() => null);
-          if (!refreshed || refreshed.length === 0 || refreshed.equals(original)) continue;
-          const current = await fs.promises.readFile(spec.source).catch(() => null);
-          // Someone else refreshed or removed the login meanwhile: theirs wins.
-          if (!current || !current.equals(original)) continue;
-          await writeBack(spec.source, refreshed).catch(() => undefined);
-        }
-      } finally {
-        await fs.promises.rm(home, { recursive: true, force: true });
+  // An interrupted eval still writes refreshed logins back and deletes the copies.
+  let untrack = () => {};
+  const dispose = async () => {
+    if (disposed) return;
+    disposed = true;
+    try {
+      for (const { spec, original } of copied) {
+        const refreshed = await fs.promises.readFile(path.join(home, spec.target)).catch(() => null);
+        if (!refreshed || refreshed.length === 0 || refreshed.equals(original)) continue;
+        const current = await fs.promises.readFile(spec.source).catch(() => null);
+        // Someone else refreshed or removed the login meanwhile: theirs wins.
+        if (!current || !current.equals(original)) continue;
+        await writeBack(spec.source, refreshed).catch(() => undefined);
       }
-    },
+    } finally {
+      await fs.promises.rm(home, { recursive: true, force: true });
+      untrack();
+    }
   };
+  untrack = trackDisposer(dispose, home);
+  return { home, env, credentials, auth, dispose };
 }
 
 /**

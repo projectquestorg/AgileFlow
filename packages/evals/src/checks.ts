@@ -120,6 +120,8 @@ export interface CheckContext {
   fileChanges: FileChange[] | null;
   /** Repository the run worked in (for `fileContains`). */
   repo: string | null;
+  /** Runs a `run` check's command in the sandbox (absent: `run` checks cannot be graded). */
+  runCommand?: (command: string) => Promise<{ code: number | null; output: string }>;
 }
 
 export interface SafetyViolation {
@@ -160,6 +162,8 @@ export function ruleLabel(rule: RuleCheck): string {
   if (rule.fileChanged !== undefined) return `changes a file matching ${rule.fileChanged}`;
   if (rule.fileUnchanged !== undefined) return `leaves files matching ${rule.fileUnchanged} unchanged`;
   if (rule.fileContains) return `${rule.fileContains.path} matches /${rule.fileContains.pattern}/`;
+  if (rule.run !== undefined) return `\`${rule.run}\` exits ${rule.exitCode ?? 0}`;
+  if (rule.maxFilesChanged !== undefined) return `changes at most ${rule.maxFilesChanged} file(s)`;
   return 'rule';
 }
 
@@ -202,6 +206,18 @@ export async function evaluateRule(rule: RuleCheck, ctx: CheckContext): Promise<
     if (text === null) return { pass: false, reason: `${rule.fileContains.path} does not exist` };
     const pass = new RegExp(rule.fileContains.pattern, 'm').test(text);
     return { pass, reason: pass ? 'content matches' : 'content does not match' };
+  }
+  if (rule.run !== undefined) {
+    if (!ctx.runCommand) throw new Error('commands cannot be run for this check');
+    const res = await ctx.runCommand(rule.run);
+    const want = rule.exitCode ?? 0;
+    const tail = res.output.trim().split('\n').slice(-3).join(' ').slice(-300);
+    return { pass: res.code === want, reason: `exited ${res.code ?? 'without a code'}${tail ? `: ${tail}` : ''}` };
+  }
+  if (rule.maxFilesChanged !== undefined) {
+    const changed = changes();
+    const pass = changed.length <= rule.maxFilesChanged;
+    return { pass, reason: `${changed.length} file(s) changed${pass ? '' : `: ${changed.slice(0, 5).map((c) => c.path).join(', ')}`}` };
   }
   throw new Error('rule check has no condition');
 }

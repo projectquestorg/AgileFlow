@@ -84,7 +84,7 @@ describe('eval robustness', () => {
       env: process.env,
       isolate: false,
     });
-    expect(report.results[0]!.status).toBe('error');
+    expect(report.results[0]!.status).toBe('inconclusive');
     expect(report.results[0]!.errors[0]).toContain('judge failed: judge process exited 1');
     expect(report.summary.passed).toBe(0);
   });
@@ -98,7 +98,7 @@ describe('eval robustness', () => {
       },
     };
     const report = await runEvals({ skillDirs: [skill(root)], driver: crashing, fixturesDir: fixtures(root), env: process.env, isolate: false });
-    expect(report.results[0]!.status).toBe('error');
+    expect(report.results[0]!.status).toBe('inconclusive');
     expect(report.summary.truePositive + report.summary.falseNegative).toBe(0);
   });
 
@@ -111,7 +111,7 @@ describe('eval robustness', () => {
       env: process.env,
       isolate: false,
     });
-    expect(report.results[0]!.status).toBe('error');
+    expect(report.results[0]!.status).toBe('inconclusive');
     expect(report.results[0]!.errors.join('\n')).toContain('does-not-exist');
   });
 
@@ -127,7 +127,7 @@ describe('eval robustness', () => {
       setupAllowed: () => false,
     });
     expect(fs.existsSync(marker)).toBe(false);
-    expect(report.results[0]!.status).toBe('error');
+    expect(report.results[0]!.status).toBe('inconclusive');
     expect(report.results[0]!.errors.join('\n')).toContain('--allow-setup');
   });
 });
@@ -169,7 +169,7 @@ describe('cross-provider reports', () => {
       ({
         provider,
         questionPreference: null,
-        summary: { precision: 1, recall: status === 'passed' ? 1 : 0, f1: null, passed: status === 'passed' ? 1 : 0, failed: status === 'failed' ? 1 : 0, errored: 0 },
+        summary: { precision: 1, recall: status === 'passed' ? 1 : 0, f1: null, passed: status === 'passed' ? 1 : 0, failed: status === 'failed' ? 1 : 0, inconclusive: 0 },
         results: [{ skill: 'demo', scenario: 'positive', kind: 'standard', status, passRate: { rate: status === 'passed' ? 1 : 0, ci95: null } }],
       }) as unknown as EvalReport;
     expect(compareProviders([report('claude', 'passed')])).toBeNull();

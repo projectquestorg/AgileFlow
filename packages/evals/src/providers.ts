@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { findExecutable } from '@agileflow/providers';
+import { trackChild } from './cleanup';
 
 /**
  * Eval drivers run a real provider CLI headlessly in a sandbox repository
@@ -19,12 +20,28 @@ export interface EvalRunInput {
   env: Record<string, string | undefined>;
   /** Commands the scenario supplies as sandbox stand-ins (its `bin:` block); full runs may call them without asking. */
   sandboxCommands?: string[];
+  /** The run uses an isolated HOME: drivers also skip user-scope settings where the provider allows it. */
+  isolated?: boolean;
 }
 
 export interface ToolCall {
   name: string;
   input: string;
 }
+
+/** Token usage and cost as the provider reported them (absent: not reported). */
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+  /** Cost in USD when the provider reports it (Claude `total_cost_usd`), else null. */
+  costUsd: number | null;
+}
+
+export const totalTokens = (u: TokenUsage) => u.inputTokens + u.outputTokens + u.cacheReadTokens + u.cacheCreationTokens;
+
+const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 
 export interface Transcript {
   provider: string;
@@ -41,6 +58,9 @@ export interface Transcript {
   slashCommands?: string[];
   /** Provider's own result classification when it reports one (Claude: `success`, `error_max_turns`, ...). */
   resultSubtype?: string;
+  /** Model the provider reported using (Claude init event). */
+  model?: string;
+  usage?: TokenUsage;
   exitCode: number | null;
   durationMs: number;
   /** The provider crashed, failed to start, or timed out: the run is an error, never scored. */
@@ -60,11 +80,21 @@ export interface EvalDriver {
   activated(transcript: Transcript, skillId: string): boolean;
 }
 
+export interface ProcessResult {
+  stdout: string;
+  stderr: string;
+  code: number | null;
+  durationMs: number;
+  timedOut: boolean;
+  /** Writing stdin failed (e.g. EPIPE: the process closed its input before reading it all). */
+  stdinError?: string;
+}
+
 export async function runProcess(
   command: string,
   args: string[],
   options: { cwd: string; env: Record<string, string | undefined>; timeoutMs: number; stdin?: string },
-): Promise<{ stdout: string; stderr: string; code: number | null; durationMs: number; timedOut: boolean }> {
+): Promise<ProcessResult> {
   const started = Date.now();
   return new Promise((resolve) => {
     const child = spawn(command, args, {
@@ -72,9 +102,12 @@ export async function runProcess(
       env: options.env as NodeJS.ProcessEnv,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
+    trackChild(child);
     let stdout = '';
     let stderr = '';
     let timedOut = false;
+    let stdinError: string | undefined;
+    const done = (res: ProcessResult) => resolve(stdinError ? { ...res, stdinError } : res);
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill('SIGTERM');
@@ -82,13 +115,18 @@ export async function runProcess(
     }, options.timeoutMs);
     child.stdout.on('data', (d) => (stdout += d));
     child.stderr.on('data', (d) => (stderr += d));
+    // Without a handler, a process that closes stdin early (EPIPE) or never
+    // starts would throw from the stream and crash the whole eval.
+    child.stdin.on('error', (err) => {
+      stdinError = (err as NodeJS.ErrnoException).code ?? err.message;
+    });
     child.on('error', (err) => {
       clearTimeout(timer);
-      resolve({ stdout, stderr: stderr + String(err), code: null, durationMs: Date.now() - started, timedOut });
+      done({ stdout, stderr: stderr + String(err), code: null, durationMs: Date.now() - started, timedOut });
     });
     child.on('close', (code) => {
       clearTimeout(timer);
-      resolve({ stdout, stderr, code, durationMs: Date.now() - started, timedOut });
+      done({ stdout, stderr, code, durationMs: Date.now() - started, timedOut });
     });
     child.stdin.end(options.stdin ?? '');
   });
@@ -110,17 +148,43 @@ function jsonLines(text: string): Array<Record<string, unknown>> {
 
 /** Error text for a failed provider process (timeout, spawn failure, non-zero exit). */
 export function processError(
-  res: { stderr: string; code: number | null; timedOut: boolean },
+  res: { stderr: string; code: number | null; timedOut: boolean; stdinError?: string },
   timeoutMs: number,
-  options: { allowNonZero?: boolean } = {},
+  options: { allowNonZero?: boolean; stdin?: string } = {},
 ): string | undefined {
   if (res.timedOut) return `timed out after ${Math.round(timeoutMs / 1000)}s`;
+  // Only input that was actually lost counts; an empty stdin has nothing to lose.
+  if (res.stdinError && options.stdin) return `closed its input before reading it (${res.stdinError})`;
   if (res.code === 0 || (options.allowNonZero && res.code !== null)) return undefined;
   const detail = res.stderr.trim().split('\n').slice(-3).join(' ').slice(-500);
   return res.code === null ? `could not run: ${detail || 'spawn failed'}` : `exited with code ${res.code}${detail ? `: ${detail}` : ''}`;
 }
 
 const skillPathRe = (id: string) => new RegExp(`skills[\\\\/]${id.replace(/[-]/g, '\\-')}[\\\\/]SKILL\\.md`);
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Where the transcript shows the skill `id` being loaded from: SKILL.md paths
+ * in tool calls (file reads, shell commands) and injected messages, plus
+ * Claude's "Base directory for this skill: <dir>" note. Paths are returned as
+ * written (relative, `~/`, or absolute); empty when the provider names the
+ * skill but not its file (Gemini `activate_skill`, OpenCode `skill`).
+ */
+export function loadedSkillPaths(t: Transcript, id: string): string[] {
+  const found = new Set<string>();
+  const file = new RegExp(`([^\\s"'\`;|&<>()=]*skills(?:[\\\\/]+)${escapeRe(id)}(?:[\\\\/]+)SKILL\\.md)`, 'g');
+  const texts = [...t.toolCalls.map((c) => c.input), ...t.userMessages];
+  for (const text of texts) for (const m of text.matchAll(file)) found.add(m[1]!.replace(/\\\\/g, '\\'));
+  const base = /Base directory for this skill: (\S+)/g;
+  for (const text of t.userMessages) {
+    for (const m of text.matchAll(base)) {
+      const dir = m[1]!.replace(/[\\/]+$/, '');
+      if (dir.split(/[\\/]/).pop() === id) found.add(`${dir}/SKILL.md`);
+    }
+  }
+  return [...found];
+}
 
 const withError = (error: string | undefined) => (error ? { error } : {});
 
@@ -135,7 +199,10 @@ export function parseClaudeStream(stdout: string): Omit<Transcript, 'provider' |
   let visibleSkills: string[] | null = null;
   let slashCommands: string[] | undefined;
   let resultSubtype: string | undefined;
+  let model: string | undefined;
+  let usage: TokenUsage | undefined;
   for (const event of jsonLines(stdout)) {
+    if (event.type === 'system' && event.subtype === 'init' && typeof event.model === 'string') model = event.model;
     if (event.type === 'system' && event.subtype === 'init' && Array.isArray(event.skills)) {
       visibleSkills = event.skills as string[];
       if (Array.isArray(event.slash_commands)) slashCommands = event.slash_commands as string[];
@@ -152,6 +219,16 @@ export function parseClaudeStream(stdout: string): Omit<Transcript, 'provider' |
     if (event.type === 'result') {
       if (typeof event.result === 'string') finalText = event.result;
       if (typeof event.subtype === 'string') resultSubtype = event.subtype;
+      const u = event.usage as Record<string, unknown> | undefined;
+      if (u && typeof u === 'object') {
+        usage = {
+          inputTokens: num(u.input_tokens),
+          outputTokens: num(u.output_tokens),
+          cacheReadTokens: num(u.cache_read_input_tokens),
+          cacheCreationTokens: num(u.cache_creation_input_tokens),
+          costUsd: typeof event.total_cost_usd === 'number' ? event.total_cost_usd : null,
+        };
+      }
     }
   }
   return {
@@ -161,6 +238,8 @@ export function parseClaudeStream(stdout: string): Omit<Transcript, 'provider' |
     visibleSkills,
     ...(slashCommands ? { slashCommands } : {}),
     ...(resultSubtype ? { resultSubtype } : {}),
+    ...(model ? { model } : {}),
+    ...(usage ? { usage } : {}),
   };
 }
 
@@ -201,6 +280,9 @@ export function claudeArgs(input: EvalRunInput): string[] {
       ...(input.sandboxCommands ?? []).map((c) => `Bash(${c}:*)`),
     );
   }
+  // User-scope settings (and the personal skills and instructions they bring)
+  // stay out of isolated runs; managed policy settings cannot be skipped.
+  if (input.isolated) args.push('--setting-sources', 'project,local');
   if (input.model) args.push('--model', input.model);
   return args;
 }
@@ -248,7 +330,14 @@ export const claudeDriver: EvalDriver = {
 export function parseCodexStream(stdout: string): Omit<Transcript, 'provider' | 'raw' | 'exitCode' | 'durationMs'> {
   const toolCalls: ToolCall[] = [];
   let finalText = '';
+  let usage: TokenUsage | undefined;
   for (const event of jsonLines(stdout)) {
+    if (event.type === 'turn.completed' && event.usage && typeof event.usage === 'object') {
+      const u = event.usage as Record<string, unknown>;
+      // Codex reports cached input as part of input_tokens.
+      const cached = num(u.cached_input_tokens);
+      usage = { inputTokens: num(u.input_tokens) - cached, outputTokens: num(u.output_tokens), cacheReadTokens: cached, cacheCreationTokens: 0, costUsd: null };
+    }
     const item = event.item as Record<string, unknown> | undefined;
     if (!item || event.type !== 'item.completed') continue;
     if (item.type === 'command_execution') toolCalls.push({ name: 'shell', input: String(item.command ?? '') });
@@ -256,7 +345,7 @@ export function parseCodexStream(stdout: string): Omit<Transcript, 'provider' | 
     else if (item.type === 'mcp_tool_call') toolCalls.push({ name: String(item.tool ?? 'mcp'), input: JSON.stringify(item.arguments ?? {}) });
     else if (item.type === 'agent_message' && typeof item.text === 'string') finalText = item.text;
   }
-  return { toolCalls, userMessages: [], finalText, visibleSkills: null };
+  return { toolCalls, userMessages: [], finalText, visibleSkills: null, ...(usage ? { usage } : {}) };
 }
 
 export const codexDriver: EvalDriver = {

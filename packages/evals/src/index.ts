@@ -7,3 +7,6 @@ export * from './isolation';
 export * from './metrics';
 export * from './runner';
 export * from './report';
+export * from './cleanup';
+export * from './versions';
+export * from './compare';

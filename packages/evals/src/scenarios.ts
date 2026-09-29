@@ -4,7 +4,7 @@ import YAML from 'yaml';
 import { z } from 'zod';
 import { formatZodError, isNotFound, type InteractionPreference } from '@agileflow/core';
 
-export const RULE_KEYS = ['command', 'noCommand', 'output', 'noOutput', 'fileChanged', 'fileUnchanged', 'fileContains'] as const;
+export const RULE_KEYS = ['command', 'noCommand', 'output', 'noOutput', 'fileChanged', 'fileUnchanged', 'fileContains', 'run', 'maxFilesChanged'] as const;
 
 /** Deterministic rubric check: evaluated from the transcript and the sandbox, never by a model. */
 export const RuleCheckSchema = z
@@ -25,9 +25,20 @@ export const RuleCheckSchema = z
     fileUnchanged: z.string().min(1).optional(),
     /** After the run, the file at `path` exists and its content matches `pattern` (regex). */
     fileContains: z.object({ path: z.string().min(1), pattern: z.string().min(1) }).strict().optional(),
+    /**
+     * A shell command run in the sandbox after the agent finishes (e.g.
+     * `npm test`); passes when it exits with `exitCode` (default 0). It is the
+     * skill's code, so it runs under the same trust rules as `setup`.
+     */
+    run: z.string().min(1).optional(),
+    /** Expected exit code of `run` (default 0). */
+    exitCode: z.number().int().optional(),
+    /** At most this many repository files were created, modified, or deleted. */
+    maxFilesChanged: z.number().int().nonnegative().optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
+    if (value.exitCode !== undefined && value.run === undefined) ctx.addIssue({ code: 'custom', path: ['exitCode'], message: 'exitCode only applies to run' });
     const keys = RULE_KEYS.filter((k) => value[k] !== undefined);
     if (keys.length !== 1) {
       ctx.addIssue({
@@ -121,12 +132,36 @@ export const EvalScenarioSchema = z
     bin: z
       .record(z.string().regex(/^[a-z0-9][a-z0-9._-]*$/, 'command names are lowercase letters, digits, ., _, -'), z.string().min(1))
       .optional(),
-    assert: z.object({ shouldActivate: z.boolean() }).strict(),
+    assert: z
+      .object({
+        shouldActivate: z.boolean(),
+        /**
+         * Globs of the files the task is expected to change. Other changed
+         * files count as unnecessary edits (reported, and compared across
+         * arms by `--compare`).
+         */
+        changes: z.array(z.string().min(1)).optional(),
+      })
+      .strict(),
+    /**
+     * Held out from authoring: skipped by ordinary runs, so a skill is not
+     * tuned against it, and run by `--compare` and `--pack`, which report
+     * held-out results separately.
+     */
+    heldOut: z.boolean().optional(),
     /**
      * For negative scenarios: the neighboring skill this prompt belongs to, so
      * lint can check that trigger conflicts with similar skills are covered.
      */
     neighbor: z.string().min(1).optional(),
+    /**
+     * For positive scenarios: which path through the skill the prompt exercises.
+     * `happy`: the normal case. `blocked`: the skill must stop or ask (missing
+     * input, unsafe step, a precondition fails). `failure`: something goes wrong
+     * midway and the skill must report it honestly. Official skills need a
+     * happy path and a blocked or failure path.
+     */
+    path: z.enum(['happy', 'blocked', 'failure']).optional(),
     /** Observable behaviors checked on positive scenarios (strings: LLM judge; objects: rule checks). */
     rubric: z.array(RubricItemSchema).optional(),
     /** Safety expectations checked deterministically on every run. */

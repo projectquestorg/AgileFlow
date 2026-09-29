@@ -14,6 +14,9 @@ import { loadScenarios } from './scenarios';
 /** Size policy for official skills (lines in SKILL.md). */
 export const SIZE_POLICY = { idealMin: 30, idealMax: 120, soft: 200, review: 300, max: 500 };
 
+/** Official skills above this many lines get an info note: keep the body lean, move detail to references/. */
+export const OFFICIAL_LEAN_LINES = 60;
+
 export interface LintIssue {
   level: 'error' | 'warning' | 'info';
   message: string;
@@ -88,6 +91,33 @@ export function neighborSkills(id: string, catalog: CatalogSkill[]): string[] {
     .map((c) => c.id);
 }
 
+/**
+ * Skill ids a description names in parentheses, e.g. "Not for reviewing an
+ * existing PR (reviewing-changes)". Only groups made entirely of id-like
+ * hyphenated names count, so ordinary prose in parentheses is ignored.
+ */
+export function referencedSkillIds(description: string): string[] {
+  const ids = new Set<string>();
+  const idRe = /[a-z0-9]+(?:-[a-z0-9]+)+/;
+  for (const m of description.matchAll(/\(([^()]*)\)/g)) {
+    const parts = m[1]!.split(/\s*(?:,|\bor\b|\band\b)\s*/).map((p) => p.trim()).filter(Boolean);
+    if (parts.length && parts.every((p) => new RegExp(`^${idRe.source}$`).test(p))) parts.forEach((p) => ids.add(p));
+  }
+  return [...ids];
+}
+
+/**
+ * Does the body tell the agent when to ask the user something? Requests the
+ * user makes ("when the user asks") and prohibitions ("never ask what the
+ * repository answers") do not count.
+ */
+export function tellsAgentToAsk(body: string): boolean {
+  const text = body
+    .replace(/\b(the user|users?|they|someone|you are|when|if|unless|is|was|were|being)\s+ask(s|ed)?\b/gi, ' ')
+    .replace(/\b(never|not|n't|without|no need to|stop to|stopping to|stops to)\s+ask(ing)?\b/gi, ' ');
+  return /\b(ask|asking|clarify|check with the user|confirm with the user)\b|\bAskUserQuestion\b/i.test(text);
+}
+
 /** Split `allowed-tools` into entries: whitespace or commas outside parentheses separate them. */
 export function splitAllowedTools(value: string): string[] {
   const out: string[] = [];
@@ -139,6 +169,7 @@ export async function lintSkill(dir: string, options: LintOptions = {}): Promise
   const text = await readTextIfExists(path.join(dir, SKILL_FILE));
   let lines = 0;
   let activation: 'auto' | 'manual' = 'auto';
+  let body = '';
 
   if (text === null) {
     issues.push({ level: 'error', message: `${SKILL_FILE} is missing` });
@@ -154,6 +185,7 @@ export async function lintSkill(dir: string, options: LintOptions = {}): Promise
       meta = null;
     }
     if (meta) {
+      body = meta.body;
       if (options.official) {
         const extra = Object.keys(meta.frontmatter).filter((k) => !OFFICIAL_FRONTMATTER.has(k));
         if (extra.length) {
@@ -174,6 +206,11 @@ export async function lintSkill(dir: string, options: LintOptions = {}): Promise
       if (!/^#{1,3}\s*(done when|completion)\b/im.test(meta.body)) {
         issues.push({ level: gate, message: 'SKILL.md needs a "## Done when" section describing completion' });
       }
+      if (options.catalog) {
+        const known = new Set(options.catalog.map((c) => c.id));
+        const unknown = referencedSkillIds(description).filter((ref) => ref !== id && !known.has(ref));
+        if (unknown.length) issues.push({ level: 'warning', message: `description names ${unknown.map((u) => `(${u})`).join(', ')}, which is not in the catalog` });
+      }
     }
     if (lines > SIZE_POLICY.max) {
       issues.push({ level: 'error', message: `${lines} lines exceeds the ${SIZE_POLICY.max}-line maximum` });
@@ -183,6 +220,8 @@ export async function lintSkill(dir: string, options: LintOptions = {}): Promise
       issues.push({ level: 'warning', message: `${lines} lines is above the ${SIZE_POLICY.soft}-line soft limit` });
     } else if (lines < SIZE_POLICY.idealMin || lines > SIZE_POLICY.idealMax) {
       issues.push({ level: 'info', message: `${lines} lines (ideal ${SIZE_POLICY.idealMin}-${SIZE_POLICY.idealMax})` });
+    } else if (options.official && lines > OFFICIAL_LEAN_LINES) {
+      issues.push({ level: 'info', message: `${lines} lines: official skills aim for ${OFFICIAL_LEAN_LINES} or fewer (move detail to references/)` });
     }
   }
 
@@ -197,6 +236,17 @@ export async function lintSkill(dir: string, options: LintOptions = {}): Promise
     try {
       const sidecar = parseSidecar(sidecarText);
       activation = sidecar.activation?.mode ?? 'auto';
+      // The declared interaction contract should match what the body tells the agent to do.
+      const interaction = sidecar.capabilities?.userInteraction ?? 'none';
+      const asks = tellsAgentToAsk(body);
+      if (body && interaction === 'none' && asks) {
+        issues.push({ level: 'warning', message: `${SKILL_FILE} tells the agent to ask the user, but ${SIDECAR_FILE} declares capabilities.userInteraction: none` });
+      } else if (body && interaction !== 'none' && !asks) {
+        issues.push({
+          level: 'warning',
+          message: `${SIDECAR_FILE} declares capabilities.userInteraction: ${interaction}, but ${SKILL_FILE} never says when to ask the user`,
+        });
+      }
       if (options.official && sidecar.package.name !== `@agileflow/${id}`) {
         issues.push({ level: 'error', message: `package.name must be @agileflow/${id}` });
       }
@@ -215,6 +265,16 @@ export async function lintSkill(dir: string, options: LintOptions = {}): Promise
     }
   } catch {
     // no scripts
+  }
+
+  // references/: every file SKILL.md points at must exist, and every file must be pointed at.
+  const mentioned = new Set([...(text ?? '').matchAll(/\breferences\/([A-Za-z0-9._/-]*[A-Za-z0-9_-])/g)].map((m) => m[1]!));
+  for (const ref of mentioned) {
+    if (!(await pathExists(path.join(dir, 'references', ref)))) issues.push({ level: gate, message: `${SKILL_FILE} mentions references/${ref}, which does not exist` });
+  }
+  const referenceFiles = await fs.promises.readdir(path.join(dir, 'references')).catch(() => [] as string[]);
+  for (const file of referenceFiles) {
+    if (!file.startsWith('.') && !mentioned.has(file)) issues.push({ level: 'warning', message: `references/${file} is not mentioned in ${SKILL_FILE}` });
   }
 
   const { scenarios, errors } = await loadScenarios(dir);
@@ -253,17 +313,31 @@ export async function lintSkill(dir: string, options: LintOptions = {}): Promise
     if (s.fixture && options.fixturesDir && !(await pathExists(path.join(options.fixturesDir, s.fixture)))) {
       issues.push({ level: 'error', message: `eval ${s.name}: fixture "${s.fixture}" not found in ${options.fixturesDir}` });
     }
+    if (s.path && !s.assert.shouldActivate) {
+      issues.push({ level: 'warning', message: `eval ${s.name}: path only applies to positive scenarios (shouldActivate: true)` });
+    }
+  }
+  // Positive paths: a skill must be shown to stop or report honestly, not only to succeed.
+  const paths = new Set(positives.map((s) => s.path).filter(Boolean));
+  if (paths.size) {
+    const missing = [!paths.has('happy') ? 'a happy path' : '', !paths.has('blocked') && !paths.has('failure') ? 'a blocked or failure path' : ''].filter(Boolean);
+    if (missing.length) issues.push({ level: gate, message: `positive scenarios need ${missing.join(' and ')} (path: happy | blocked | failure)` });
+  } else if (options.official && positives.length) {
+    issues.push({ level: 'warning', message: 'mark positive scenarios with path: happy | blocked | failure (official skills need a happy and a blocked or failure path)' });
   }
   // Trigger conflicts: a skill whose description is close to another's needs a
   // negative scenario with a prompt that belongs to that neighbor.
   if (options.catalog) {
     const neighbors = neighborSkills(id, options.catalog);
-    const covered = negatives.some((s) => s.neighbor && neighbors.includes(s.neighbor));
-    if (neighbors.length && !covered) {
+    const uncovered = neighbors.filter((n) => !negatives.some((s) => s.neighbor === n));
+    if (uncovered.length) {
       issues.push({
-        level: 'warning',
-        message: `no negative scenario covers a neighboring skill (${neighbors.join(', ')}): add one whose prompt belongs to it, with neighbor: <id>`,
+        level: gate,
+        message: `no negative scenario covers the neighboring skill${uncovered.length > 1 ? 's' : ''} ${uncovered.join(', ')}: add one whose prompt belongs to it, with neighbor: <id>`,
       });
+    }
+    if (options.official && !negatives.some((s) => s.neighbor)) {
+      issues.push({ level: 'warning', message: 'no negative scenario names a neighbor: add one whose prompt belongs to the most similar skill, with neighbor: <id>' });
     }
   }
 

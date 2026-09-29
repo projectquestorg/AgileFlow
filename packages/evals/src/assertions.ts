@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createIsolatedEnv } from './isolation';
+import { createIsolatedEnv, type AuthInfo } from './isolation';
 import { runProcess, type Transcript } from './providers';
+import { commandVersion } from './versions';
 
 export interface RubricItemResult {
   criterion: string;
@@ -24,9 +25,12 @@ export interface RubricResult {
 
 /** The judge crashed, timed out, or answered with something unusable. Never a pass. */
 export class JudgeError extends Error {
-  constructor(message: string) {
+  /** What the judge process printed (its reply, or its error output), kept as evidence. */
+  raw?: string;
+  constructor(message: string, raw?: string) {
     super(message);
     this.name = 'JudgeError';
+    if (raw !== undefined) this.raw = raw;
   }
 }
 
@@ -120,10 +124,19 @@ export interface InteractionAssessment {
   reason: string;
 }
 
+/** What a judge is, for reports: its model, CLI version, and how it authenticated (after it ran). */
+export interface JudgeInfo {
+  id: string;
+  model: string | null;
+  version: string | null;
+  auth: AuthInfo | null;
+}
+
 export interface Judge {
   id: string;
   grade(prompt: string, rubric: string[], transcript: Transcript): Promise<RubricResult>;
   assessInteraction?(prompt: string, context: InteractionContext, transcript: Transcript): Promise<InteractionAssessment>;
+  describe?(): Promise<JudgeInfo>;
 }
 
 export function buildInteractionJudgePrompt(prompt: string, context: InteractionContext, transcript: Transcript): string {
@@ -175,17 +188,23 @@ export function parseInteractionJudgeOutput(text: string): InteractionAssessment
   };
 }
 
-/** Ask the judge again once when it fails or its output does not parse; a second failure is an error. */
+/**
+ * Ask the judge again once when it fails or its output does not parse; a
+ * second failure is an error that carries the judge's last raw reply.
+ */
 async function withRetry<T>(ask: () => Promise<string>, parse: (text: string) => T): Promise<T> {
-  try {
-    return parse(await ask());
-  } catch {
+  let last: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let reply: string | undefined;
     try {
-      return parse(await ask());
+      reply = await ask();
+      return parse(reply);
     } catch (err) {
-      throw err instanceof JudgeError ? err : new JudgeError((err as Error).message);
+      last = err;
+      if (err instanceof JudgeError && err.raw === undefined && reply !== undefined) err.raw = reply;
     }
   }
+  throw last instanceof JudgeError ? last : new JudgeError((last as Error).message);
 }
 
 export interface ClaudeJudgeOptions {
@@ -204,7 +223,7 @@ export interface ClaudeJudgeOptions {
 
 /** Output of `claude -p --output-format json`: the answer text, or a JudgeError for a failed call. */
 export function readClaudeJudgeResult(res: { stdout: string; stderr: string; code: number | null; timedOut: boolean }): string {
-  if (res.timedOut) throw new JudgeError('judge timed out');
+  if (res.timedOut) throw new JudgeError('judge timed out', res.stdout || res.stderr);
   type ClaudeJson = { result?: unknown; is_error?: unknown };
   let parsed: ClaudeJson | null;
   try {
@@ -215,7 +234,7 @@ export function readClaudeJudgeResult(res: { stdout: string; stderr: string; cod
   }
   if (res.code !== 0 || parsed?.is_error === true) {
     const detail = (typeof parsed?.result === 'string' ? parsed.result : res.stderr || res.stdout).trim().split('\n').slice(-3).join(' ');
-    throw new JudgeError(`judge exited with ${res.code ?? 'no code'}${detail ? `: ${detail.slice(0, 300)}` : ''}`);
+    throw new JudgeError(`judge exited with ${res.code ?? 'no code'}${detail ? `: ${detail.slice(0, 300)}` : ''}`, [res.stdout, res.stderr].filter((x) => x.trim()).join('\n'));
   }
   if (parsed && typeof parsed.result === 'string') return parsed.result;
   return res.stdout;
@@ -229,11 +248,17 @@ export function readClaudeJudgeResult(res: { stdout: string; stderr: string; cod
  */
 export function claudeJudge(options: ClaudeJudgeOptions): Judge {
   const id = options.model ? `claude:${options.model}` : 'claude';
+  let auth: AuthInfo | null = options.isolate === false ? { provider: 'claude', mode: 'inherited', envVars: [], files: [] } : null;
+  let version: Promise<string | null> | null = null;
   const ask = async (judgePrompt: string): Promise<string> => {
     const args = ['-p', judgePrompt, '--output-format', 'json', '--max-turns', '1'];
     if (options.model) args.push('--model', options.model);
     const isolated =
       options.isolate === false ? null : await createIsolatedEnv({ env: options.env, providers: ['claude'], realHome: options.realHome });
+    if (isolated) {
+      args.push('--setting-sources', 'project,local');
+      auth = isolated.auth.find((a) => a.provider === 'claude') ?? null;
+    }
     const cwd = await fs.promises.mkdtemp(path.join(isolated?.home ?? os.tmpdir(), isolated ? 'judge-' : 'agileflow-judge-'));
     try {
       const res = await runProcess(options.command ?? 'claude', args, {
@@ -255,6 +280,10 @@ export function claudeJudge(options: ClaudeJudgeOptions): Judge {
     },
     async assessInteraction(prompt, context, transcript) {
       return withRetry(() => ask(buildInteractionJudgePrompt(prompt, context, transcript)), parseInteractionJudgeOutput);
+    },
+    async describe() {
+      version ??= commandVersion(options.command ?? 'claude', options.env).catch(() => null);
+      return { id, model: options.model ?? null, version: await version, auth };
     },
   };
 }

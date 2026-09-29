@@ -79,9 +79,67 @@ jobs:
       - name: Activation evals
         if: env.ANTHROPIC_API_KEY != ''
         working-directory: apps/cli
-        run: npx tsx src/index.ts eval --catalog ../../skills --provider claude --fixtures ../../fixtures --runs 2 --json --out eval-report.json
+        # The catalog is a local checkout, so its scenario setup scripts need --allow-setup.
+        run: npx tsx src/index.ts eval --catalog ../../skills --provider claude --fixtures ../../fixtures --runs 2 --allow-setup --json --out eval-report.json
       - uses: actions/upload-artifact@v4
         if: always() && env.ANTHROPIC_API_KEY != ''
         with:
           name: eval-report
           path: apps/cli/eval-report.json
+
+  skill-comparison:
+    # Release gate for changed skills: every skill whose version differs from
+    # the last release tag is compared, on the same scenarios, against its
+    # version at that tag and against no skill at all. Fails on a regression
+    # or when a comparison is inconclusive (a crashed provider or a broken
+    # judge can never pass). Needs a Claude API key; skipped without one.
+    name: skill comparison vs released (claude)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        if: env.ANTHROPIC_API_KEY != ''
+        with:
+          fetch-depth: 0
+      - name: Find skills whose version changed since the last release
+        id: changed
+        if: env.ANTHROPIC_API_KEY != ''
+        run: |
+          base=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          changed=""
+          if [ -n "$base" ]; then
+            git worktree add --quiet "$RUNNER_TEMP/released" "$base"
+            for dir in skills/*/; do
+              id=$(basename "$dir")
+              old=$(git show "$base:skills/$id/agileflow.skill.yaml" 2>/dev/null | grep -m1 -E '^\s+version:' || true)
+              new=$(grep -m1 -E '^\s+version:' "skills/$id/agileflow.skill.yaml" || true)
+              # New skills have no released version to compare against.
+              if [ -n "$old" ] && [ "$old" != "$new" ]; then changed="$changed $id"; fi
+            done
+          fi
+          echo "skills=$(echo $changed)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        if: env.ANTHROPIC_API_KEY != '' && steps.changed.outputs.skills != ''
+        with:
+          node-version: '22'
+          cache: npm
+      - if: env.ANTHROPIC_API_KEY != '' && steps.changed.outputs.skills != ''
+        run: npm ci --legacy-peer-deps --no-audit --no-fund && npm install --global @anthropic-ai/claude-code --no-fund --no-audit
+      - name: Compare changed skills against their released versions
+        if: env.ANTHROPIC_API_KEY != '' && steps.changed.outputs.skills != ''
+        working-directory: apps/cli
+        run: >-
+          npx tsx src/index.ts eval ${{ steps.changed.outputs.skills }}
+          --catalog ../../skills --fixtures ../../fixtures
+          --compare --released "$RUNNER_TEMP/released/skills"
+          --provider claude --mode full --runs 3 --allow-setup
+          --json --out compare-report.json
+      - uses: actions/upload-artifact@v4
+        if: always() && env.ANTHROPIC_API_KEY != '' && steps.changed.outputs.skills != ''
+        with:
+          name: compare-report
+          path: |
+            apps/cli/compare-report.json
+            apps/cli/compare-report.transcripts/
