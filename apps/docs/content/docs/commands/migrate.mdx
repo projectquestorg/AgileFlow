@@ -4,7 +4,8 @@ description: "Clean up an AgileFlow v4 project, or detach AgileFlow from a proje
 ---
 
 ```bash
-agileflow migrate v4 --preview       # report only
+agileflow migrate v4 --preview       # report only (same as --dry-run)
+agileflow migrate v4 --preview --json   # the plan as JSON
 agileflow migrate v4                 # apply (asks first)
 agileflow migrate v4 --yes           # apply non-interactively
 agileflow migrate v4 --no-backup
@@ -16,7 +17,8 @@ agileflow migrate --detach --delete-skills   # also delete unmodified AgileFlow 
 
 | Option | Meaning |
 | --- | --- |
-| `--preview` | Report what would change without changing anything. |
+| `--preview`, `--dry-run` | Report what would change without changing anything. |
+| `--json` | Machine-readable plan (with `--preview`) or result, in the [JSON envelope](/commands/add-remove-list#json-output); never prompts. |
 | `--report-docs` | Report legacy docs directories (never deleted). |
 | `--yes` | Apply without prompting. |
 | `--no-backup` | Do not copy changed files to `.agileflow-v4-backup-<timestamp>/`. |

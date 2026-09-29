@@ -1,4 +1,5 @@
 import path from 'node:path';
+import YAML from 'yaml';
 import {
   globalScope,
   packMembers,
@@ -13,6 +14,7 @@ import {
   summarizeTree,
   type FetchedPackage,
   type SkillSpec,
+  type TreeFile,
 } from '@agileflow/core';
 import type { RegistryClient } from '@agileflow/registry';
 import type { Cli } from '../runtime';
@@ -31,6 +33,55 @@ export interface InfoOptions {
 const SPEC_FIELDS = ['license', 'compatibility', 'allowed-tools', 'metadata'];
 
 /**
+ * Published eval results for a version: optional registry metadata
+ * (`metadata.evals`), read tolerantly so registries without it, or with a
+ * newer shape, still work.
+ */
+export interface EvalEvidence {
+  scenarios?: number;
+  lastRun?: { passRate: number; runs: number; date: string; provider: string };
+}
+
+export function evalEvidence(metadata: unknown): EvalEvidence | null {
+  const evals = (metadata as { evals?: unknown } | null | undefined)?.evals;
+  if (!evals || typeof evals !== 'object') return null;
+  const e = evals as Record<string, unknown>;
+  const out: EvalEvidence = {};
+  if (typeof e.scenarios === 'number' && Number.isInteger(e.scenarios) && e.scenarios >= 0) out.scenarios = e.scenarios;
+  const run = e.lastRun as Record<string, unknown> | undefined;
+  if (
+    run &&
+    typeof run === 'object' &&
+    typeof run.passRate === 'number' &&
+    run.passRate >= 0 &&
+    run.passRate <= 1 &&
+    typeof run.runs === 'number' &&
+    typeof run.date === 'string' &&
+    typeof run.provider === 'string'
+  ) {
+    out.lastRun = { passRate: run.passRate, runs: run.runs, date: run.date, provider: run.provider };
+  }
+  return out.scenarios !== undefined || out.lastRun ? out : null;
+}
+
+/** Eval scenarios shipped in a package: total and how many should / should not activate. */
+export function evalScenarios(files: TreeFile[]): { total: number; shouldActivate: number; shouldNotActivate: number } {
+  const counts = { total: 0, shouldActivate: 0, shouldNotActivate: 0 };
+  for (const f of files) {
+    if (!f.path.startsWith('evals/') || !/\.ya?ml$/.test(f.path)) continue;
+    counts.total++;
+    try {
+      const doc = YAML.parse(f.content.toString('utf8')) as { assert?: { shouldActivate?: unknown } } | null;
+      if (doc?.assert?.shouldActivate === true) counts.shouldActivate++;
+      else if (doc?.assert?.shouldActivate === false) counts.shouldNotActivate++;
+    } catch {
+      // Counted, not classified.
+    }
+  }
+  return counts;
+}
+
+/**
  * `agileflow info <target>`: everything worth knowing before installing a
  * skill or pack (versions, license, compatibility, files, requirements, risk
  * scan, and optionally SKILL.md itself). Nothing is written.
@@ -46,6 +97,7 @@ export async function runInfo(cli: Cli, target: string, options: InfoOptions): P
   let spec: SkillSpec;
   let id: string;
   let versions: string[] | null = null;
+  let versionMetadata: (version: string) => unknown = () => undefined;
   if (parsed.ref.kind === 'registry') {
     const name = parsed.ref.name;
     const doc = registry ? await registry.getSkill(name) : null;
@@ -66,6 +118,7 @@ export async function runInfo(cli: Cli, target: string, options: InfoOptions): P
     }
     id = skillIdFromPackageName(name);
     versions = Object.keys(doc.versions);
+    versionMetadata = (version) => doc.versions[version]?.metadata;
     spec = { source: name, ...(parsed.range ? { version: parsed.range } : {}) };
   } else {
     const gitRef = options.ref ?? parsed.gitRef ?? undefined;
@@ -100,6 +153,9 @@ export async function runInfo(cli: Cli, target: string, options: InfoOptions): P
   const frontmatter = parseSkillMarkdown(skillText).frontmatter;
   const specFields = Object.fromEntries(SPEC_FIELDS.filter((k) => k in frontmatter).map((k) => [k, frontmatter[k]]));
   const pinned = parsed.ref.kind === 'registry' && registry ? registry.isPinned(parsed.ref.name, pkg.version) : false;
+  const scenarios = evalScenarios(pkg.files);
+  const evidence = evalEvidence(versionMetadata(pkg.version));
+  const capabilities = summary.sidecar?.capabilities ?? null;
 
   if (options.json) {
     out.json({
@@ -117,9 +173,11 @@ export async function runInfo(cli: Cli, target: string, options: InfoOptions): P
       frontmatter: specFields,
       activation: summary.activation,
       requirements: summary.sidecar?.requirements ?? null,
-      capabilities: summary.sidecar?.capabilities ?? null,
+      capabilities,
       files: pkg.files.filter((f) => !f.path.startsWith('evals/')).map((f) => f.path),
       evals: pkg.files.filter((f) => f.path.startsWith('evals/')).length,
+      evalScenarios: scenarios,
+      evalEvidence: evidence,
       risks,
       ...(options.content ? { skillMd: skillText } : {}),
     });
@@ -138,7 +196,21 @@ export async function runInfo(cli: Cli, target: string, options: InfoOptions): P
   if (req && (req.commands.length || req.network !== 'none')) {
     out.line(`Requires:    ${[...req.commands.map((c) => `${c} on PATH`), ...(req.network !== 'none' ? [`network (${req.network})`] : [])].join(', ')}`);
   }
+  if (capabilities) {
+    const interaction = { none: 'no questions', optional: 'may ask questions', required: 'asks questions' }[capabilities.userInteraction];
+    const edits = { no: 'read-only', possible: 'may edit files', yes: 'edits files' }[capabilities.modifiesFiles];
+    out.line(`Behavior:    ${edits}, ${interaction}${capabilities.longRunning ? ', long-running' : ''}`);
+  }
   out.line(`Files:       ${pkg.files.filter((f) => !f.path.startsWith('evals/')).map((f) => f.path).join(', ')}`);
+  out.line(
+    `Evals:       ${scenarios.total} scenario${scenarios.total === 1 ? '' : 's'}${scenarios.total ? ` (${scenarios.shouldActivate} should activate, ${scenarios.shouldNotActivate} should not)` : ''}`,
+  );
+  if (evidence?.lastRun) {
+    const r = evidence.lastRun;
+    out.line(`Eval runs:   ${Math.round(r.passRate * 100)}% passed over ${r.runs} run${r.runs === 1 ? '' : 's'} on ${safeText(r.provider)} (${safeText(r.date)})`);
+  } else {
+    out.line('Eval runs:   no published eval results');
+  }
   const counts = riskCounts(risks);
   out.line(`Review:      ${counts.high} high, ${counts.medium} medium, ${counts.low} low findings`);
   for (const r of risks.filter((x) => x.severity !== 'low')) out.line(`  ${safeText(riskLine(r))}`);

@@ -1,4 +1,4 @@
-import type { Diagnostic } from '@agileflow/core';
+import type { Diagnostic, OperationEvent } from '@agileflow/core';
 
 export interface Writer {
   write(chunk: string): unknown;
@@ -31,6 +31,23 @@ const MARK_COLOR: Record<Diagnostic['level'], Color> = {
   error: 'red',
 };
 
+const pipeGuarded = new WeakSet<object>();
+
+/**
+ * `agileflow ... | head` closes stdout early; the next write then fails with
+ * EPIPE on the stream. End quietly instead of crashing (the exit code is
+ * unaffected); any other stream error still surfaces.
+ */
+function ignoreBrokenPipe(stream: Writer): void {
+  const s = stream as Writer & { on?: (event: string, listener: (err: NodeJS.ErrnoException) => void) => unknown };
+  if (typeof s.on !== 'function' || pipeGuarded.has(s)) return;
+  pipeGuarded.add(s);
+  s.on('error', (err) => {
+    if (err?.code === 'EPIPE') return;
+    throw err;
+  });
+}
+
 /**
  * Plain terminal output. Colors only on a TTY and never when NO_COLOR is set.
  *
@@ -51,6 +68,7 @@ export class Output {
   ) {
     this.jsonMode = !!options.json;
     this.color = options.color !== false && !!stdout.isTTY && !('NO_COLOR' in env) && env.TERM !== 'dumb';
+    ignoreBrokenPipe(stdout);
   }
 
   /** True once a command printed its JSON result. */
@@ -111,4 +129,90 @@ export class Output {
   jsonError(message: string, hints: string[] = [], code = 'error'): void {
     this.json({ ok: false, error: { code, message, hints } });
   }
+}
+
+// ---------------------------------------------------------------------------
+// Versioned JSON envelope for commands that change things
+// ---------------------------------------------------------------------------
+
+/** Version of the mutation envelope below. Bumped only for incompatible changes. */
+export const JSON_SCHEMA = 1;
+
+export interface SkippedItem {
+  id: string;
+  reason: string;
+}
+
+export interface FailedItem {
+  /** Skill id, or null for a failure that is not about one skill. */
+  id: string | null;
+  error: string;
+}
+
+/**
+ * The one result shape of every changing command (`add`, `remove`, `sync`,
+ * `update`, `configure`, `migrate`) in `--json` mode:
+ *
+ *   { schema: 1, ok, command, dryRun,
+ *     applied: [...], skipped: [{id, reason}], failed: [{id, error}],
+ *     repaired: [...], warnings: [string], events: [OperationEvent],
+ *     ...command-specific keys kept for backward compatibility }
+ *
+ * `applied` lists what changed (or would change, with `dryRun`); items are
+ * skill ids or objects with an `id`. `failed` is derived from error events
+ * unless the command passes its own. `ok` is false when anything failed.
+ */
+export interface MutationEnvelope {
+  schema: typeof JSON_SCHEMA;
+  ok: boolean;
+  command: string;
+  dryRun: boolean;
+  applied: unknown[];
+  skipped: SkippedItem[];
+  failed: FailedItem[];
+  repaired: unknown[];
+  warnings: string[];
+  events: OperationEvent[];
+  [key: string]: unknown;
+}
+
+export interface EnvelopeParts {
+  ok?: boolean;
+  dryRun?: boolean;
+  applied?: unknown[];
+  skipped?: SkippedItem[];
+  failed?: FailedItem[];
+  repaired?: unknown[];
+  warnings?: string[];
+  events?: OperationEvent[];
+  /** Command-specific keys (existing fields kept for compatibility). */
+  extra?: Record<string, unknown>;
+}
+
+function eventText(e: OperationEvent): string {
+  return `${e.skill ? `${e.skill}: ` : ''}${e.message}`;
+}
+
+/** Build the envelope; error events become `failed`, warn events `warnings`. */
+export function mutationEnvelope(command: string, parts: EnvelopeParts = {}): MutationEnvelope {
+  const events = parts.events ?? [];
+  const failed = [
+    ...(parts.failed ?? []),
+    ...events.filter((e) => e.level === 'error').map((e) => ({ id: e.skill ?? null, error: e.message })),
+  ];
+  const warnings = [...new Set([...(parts.warnings ?? []), ...events.filter((e) => e.level === 'warn').map(eventText)])];
+  return {
+    // Command-specific keys first so the envelope fields always win.
+    ...(parts.extra ?? {}),
+    schema: JSON_SCHEMA,
+    ok: (parts.ok ?? true) && failed.length === 0,
+    command,
+    dryRun: !!parts.dryRun,
+    applied: parts.applied ?? [],
+    skipped: parts.skipped ?? [],
+    failed,
+    repaired: parts.repaired ?? [],
+    warnings,
+    events,
+  };
 }

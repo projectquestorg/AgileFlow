@@ -500,13 +500,22 @@ export async function planMigration(
     plan.docs.push({ dir: rel, files: files.length, untouchedSeed: await isUntouchedSeed(rel, abs, files) });
   }
   if (plan.docs.length) {
-    plan.findings.push(loc.kind === 'user' ? 'legacy docs structure (~/docs)' : 'legacy docs structure');
+    // A v4 backlog (epics, stories, status.json) can be brought into Agile Work without touching it.
+    const backlog =
+      loc.kind !== 'user' &&
+      (plan.docs.some((d) => (d.dir === 'docs/05-epics' || d.dir === 'docs/06-stories') && !d.untouchedSeed) ||
+        !!(await lstatOrNull(path.join(loc.base, 'docs', '09-agents', 'status.json')))?.isFile());
+    const importHint = 'Import the v4 backlog (epics, stories, status.json) into Agile Work: `agileflow work import v4 --preview`.';
+    plan.findings.push(
+      loc.kind === 'user' ? 'legacy docs structure (~/docs)' : backlog ? 'legacy docs structure (backlog: `agileflow work import v4 --preview`)' : 'legacy docs structure',
+    );
     plan.notes.push({
       level: 'info',
       message: `Legacy AgileFlow docs structure detected${loc.kind === 'user' ? ' in your home directory' : ''}. AgileFlow v5 does not use these directories.`,
       detail: [
         'They will be left unchanged.',
         `Run \`agileflow migrate v4${loc.kind === 'user' ? ' --global' : ''} --report-docs\` for a cleanup report.`,
+        ...(backlog ? [importHint] : []),
       ],
     });
   }

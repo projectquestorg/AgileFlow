@@ -1,6 +1,7 @@
 import type { Cli } from '../runtime';
 import { EXIT, findProject, servicesFor, UsageError } from '../runtime';
-import { globalScope, projectScope, SKILL_NAME_RE } from '@agileflow/core';
+import { globalScope, packMembers, projectScope, SKILL_NAME_RE, type Services } from '@agileflow/core';
+import type { RegistryClient } from '@agileflow/registry';
 import { table } from '../ui/tables';
 
 export interface SearchOptions {
@@ -22,6 +23,12 @@ export interface SearchResult {
   add: string;
   /** False when the skill name cannot be used as an Agent Skills directory name. */
   installable: boolean;
+  /** Official results: how the latest version activates (`manual` only when invoked by name). */
+  activation?: 'auto' | 'manual';
+  /** Official results: what the latest version needs (commands on PATH, network). */
+  requirements?: { commands: string[]; network: 'none' | 'optional' | 'required' };
+  /** Official results: packs that include this skill (e.g. `core`). */
+  packs?: string[];
 }
 
 /** Public skills.sh search endpoint (the one the `skills` CLI uses); overridable for mirrors and tests. */
@@ -41,17 +48,59 @@ function score(query: string, name: string, description: string): number {
   return s;
 }
 
-async function searchOfficial(cli: Cli, query: string): Promise<SearchResult[]> {
+/** Package name -> short names of the packs that list it. Empty when packs cannot be read. */
+async function packIndex(registry: RegistryClient): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  try {
+    const index = await registry.listPacks();
+    for (const entry of index?.packs ?? []) {
+      const pack = await registry.getPack(entry.name).catch(() => null);
+      if (!pack) continue;
+      const short = entry.name.split('/').pop()!;
+      for (const m of packMembers(pack)) out.set(m.source, [...(out.get(m.source) ?? []), short]);
+    }
+  } catch {
+    // Pack membership is a hint; search works without it.
+  }
+  return out;
+}
+
+/** Activation, requirements, and packs for official results (from the cached catalog documents). */
+async function addDetails(services: Services, results: SearchResult[], names: Map<SearchResult, string>): Promise<void> {
+  const registry = (services.fetcher as { registry?: RegistryClient }).registry;
+  if (!registry || !results.length) return;
+  const packs = await packIndex(registry);
+  await Promise.all(
+    results.map(async (r) => {
+      const name = names.get(r)!;
+      const inPacks = packs.get(name);
+      if (inPacks?.length) r.packs = inPacks.sort();
+      try {
+        const doc = await registry.getSkill(name);
+        const meta = doc?.versions[doc.latest]?.metadata;
+        if (!meta) return;
+        r.activation = meta.activation;
+        r.requirements = { commands: meta.requirements.commands, network: meta.requirements.network };
+      } catch {
+        // Details are optional; the index entry is enough to list the skill.
+      }
+    }),
+  );
+}
+
+async function searchOfficial(cli: Cli, query: string, limit: number): Promise<SearchResult[]> {
   const root = await findProject(cli.ctx);
   const services = await servicesFor(cli.ctx, root ? projectScope(root) : globalScope(cli.ctx));
   const skills = await services.fetcher.listSkills();
-  return skills
+  const names = new Map<SearchResult, string>();
+  const results = skills
     .map((s) => ({ s, rank: score(query, s.name.split('/')[1]!, s.description) }))
     .filter((r) => r.rank > 0)
     .sort((a, b) => b.rank - a.rank || (a.s.name < b.s.name ? -1 : 1))
+    .slice(0, limit)
     .map(({ s }) => {
       const id = s.name.split('/')[1]!;
-      return {
+      const result: SearchResult = {
         name: id,
         description: s.description,
         from: 'official' as const,
@@ -59,7 +108,27 @@ async function searchOfficial(cli: Cli, query: string): Promise<SearchResult[]> 
         add: s.name.startsWith('@agileflow/') ? id : s.name,
         installable: true,
       };
+      names.set(result, s.name);
+      return result;
     });
+  await addDetails(services, results, names);
+  return results;
+}
+
+/** `manual, needs gh + network, pack core` */
+function details(r: SearchResult): string {
+  if (r.from !== 'official') return '-';
+  const needs = [
+    ...(r.requirements?.commands ?? []),
+    ...(r.requirements?.network === 'required' ? ['network'] : r.requirements?.network === 'optional' ? ['network (optional)'] : []),
+  ];
+  return [
+    r.activation ?? '',
+    needs.length ? `needs ${needs.join(' + ')}` : '',
+    r.packs?.length ? `pack ${r.packs.join(', ')}` : '',
+  ]
+    .filter(Boolean)
+    .join('; ') || '-';
 }
 
 interface SkillsShResponse {
@@ -121,7 +190,7 @@ export async function runSearch(cli: Cli, words: string[], options: SearchOption
   const problems: string[] = [];
   if (source !== 'skills.sh') {
     try {
-      results.push(...(await searchOfficial(cli, query)).slice(0, limit));
+      results.push(...(await searchOfficial(cli, query, limit)));
     } catch (err) {
       if (source === 'official') throw err;
       problems.push(`official catalog: ${(err as Error).message}`);
@@ -148,9 +217,10 @@ export async function runSearch(cli: Cli, words: string[], options: SearchOption
   const rows = results.map((r) => [
     r.name,
     r.from === 'official' ? `official ${r.version}` : `${r.repository}${r.installs !== undefined ? ` (${r.installs} installs)` : ''}`,
+    details(r),
     r.description.length > 60 ? `${r.description.slice(0, 57)}...` : r.description,
   ]);
-  cli.out.lines(table(['NAME', 'SOURCE', 'DESCRIPTION'], rows));
+  cli.out.lines(table(['NAME', 'SOURCE', 'USE', 'DESCRIPTION'], rows));
   cli.out.line();
   cli.out.line('Preview: agileflow info <name or owner/repo/skill>');
   cli.out.line('Install: agileflow add <name or owner/repo/skill>');

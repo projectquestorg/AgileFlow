@@ -7,7 +7,11 @@ import {
   type Services,
 } from '@agileflow/core';
 import type { Cli } from '../runtime';
-import { EXIT, mutate, relSkillsDir, scopeFor, servicesFor, UsageError } from '../runtime';
+import { EXIT, mutate, printEvents, relSkillsDir, scopeFor, servicesFor, UsageError } from '../runtime';
+import { mutationEnvelope } from '../ui/output';
+
+/** Command name for the JSON envelope: `remove --all` and `migrate --detach` share the detach flow. */
+const commandOf = (cli: Cli) => cli.invocation?.command || 'remove';
 
 export interface RemoveOptions {
   global?: boolean;
@@ -43,7 +47,7 @@ export async function runRemove(cli: Cli, ids: string[], options: RemoveOptions)
 
   if (options.dryRun) {
     const plan = await describe();
-    if (options.json) cli.out.json({ ok: true, dryRun: true, plan });
+    if (options.json) cli.out.json(mutationEnvelope('remove', { dryRun: true, applied: plan, extra: { plan } }));
     else for (const p of plan) cli.out.line(`Would remove ${p.id} (files ${p.files}${p.modified ? ', has local modifications' : ''})`);
     return EXIT.OK;
   }
@@ -55,7 +59,14 @@ export async function runRemove(cli: Cli, ids: string[], options: RemoveOptions)
       const detail = discarding.length ? ` (discarding local edits in ${discarding.map((p) => p.id).join(', ')})` : '';
       if (!(await cli.prompter.confirm(`Remove ${plan.map((p) => p.id).join(', ')}${detail}?`, !discarding.length))) {
         cli.out.line('Nothing removed.');
-        if (options.json) cli.out.json({ ok: true, removed: [], declined: true });
+        if (options.json) {
+          cli.out.json(
+            mutationEnvelope('remove', {
+              skipped: plan.map((p) => ({ id: p.id, reason: 'declined' })),
+              extra: { removed: [], declined: true },
+            }),
+          );
+        }
         return EXIT.OK;
       }
     }
@@ -73,8 +84,22 @@ export async function runRemove(cli: Cli, ids: string[], options: RemoveOptions)
       if (r.change.kind === 'warn') cli.out.warn(r.change.message);
       else if (r.outcome === 'failed') cli.out.warn(`could not remove ${r.change.path}: ${r.message}`);
     }
-    if (options.json) cli.out.json({ ok: true, removed: report.removed, keptLocal: report.keptLocal });
-    return EXIT.OK;
+    printEvents(cli, report.events);
+    const failed = report.events.some((e) => e.level === 'error');
+    if (options.json) {
+      cli.out.json(
+        mutationEnvelope('remove', {
+          ok: !failed,
+          applied: report.removed,
+          events: report.events,
+          warnings: report.artifacts.flatMap((r) =>
+            r.change.kind === 'warn' ? [r.change.message] : r.outcome === 'failed' ? [`could not remove ${r.change.path}: ${r.message}`] : [],
+          ),
+          extra: { removed: report.removed, keptLocal: report.keptLocal },
+        }),
+      );
+    }
+    return failed ? EXIT.ERROR : EXIT.OK;
   });
 }
 
@@ -89,7 +114,7 @@ export async function runDetach(
     const ws = await loadWorkspace(scope);
     if (!ws.configExists && !ws.lockExists) {
       cli.out.line('AgileFlow is not set up here; nothing to remove.');
-      if (options.json) cli.out.json({ ok: true, detached: false });
+      if (options.json) cli.out.json(mutationEnvelope(commandOf(cli), { extra: { detached: false } }));
       return EXIT.OK;
     }
     let keepSkills = options.keepSkills ?? true;
@@ -114,7 +139,7 @@ export async function runDetach(
     if (interactive) {
       if (!(await cli.prompter.confirm('Stop using AgileFlow here?', keepSkills))) {
         cli.out.line('Nothing changed.');
-        if (options.json) cli.out.json({ ok: true, detached: false, declined: true });
+        if (options.json) cli.out.json(mutationEnvelope(commandOf(cli), { extra: { detached: false, declined: true } }));
         return EXIT.OK;
       }
     } else if (!options.yes) {
@@ -147,7 +172,14 @@ export async function runDetach(
       }
     }
     cli.out.line('AgileFlow no longer manages this scope. Nothing depends on the AgileFlow CLI.');
-    if (options.json) cli.out.json({ ok: true, detached: true, ...report });
+    if (options.json) {
+      cli.out.json(
+        mutationEnvelope(commandOf(cli), {
+          applied: [...report.removedSkills, ...report.removedFiles],
+          extra: { detached: true, ...report },
+        }),
+      );
+    }
     return EXIT.OK;
   });
 }

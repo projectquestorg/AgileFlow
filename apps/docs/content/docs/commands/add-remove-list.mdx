@@ -18,6 +18,7 @@ agileflow add git+https://github.com/example/skills.git#skills/release-notes
 agileflow add ./skills/my-release-flow   # a local directory
 agileflow add filing-pr --dry-run        # review only: files, risk scan, nothing written
 agileflow add                            # interactive: pick from the registry catalog
+agileflow add --adopt                    # take over skills already in .agents/skills or .claude/skills
 ```
 
 Options:
@@ -30,7 +31,8 @@ Options:
 | `--skill <name>` | Pick a skill from a source that contains several (repeatable). |
 | `--ref <ref>` | Git sources: the branch, tag, or commit to track (recorded in the lockfile). |
 | `--dry-run` | Resolve and review without installing. |
-| `--json` | Machine-readable result (the installed skills, their integrity, and review findings). |
+| `--adopt [skills...]` | Adopt skills that already exist here instead of installing new ones (see below). |
+| `--json` | Machine-readable result (the [JSON envelope](#json-output) with the installed skills, their integrity, and review findings). |
 
 Before installing, `add` shows what the skill contains: source, version, integrity, activation, reference files, **executable scripts** (listed by name), requirements such as `gh` on PATH or network access, and **review findings** from a content scan: commands that download and run code, destructive or history-rewriting commands, access to credentials, sending data over the network, instructions to ignore other instructions or hide actions from you, invisible Unicode and HTML comments, encoded blobs, broad `allowed-tools`, and network use a skill did not declare. Third-party content is labeled "Installing external skill"; the confirmation defaults to "no" when a high-severity finding is present. Without a terminal, third-party content (anything outside the official `@agileflow` catalog) is installed only with `--yes`. Scripts are never executed during installation. Approvals are recorded in [`agileflow history`](/commands/discover-and-verify#agileflow-history).
 
@@ -41,6 +43,31 @@ Registry skills get a caret range on the installed version by default (for examp
 `add` creates `agileflow.yaml` if the project does not have one yet. A skill that is already installed is left as is (use `agileflow update <skill>` for a newer version). Without a TTY, `add` needs at least one target.
 
 `add` refuses to overwrite a directory in `.agents/skills` that AgileFlow does not manage. See [Skill sources](/concepts/sources) for git and local skills.
+
+### Adopting skills that are already there
+
+Skills copied in by hand or by another installer sit in `.agents/skills` (or only in a provider directory such as `.claude/skills`) without AgileFlow knowing about them. `add --adopt` brings them under AgileFlow without losing anything:
+
+```bash
+agileflow add --adopt                    # preview every unmanaged skill, then ask
+agileflow add --adopt deploy-notes       # only these skills
+agileflow add --adopt --dry-run --json   # the plan for scripts
+agileflow add --adopt --yes              # apply without a terminal
+```
+
+```text
+Unmanaged skills found:
+  SKILL            WHERE                           STATUS
+  diagnosing-bugs  .agents/skills/diagnosing-bugs  identical to @agileflow/diagnosing-bugs@1.0.4
+  filing-pr        .agents/skills/filing-pr        @agileflow/filing-pr@1.2.1 with local edits (96% of SKILL.md lines shared)
+  deploy-notes     .claude/skills/deploy-notes     unknown (no registry package with this name)
+```
+
+- **Identical** to a published version (byte for byte, ignoring line endings): recorded as managed at that version, so `update` keeps it current. A copy of the published package that lacks AgileFlow's managed notice is rewritten into the managed form (same content, backed up first).
+- **With local edits**, or **unknown**: recorded as locally owned (`source: .agents/skills/<id>`), so AgileFlow never rewrites it. For edited copies the closest version is kept as `provenance.forkedFrom`, and `outdated` and `update` tell you when upstream moves on. A matching name alone never makes a skill managed.
+- **Only in a provider directory** (for example `.claude/skills/deploy-notes`): moved into `.agents/skills` and linked back, so every provider sees the same copy. Identical copies in other provider directories are replaced by links; different copies are left alone (and a skill with conflicting copies is not adopted). Only providers that are enabled (or detected) get links, so a skill is never moved out of a disabled provider's directory: enable the provider first, or move it yourself.
+
+Nothing changes without confirmation: interactive runs show the preview and ask; without a terminal, `--adopt` only previews unless you pass `--yes`. Every directory that is moved or rewritten is saved first, in this machine's cache (`~/.cache/agileflow/projects/<scope>/adopt-backups/<timestamp>/`, printed after adopting; never in the repository). A provider copy is moved aside in one step and put back if its link is not created, and a skill that changes between the preview and the write is left alone. Skills with an invalid `SKILL.md` or files AgileFlow cannot copy (symlinks, nested `.git`) are reported and left in place.
 
 ## agileflow remove
 
@@ -70,6 +97,27 @@ agileflow remove filing-pr --dry-run      # what would be removed
 ### Removing AgileFlow from a project
 
 `agileflow remove --all` (same as `agileflow migrate --detach`) removes `agileflow.yaml` and `agileflow.lock`. It asks whether to keep installed skills as standalone Agent Skills and then confirms; without a TTY it needs `--yes` (and keeps the skills unless you pass `--delete-skills`). For personal skills (`--global`), your personal defaults, provider settings, and registry setting stay in `config.yaml`, and a Codex setting AgileFlow changed at your request is restored if nobody edited it since. The default is yes: the managed notice is removed, Claude Code links stay, and every provider keeps seeing the skills. `--delete-skills` deletes unmodified AgileFlow skills instead; modified and locally owned skills are kept.
+
+### JSON output
+
+Every command that changes skills (`add`, `remove`, `sync`, `update`, `configure`, `migrate`) prints one versioned document with `--json`, and never prompts:
+
+```json
+{
+  "schema": 1,
+  "ok": true,
+  "command": "add",
+  "dryRun": false,
+  "applied": [],
+  "skipped": [{ "id": "filing-pr", "reason": "already installed" }],
+  "failed": [{ "id": "diagnosing-bugs", "error": "..." }],
+  "repaired": [],
+  "warnings": [],
+  "events": [{ "level": "warn", "skill": "filing-pr", "message": "..." }]
+}
+```
+
+`applied` is what changed (or would change with `--dry-run`), `skipped` what was left alone and why, `failed` what went wrong (`ok` is then `false`), `repaired` what was put back (for example provider links restored by `sync`). Command-specific fields from earlier releases (`installed`, `removed`, `materialized`, `upToDate`, ...) are still there. Errors are `{"ok": false, "error": {"code", "message", "hints"}}`, with nothing else written to stderr.
 
 ## agileflow list
 

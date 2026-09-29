@@ -1,10 +1,31 @@
 import { Command, CommanderError, Option } from 'commander';
-import { createContext, type ContextOverrides } from '@agileflow/core';
+// Startup imports stay light: the context module (node builtins only) instead of
+// all of @agileflow/core, and commands, runtime, prompts, zod, and yaml are
+// loaded only when a command needs them (`--version`/`--help` load none).
+import { createContext, type ContextOverrides } from '../../../packages/core/src/context';
 import { appendHistory } from './history';
-import { EXIT, type Cli } from './runtime';
+import type { Cli } from './runtime';
 import { Output, type Writer } from './ui/output';
-import { clackPrompter, defaultsPrompter, type Prompter } from './ui/prompts';
+import type { Prompter } from './ui/prompts';
 import { cliVersion } from './version';
+
+/** Same values as `EXIT` in ./runtime (kept here so startup does not load it). Never 2. */
+const EXIT = { OK: 0, ERROR: 1 } as const;
+
+/** A prompter whose implementation (and @clack/prompts) loads on the first question. */
+function lazyPrompter(interactive: boolean): Prompter {
+  const load = async () => {
+    const m = await import('./ui/prompts');
+    return interactive ? m.clackPrompter : m.defaultsPrompter;
+  };
+  return {
+    interactive,
+    select: async (message, choices, initial) => (await load()).select(message, choices, initial),
+    multiselect: async (message, choices, initial, required) => (await load()).multiselect(message, choices, initial, required),
+    confirm: async (message, initial) => (await load()).confirm(message, initial),
+    text: async (message, placeholder) => (await load()).text(message, placeholder),
+  };
+}
 
 export interface RunOptions extends ContextOverrides {
   stdout?: Writer;
@@ -30,11 +51,15 @@ Skills live in .agents/skills (project) or ~/.agents/skills (personal).
 Open Codex, Claude, Cursor, OpenCode, or Gemini as usual; AgileFlow is not
 involved while they run. Problems? Run \`agileflow check\`.`;
 
+/** The eval command's exit codes (the only copy: \`agileflow eval --help\` and the docs describe these). */
 const EVAL_EXIT_HELP = `Exit codes:
-  0  every skill passed the release gate and every scenario passed
-  1  a skill failed the gate, a scenario failed or errored (setup, provider crash or
-     timeout, judge failure, isolation leak), a question-preference comparison is out
-     of order, or the command was used incorrectly`;
+  0  every skill passed the release gate, every scenario that ran passed, and every
+     --compare/--pack comparison improved or showed no measurable difference
+  1  a skill failed the gate, a scenario failed or was inconclusive (setup, provider
+     crash or timeout, judge failure, isolation leak, criteria left ungraded), the
+     preflight found a problem, a comparison regressed or was inconclusive, a
+     question-preference comparison is out of order, or the command was used incorrectly
+  130/143  interrupted (SIGINT/SIGTERM); a partial report is written with complete: false`;
 
 /** Commands whose runs are recorded in `agileflow history`. */
 const RECORDED = new Set(['init', 'add', 'remove', 'sync', 'update', 'configure', 'fork', 'migrate', 'work']);
@@ -73,8 +98,8 @@ export async function run(argv: string[], options: RunOptions = {}): Promise<num
   const wantsYes = argv.includes('--yes') || argv.includes('-y') || argv.includes('--non-interactive');
   const interactiveTerminal =
     !!process.stdin.isTTY && !!process.stdout.isTTY && !ctx.env.CI && !ctx.env.AGILEFLOW_NON_INTERACTIVE;
-  // JSON output is for scripts: never prompt.
-  const prompter = options.prompter ?? (interactiveTerminal && !wantsYes && !json ? clackPrompter : defaultsPrompter);
+  // JSON output is for scripts: never prompt, whatever prompter was passed in.
+  const prompter = json ? lazyPrompter(false) : (options.prompter ?? lazyPrompter(interactiveTerminal && !wantsYes));
   const commandName = argv.slice(2).find((a) => !a.startsWith('-')) ?? '';
   const cli: Cli = { ctx, out, prompter, invocation: { command: commandName, args: argv.slice(3) } };
   let exitCode: number = EXIT.OK;
@@ -99,11 +124,16 @@ export async function run(argv: string[], options: RunOptions = {}): Promise<num
     .option('--offline', 'never use the network; work from the package cache')
     .option('--debug', 'print stack traces for unexpected errors')
     .option('--no-color', 'plain output')
-    .showHelpAfterError()
+    // With --json, a usage error is one JSON document on stdout and one line on stderr (no help dump).
+    .showHelpAfterError(!json)
     .addHelpText('after', HELP_FOOTER)
     .configureOutput({
       writeOut: (s) => out.stdout.write(s),
       writeErr: (s) => out.stderr.write(s),
+      // With --json the error is the JSON document on stdout (handleError), not text on stderr.
+      outputError: (s, write) => {
+        if (!json) write(s);
+      },
     })
     .exitOverride();
 
@@ -147,8 +177,16 @@ export async function run(argv: string[], options: RunOptions = {}): Promise<num
     .option('--skill <name>', 'pick a skill from a multi-skill source (repeatable)', collect)
     .option('--ref <ref>', 'git sources: branch, tag, or commit to track')
     .option('--dry-run', 'resolve and review (files, risk scan) without installing')
+    .option('--adopt', 'adopt skills already in .agents/skills or a provider dir (e.g. .claude/skills); previews, then asks (or --yes)')
     .option('--json', 'machine-readable output')
     .action(async (targets, opts) => setExit(await (await import('./commands/add')).runAdd(cli, targets, opts)));
+
+  program
+    .command('outdated')
+    .description('Show installed skills with the locked, wanted (allowed by the range), and latest versions (read-only)')
+    .option('-g, --global', 'personal skills')
+    .option('--json', 'machine-readable output')
+    .action(async (opts) => setExit(await (await import('./commands/outdated')).runOutdated(cli, opts)));
 
   program
     .command('remove')
@@ -183,6 +221,7 @@ export async function run(argv: string[], options: RunOptions = {}): Promise<num
     .description('Make the filesystem match agileflow.lock (no version changes)')
     .option('-g, --global', 'personal skills')
     .option('--dry-run', 'show what would change without writing anything')
+    .option('-y, --yes', 'install third-party content this machine has not installed before (review with --dry-run first)')
     .option('--json', 'machine-readable output')
     .action(async (opts) => setExit(await (await import('./commands/sync')).runSync(cli, opts)));
 
@@ -254,7 +293,7 @@ export async function run(argv: string[], options: RunOptions = {}): Promise<num
     .description('Scaffold a new Agent Skill that passes the release-gate lint')
     .argument('<name>', 'skill name: lowercase letters, digits, hyphens (e.g. releasing-packages)')
     .option('--dir <dir>', 'parent directory (default: skills/ in the project)')
-    .option('--description <text>', 'what it does and when to use it ("... Use when ...")')
+    .option('--description <text>', 'what it does, when to use it, and when not ("... Use when ... Not for ...")')
     .option('--trigger <prompt>', 'a request that should use the skill (repeatable; becomes an eval)', collect)
     .option('--not-trigger <prompt>', 'a similar request that should not (repeatable; becomes an eval)', collect)
     .option('--scope <scope>', 'package scope for agileflow.skill.yaml (default local)')
@@ -276,6 +315,7 @@ export async function run(argv: string[], options: RunOptions = {}): Promise<num
     .description('Migrate a v4 project to v5 (preview first), or --detach from AgileFlow')
     .argument('[from]', 'v4')
     .option('--preview', 'report what would change without changing anything')
+    .option('--dry-run', 'same as --preview')
     .option('--report-docs', 'report legacy docs directories (never deleted)')
     .option('-g, --global', 'migrate your personal v4 install in the home directory (~/.agileflow, ~/.claude, ~/.codex)')
     .addOption(new Option('--user', 'same as --global').hideHelp())
@@ -286,6 +326,7 @@ export async function run(argv: string[], options: RunOptions = {}): Promise<num
     .option('--detach', 'stop using AgileFlow here but keep skills working (same as remove --all)')
     .addOption(new Option('--keep-skills', 'with --detach: keep skills (default)').default(undefined))
     .option('--delete-skills', 'with --detach: delete unmodified AgileFlow skills')
+    .option('--json', 'machine-readable output (plan with --preview/--dry-run)')
     .action(async (from, opts) => {
       const backup = argv.includes('--no-backup') ? false : argv.includes('--backup') ? true : undefined;
       setExit(await (await import('./commands/migrate')).runMigrate(cli, from, { ...opts, backup }));
@@ -310,10 +351,14 @@ export async function run(argv: string[], options: RunOptions = {}): Promise<num
     .option('--scenario <name>', 'only run this scenario (repeatable)', collect)
     .option('--question-preference <value>', 'sandbox interaction.questionPreference: provider-default, prefer, minimize, or all (runs each and compares)')
     .option('--no-isolate', 'run providers with your real HOME (personal skills and settings apply)')
-    .option('--allow-setup', 'run scenario setup scripts of third-party skills')
-    .option('--json', 'machine-readable output (schemaVersion 1)')
-    .option('--out <file>', 'write a JSON report')
+    .option('--allow-setup', 'run scenario setup scripts and bin commands of skills not from the official registry (local directories included)')
+    .option('--json', 'machine-readable output (schemaVersion 2)')
+    .option('--out <file>', 'write a JSON report (rewritten after each scenario; raw transcripts saved next to it)')
     .option('--keep', 'keep sandboxes for inspection')
+    .option('--compare [arms]', 'compare the skill across arms: baseline (not installed), released, candidate (the skill you pass); default all three with --mode full, else released,candidate')
+    .option('--released <version|dir>', 'with --compare: the released copy (default: the version this project locks, else the latest published)')
+    .option('--pack <name|installed>', 'install a whole pack together and report which skill activated for which request; with --compare, the pack without vs with the skills you pass')
+    .option('--seed <n>', 'with --compare: seed for the randomized arm order (recorded in the report)')
     .addHelpText('after', `\n${EVAL_EXIT_HELP}`)
     .action(async (skills, opts) => setExit(await (await import('./commands/eval')).runEval(cli, skills, opts)));
 
@@ -395,8 +440,30 @@ export async function run(argv: string[], options: RunOptions = {}): Promise<num
     .argument('<from>', 'v4')
     .option('--preview', 'show what would be imported without writing anything')
     .option('-y, --yes', 'import without asking')
+    .option('--prefer <side>', 'when status.json and Markdown disagree: json or markdown (default: hold those items back)')
     .option('--json', 'machine-readable output')
     .action(async (from, opts) => setExit(await (await workCommands()).runWorkImport(cli, from, opts)));
+
+  work
+    .command('next')
+    .description('Stories that can be picked up now (ready, every dependency done), best first, with reasons; read-only')
+    .option('--epic <id>', 'only stories of this epic')
+    .option('--limit <n>', 'how many to show (default 5)')
+    .option('--explain', 'also explain why the top stories that are not eligible are not')
+    .option('--json', 'machine-readable output')
+    .action(async (opts) => setExit(await (await workCommands()).runWorkNext(cli, opts)));
+
+  work
+    .command('evidence')
+    .description('Show or record evidence per acceptance criterion (verified / stale / not verified)')
+    .argument('<id>', 'story ID or unambiguous prefix')
+    .option('--criterion <n|text>', 'record: criterion number (1-based) or its text')
+    .option('--kind <kind>', 'record: test, inspection, pr, or manual')
+    .option('--ref <ref>', 'record: test name or file:line, inspected file:line, PR URL, or what was checked')
+    .option('--note <text>', 'record: short note')
+    .option('--file <path>', 'record: file the evidence depends on, hashed to detect staleness (repeatable or comma-separated)', collect)
+    .option('--json', 'machine-readable output')
+    .action(async (id, opts) => setExit(await (await workCommands()).runWorkEvidence(cli, id, opts)));
 
   program
     .command('registry')
@@ -479,8 +546,9 @@ function handleError(cli: Cli, err: unknown): number {
     code = 'internal';
   }
   const message = e?.message ?? String(err);
+  // JSON mode: the error is the JSON document; text goes to stderr only if a document was already printed.
   if (out.jsonMode && !out.hasJson) out.jsonError(message, hints, code);
-  out.error(message, hints);
+  else out.error(message, hints);
   if (ctx.env.AGILEFLOW_DEBUG && e?.stack) out.stderr.write(`${e.stack}\n`);
   return EXIT.ERROR;
 }
@@ -495,5 +563,9 @@ const isEntrypoint = (() => {
 })();
 
 if (isEntrypoint) {
-  run(process.argv).then((code) => process.exit(code));
+  // Set the exit code instead of calling process.exit(), which can cut off
+  // piped stdout that has not drained yet (e.g. large --json output).
+  run(process.argv).then((code) => {
+    process.exitCode = code;
+  });
 }
