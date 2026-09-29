@@ -11,6 +11,7 @@ import {
   type SupportLevel,
   type TreeFile,
 } from '@agileflow/core';
+import { compatibilityDiagnostics } from './compat';
 import { detectBySpec, type DetectionSpec } from './util';
 import { cachedVersion, versionDiagnostics, type MinimumVersion } from './versions';
 
@@ -29,6 +30,8 @@ export interface StandardAdapterDefinition {
   optionalFeatures?: (pctx: ProviderContext) => Promise<ProviderCapabilities['optionalFeatures']>;
   /** First CLI version known to read skills from `.agents/skills` (only where verified). */
   minimumVersion?: MinimumVersion;
+  /** Provider CLI release this adapter's behavior was last verified with (conformance run or source review). */
+  verifiedWith?: string;
 }
 
 export function canonicalLabel(pctx: ProviderContext): string {
@@ -76,36 +79,24 @@ export function createStandardAdapter(def: StandardAdapterDefinition): ProviderA
       } catch {
         visible = skills.length === 0;
       }
-      out.push(
-        visible
-          ? { level: 'ok', message: `${def.displayName} reads ${canonicalLabel(pctx)}` }
-          : { level: 'error', message: `${canonicalLabel(pctx)} is missing`, detail: ['Run `agileflow sync`.'] },
-      );
-      const manual = skills.filter((s) => s.activation === 'manual');
-      if (manual.length) {
-        if (def.manualInvocation === 'semantic') {
-          out.push({
-            level: 'info',
-            message: `${def.displayName} manual-only enforcement: semantic`,
-            detail: [
-              `${manual.map((s) => s.id).join(', ')} rely on their descriptions to avoid automatic activation.`,
-            ],
-          });
-        } else if (def.hasManualFlag) {
-          const missing: string[] = [];
-          for (const skill of manual) if (!(await def.hasManualFlag(skill))) missing.push(skill.id);
-          if (missing.length) {
-            out.push({
-              level: 'warn',
-              message: `${def.displayName} may invoke manual skills automatically`,
-              detail: [
-                `${missing.join(', ')} lack ${def.manualMechanism ?? 'the manual-only flag'}.`,
-                'Managed skills get it on `agileflow sync`; add it yourself to forked/local skills.',
-              ],
-            });
-          }
-        }
+      if (!visible) out.push({ level: 'error', message: `${canonicalLabel(pctx)} is missing`, detail: ['Run `agileflow sync`.'] });
+      const unflagged: string[] = [];
+      if (def.manualInvocation === 'hard' && def.hasManualFlag) {
+        for (const skill of skills) if (skill.activation === 'manual' && !(await def.hasManualFlag(skill))) unflagged.push(skill.id);
       }
+      out.push(
+        ...(await compatibilityDiagnostics(pctx, {
+          name: def.displayName,
+          location: canonicalLabel(pctx),
+          skills,
+          notInstalled: visible ? [] : skills.map((s) => s.id),
+          manualInvocation: def.manualInvocation,
+          manualMechanism: def.manualMechanism,
+          unflagged,
+          verifiedWith: def.verifiedWith,
+          detect: () => detectBySpec(pctx, def.detection),
+        })),
+      );
       if (def.extraValidate) out.push(...(await def.extraValidate(pctx, skills)));
       out.push(...(await versionDiagnostics(pctx, def.displayName, () => detectBySpec(pctx, def.detection), def.minimumVersion)));
       return out;

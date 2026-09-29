@@ -37,7 +37,8 @@ function patches(ctx: Context): unknown[] {
 const mode = (p: string) => fs.statSync(p).mode & 0o777;
 
 describe('Codex config writes', () => {
-  it('keeps a 0600 config at 0600 through enable and disable', async () => {
+  // Windows has no POSIX modes and needs privileges for symlinks.
+  it.skipIf(process.platform === 'win32')('keeps a 0600 config at 0600 through enable and disable', async () => {
     const { ctx } = setup();
     const file = codexConfigPath(ctx);
     fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -51,7 +52,7 @@ describe('Codex config writes', () => {
     expect(fs.readFileSync(file, 'utf8')).toBe('[mcp_servers.x]\nenv = { TOKEN = "secret" }\n');
   });
 
-  it('writes through a symlinked config.toml (dotfile managers) instead of replacing the link', async () => {
+  it.skipIf(process.platform === 'win32')('writes through a symlinked config.toml (dotfile managers) instead of replacing the link', async () => {
     const { ctx, home } = setup();
     const file = codexConfigPath(ctx);
     const real = path.join(home, 'dotfiles', 'codex', 'config.toml');
@@ -81,6 +82,15 @@ describe('Codex config writes', () => {
     await configureStructuredQuestions(ctx, true);
     expect(fs.readFileSync(path.join(codexHome, 'config.toml'), 'utf8')).toContain('default_mode_request_user_input = true');
     expect(fs.existsSync(path.join(home, '.codex'))).toBe(false);
+  });
+
+  it('expands ~ in $CODEX_HOME and resolves a relative value against the working directory', () => {
+    const { ctx: tilde, home } = setup({ CODEX_HOME: '~/codex' });
+    expect(codexConfigPath(tilde)).toBe(path.join(home, 'codex', 'config.toml'));
+    const cwd = tmpdir();
+    const rel = createContext({ cwd, homeDir: home, env: { CODEX_HOME: 'conf/codex' } });
+    expect(codexConfigPath(rel)).toBe(path.join(cwd, 'conf', 'codex', 'config.toml'));
+    expect(codexConfigPath(createContext({ cwd, homeDir: home, env: { CODEX_HOME: '' } }))).toBe(path.join(home, '.codex', 'config.toml'));
   });
 
   it('never produces a duplicate [features] table for root dotted keys (Codex would not start)', async () => {
@@ -146,6 +156,122 @@ describe('Codex config writes', () => {
     expect(await readStructuredQuestions(ctx)).toBe(true);
     await configureStructuredQuestions(ctx, false);
     expect(fs.readFileSync(file, 'utf8')).toBe(src);
+  });
+
+  it('refuses valid TOML it cannot edit safely (quoted key), leaving the file byte-identical and recording nothing', async () => {
+    const { ctx } = setup();
+    const file = codexConfigPath(ctx);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const src = '[features]\n"default_mode_request_user_input" = false\n';
+    fs.writeFileSync(file, src);
+    await expect(configureStructuredQuestions(ctx, true)).rejects.toThrow(/Cannot change .*manually.*Nothing was written/);
+    expect(fs.readFileSync(file, 'utf8')).toBe(src);
+    expect(patches(ctx)).toHaveLength(0);
+    expect(fs.existsSync(globalStatePath(ctx))).toBe(false);
+  });
+
+  it('refuses to restore once the user rewrote the table in a shape it cannot edit, and keeps the record for a retry', async () => {
+    const { ctx } = setup();
+    const file = codexConfigPath(ctx);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, 'model = "x"\n');
+    await configureStructuredQuestions(ctx, true);
+    const inline = 'model = "x"\nfeatures = { default_mode_request_user_input = true }\n';
+    fs.writeFileSync(file, inline);
+    await expect(configureStructuredQuestions(ctx, false)).rejects.toThrow(/Cannot change .*Nothing was written/);
+    expect(fs.readFileSync(file, 'utf8')).toBe(inline);
+    expect(patches(ctx)).toHaveLength(1);
+  });
+
+  it('disable leaves the file alone when the user removed the value after enable', async () => {
+    const { ctx } = setup();
+    const file = codexConfigPath(ctx);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, 'model = "x"\n');
+    await configureStructuredQuestions(ctx, true);
+    const edited = 'model = "y"\n';
+    fs.writeFileSync(file, edited);
+    const result = await configureStructuredQuestions(ctx, false);
+    expect(result).toMatchObject({ changed: false, before: undefined, after: undefined });
+    expect(result.note).toMatch(/changed since AgileFlow set it/);
+    expect(fs.readFileSync(file, 'utf8')).toBe(edited);
+    expect(patches(ctx)).toHaveLength(0);
+  });
+
+  it('disable removes only its own key and keeps everything the user added after enable', async () => {
+    const { ctx } = setup();
+    const file = codexConfigPath(ctx);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, 'model = "x"\n');
+    await configureStructuredQuestions(ctx, true);
+    const enabled = fs.readFileSync(file, 'utf8');
+    expect(enabled).toBe('model = "x"\n\n[features]\ndefault_mode_request_user_input = true\n');
+    fs.writeFileSync(file, `${enabled}web_search_request = true\n\n[mcp_servers.y]\ncommand = "y"\n`);
+
+    const result = await configureStructuredQuestions(ctx, false);
+    expect(result).toMatchObject({ changed: true, before: true, after: undefined });
+    const text = fs.readFileSync(file, 'utf8');
+    expect(text).toBe('model = "x"\n\n[features]\nweb_search_request = true\n\n[mcp_servers.y]\ncommand = "y"\n');
+    expect(parse(text)).toEqual({ model: 'x', features: { web_search_request: true }, mcp_servers: { y: { command: 'y' } } });
+    expect(patches(ctx)).toHaveLength(0);
+  });
+
+  it('re-reads config.toml right before writing and writes nothing when it changed since it was read', async () => {
+    const { ctx } = setup();
+    const file = codexConfigPath(ctx);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, 'model = "a"\n');
+    const edit = (text: string) => async () => fs.writeFileSync(file, text);
+    // Enable: the user's concurrent edit wins; no record is left behind.
+    const enable = await configureStructuredQuestions(ctx, true, { deps: { beforeWrite: edit('model = "b"\n') } });
+    expect(enable).toMatchObject({ changed: false, note: expect.stringContaining('changed while AgileFlow was editing it') });
+    expect(fs.readFileSync(file, 'utf8')).toBe('model = "b"\n');
+    expect(patches(ctx)).toEqual([]);
+    // Disable: restoring waits for a file that matches what was read; the record stays for a retry.
+    expect((await configureStructuredQuestions(ctx, true)).changed).toBe(true);
+    const applied = fs.readFileSync(file, 'utf8');
+    const disable = await configureStructuredQuestions(ctx, false, { deps: { beforeWrite: edit(`${applied}# note\n`) } });
+    expect(disable).toMatchObject({ changed: false, note: expect.stringContaining('changed while AgileFlow was editing it') });
+    expect(fs.readFileSync(file, 'utf8')).toBe(`${applied}# note\n`);
+    expect(patches(ctx)).toHaveLength(1);
+    expect((await configureStructuredQuestions(ctx, false)).changed).toBe(true);
+    expect(await readStructuredQuestions(ctx)).toBe(false);
+  });
+
+  it('disable deletes a config.toml AgileFlow created when nothing else was added', async () => {
+    const { ctx } = setup();
+    const file = codexConfigPath(ctx);
+    await configureStructuredQuestions(ctx, true);
+    expect(fs.readFileSync(file, 'utf8')).toContain('default_mode_request_user_input = true');
+    const result = await configureStructuredQuestions(ctx, false);
+    expect(result.changed).toBe(true);
+    expect(fs.existsSync(file)).toBe(false);
+    expect(patches(ctx)).toHaveLength(0);
+  });
+
+  it('disable keeps a config.toml AgileFlow created once the user added their own settings', async () => {
+    const { ctx } = setup();
+    const file = codexConfigPath(ctx);
+    await configureStructuredQuestions(ctx, true);
+    fs.writeFileSync(file, `model = "x"\n${fs.readFileSync(file, 'utf8')}`);
+    await configureStructuredQuestions(ctx, false);
+    expect(parse(fs.readFileSync(file, 'utf8'))).toEqual({ model: 'x' });
+  });
+
+  it.skipIf(process.platform === 'win32')('disable keeps a created config.toml that the user has since turned into a symlink', async () => {
+    const { ctx, home } = setup();
+    const file = codexConfigPath(ctx);
+    await configureStructuredQuestions(ctx, true);
+    const real = path.join(home, 'dotfiles', 'config.toml');
+    fs.mkdirSync(path.dirname(real), { recursive: true });
+    fs.renameSync(file, real);
+    fs.symlinkSync(real, file);
+
+    const result = await configureStructuredQuestions(ctx, false);
+    expect(result.changed).toBe(true);
+    expect(fs.lstatSync(file).isSymbolicLink()).toBe(true);
+    expect(fs.existsSync(real)).toBe(true);
+    expect(fs.readFileSync(real, 'utf8')).not.toContain('default_mode_request_user_input');
   });
 
   it.skipIf(process.getuid?.() === 0)('rolls back the restore record when the config write fails', async () => {

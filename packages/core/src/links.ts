@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { hashTree } from './hash';
+import { HASH_VERSION, matchesRenderedHash, renderedHashOf } from './hash';
 import { isNotFound, readTree, removePath, replaceDirAtomic, type TreeFile } from './fs';
 import type { PlannedChange } from './types';
 
@@ -12,9 +12,23 @@ export interface MirrorMarker {
   provider: string;
   /** Canonical directory the mirror was generated from. */
   source: string;
-  /** hashTree of the mirror content, excluding this marker. */
+  /**
+   * Hash of the mirror content, excluding this marker, under the installed-file
+   * rule `hashVersion` (absent: exact `hashTree`, written by older CLIs).
+   */
   hash: string;
+  hashVersion?: number;
   note: string;
+}
+
+/**
+ * True when `files` (a mirror's content, or the canonical skill it copies)
+ * are what `marker` recorded, under the same line-ending rule as installed
+ * skills. Executable bits are not compared: a mirror is a generated copy, and
+ * only content edits make it "edited directly" or out of date.
+ */
+export function mirrorMatches(files: TreeFile[], marker: MirrorMarker): boolean {
+  return matchesRenderedHash(files, { renderedHash: marker.hash, hashVersion: marker.hashVersion });
 }
 
 export type LinkMode = 'symlink' | 'junction' | 'mirror';
@@ -168,7 +182,7 @@ export async function classifyEntry(
     const marker = await readMirrorMarker(entryPath);
     if (marker) {
       const files = await readTree(entryPath, { exclude: (rel) => rel === MIRROR_MARKER });
-      return { state: 'mirror', modified: hashTree(files) !== marker.hash, marker };
+      return { state: 'mirror', modified: !mirrorMatches(files, marker), marker };
     }
     return { state: 'user-dir' };
   }
@@ -212,7 +226,8 @@ async function writeMirror(entryPath: string, canonicalDir: string, provider: st
     generatedBy: 'agileflow',
     provider,
     source: path.relative(root, canonicalDir).split(path.sep).join('/'),
-    hash: hashTree(files),
+    hash: renderedHashOf(files),
+    hashVersion: HASH_VERSION,
     note: 'Generated copy. Edit the canonical skill in the source directory instead; AgileFlow regenerates this mirror.',
   };
   const withMarker: TreeFile[] = [
@@ -229,14 +244,30 @@ export interface ApplyResult {
   message?: string;
 }
 
+/** Filesystem calls `applyChanges` makes that tests replace to simulate platform failures. */
+export interface LinkDeps {
+  symlink(target: string, linkPath: string, type: 'dir' | 'junction'): Promise<void>;
+}
+
+const defaultLinkDeps: LinkDeps = {
+  symlink: (target, linkPath, type) => fs.promises.symlink(target, linkPath, type),
+};
+
 /**
  * Apply provider plans. Links fall back symlink -> junction -> mirror.
  * `root` is the scope root, used to record mirror provenance.
  */
 export async function applyChanges(
   changes: PlannedChange[],
-  options: { root: string; env: Record<string, string | undefined>; platform: NodeJS.Platform; dryRun?: boolean },
+  options: {
+    root: string;
+    env: Record<string, string | undefined>;
+    platform: NodeJS.Platform;
+    dryRun?: boolean;
+    deps?: Partial<LinkDeps>;
+  },
 ): Promise<ApplyResult[]> {
+  const deps: LinkDeps = { ...defaultLinkDeps, ...options.deps };
   const results: ApplyResult[] = [];
   for (const change of changes) {
     if (change.kind === 'warn') {
@@ -249,11 +280,31 @@ export async function applyChanges(
     }
     try {
       if (change.kind === 'remove') {
+        // Only AgileFlow's own link, git placeholder, or unedited mirror is
+        // removed (re-checked: the entry may have changed since planning).
+        const canonical = path.join(options.root, '.agents', 'skills', change.skillId);
+        const now = await classifyEntry(change.path, canonical, { platform: options.platform });
+        if (now.state === 'missing') {
+          results.push({ change, outcome: 'done' });
+          continue;
+        }
+        const ours =
+          now.state === 'linked' || now.state === 'dangling-ours' || now.state === 'git-placeholder' || (now.state === 'mirror' && !now.modified);
+        if (!ours) {
+          results.push({ change, outcome: 'skipped', message: `${change.path} changed since AgileFlow planned to remove it; left it alone` });
+          continue;
+        }
         const stat = await fs.promises.lstat(change.path).catch(() => null);
         if (stat?.isSymbolicLink()) await fs.promises.unlink(change.path);
         else await removePath(change.path);
         results.push({ change, outcome: 'done' });
       } else if (change.kind === 'refresh-mirror') {
+        // Only an unedited mirror of ours is replaced (re-checked: it may have changed since planning).
+        const now = await classifyEntry(change.path, change.target, { platform: options.platform });
+        if (now.state !== 'missing' && !(now.state === 'mirror' && !now.modified)) {
+          results.push({ change, outcome: 'skipped', message: `${change.path} changed since AgileFlow planned this; left it alone` });
+          continue;
+        }
         await writeMirror(change.path, change.target, change.provider, options.root);
         results.push({ change, outcome: 'done', linkType: 'mirror' });
       } else {
@@ -267,10 +318,18 @@ export async function applyChanges(
         for (const mode of preferredLinkModes(options.env, options.platform)) {
           try {
             if (mode === 'symlink') {
-              await fs.promises.symlink(await relativeLinkTarget(change.path, change.target), change.path, 'dir');
+              await deps.symlink(await relativeLinkTarget(change.path, change.target), change.path, 'dir');
             } else if (mode === 'junction') {
-              await fs.promises.symlink(path.resolve(change.target), change.path, 'junction');
+              // Junctions store absolute targets: a moved project leaves them
+              // dangling, which `classifyEntry` reports as ours (`stale`) and
+              // the next sync relinks.
+              await deps.symlink(path.resolve(change.target), change.path, 'junction');
             } else {
+              // A failed link attempt says nothing about what is at the path now; a
+              // directory or file that appeared there is the user's, never mirrored over.
+              if (await fs.promises.lstat(change.path).then(() => true, () => false)) {
+                throw Object.assign(new Error(`${change.path} appeared while AgileFlow was linking it; left it alone`), { code: 'EEXIST' });
+              }
               await writeMirror(change.path, change.target, change.provider, options.root);
             }
             done = mode;

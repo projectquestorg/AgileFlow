@@ -118,7 +118,7 @@ describe('config and lockfile', () => {
     const lock = LockfileSchema.parse({
       version: 1,
       resolved: {
-        zeta: { source: '@agileflow/zeta', version: '1.0.0', integrity: 'sha256-a', path: '.agents/skills/zeta', renderedHash: 'sha256-b' },
+        zeta: { source: '@agileflow/zeta', version: '1.0.0', integrity: 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', path: '.agents/skills/zeta', renderedHash: 'sha256-BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=' },
         alpha: { source: './x', version: 'local', path: '.agents/skills/alpha', ownership: 'local' },
       },
     });

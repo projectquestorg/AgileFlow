@@ -17,7 +17,7 @@ Make the filesystem match `agileflow.lock`:
 
 1. Read `agileflow.yaml` and `agileflow.lock`.
 2. Verify each package's integrity.
-3. Materialize exactly the locked versions into `.agents/skills`, and re-render clean skills whose render inputs changed (activation, [question preference](/concepts/question-preferences)). A skill rendered by a different AgileFlow version is left as committed (no churn between teammates); `update` refreshes it.
+3. Materialize exactly the locked versions into `.agents/skills`, and re-render clean skills whose render inputs changed (activation, [question preference](/concepts/question-preferences)); the lock records those inputs and the renderer revision. A skill rendered by another AgileFlow version's renderer is left as committed and the lock is not rewritten (no churn between teammates); a missing one is restored from the lock when this CLI reproduces it, otherwise restored with this CLI's renderer while the lock stays as committed. `update` lists such skills as `re-render` items and adopts this CLI's renderer only there.
 4. Create or refresh provider compatibility links and mirrors.
 5. Remove stale AgileFlow-owned output (skills that left the lockfile, only if unmodified).
 6. Run a lightweight provider check and print any problems.
@@ -46,6 +46,7 @@ agileflow update diagnosing-bugs     # specific skills
 agileflow update --dry-run           # show what would change
 agileflow update --yes               # apply without the confirmation, including third-party changes
 agileflow update --dry-run --json    # the plan for scripts and bots
+agileflow outdated                   # just the versions: current, wanted, latest
 agileflow update --non-interactive   # CI: never prompt, never overwrite edits
 agileflow update --reset diagnosing-bugs   # discard local edits of this skill (repeatable)
 agileflow update --global            # personal skills

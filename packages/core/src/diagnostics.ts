@@ -3,11 +3,23 @@ import path from 'node:path';
 import { ConfigError } from './config';
 import type { Context } from './context';
 import { readTextIfExists } from './fs';
-import { compareConfigToLock, resolvedSkills, syncWorkspace, type SyncReport } from './installer';
+import {
+  compareConfigToLock,
+  effectiveActivation,
+  isOwnRender,
+  renderFor,
+  renderInputsChanged,
+  resolvedSkills,
+  syncWorkspace,
+  type SyncReport,
+} from './installer';
+import { matchesRenderedHash } from './hash';
+import { tracksExecBits } from './platform';
+import { RENDERER_REVISION } from './render';
+import type { FetchedPackage } from './types';
 import { parseSource } from './source';
 import { skillRelPath } from './scope';
-import { journalPath } from './transaction';
-import { pathExists } from './fs';
+import { pendingSkillWrites } from './transaction';
 import { inspectSkill, listSkillDirs, listUnmanagedSkills } from './ownership';
 import { globalScope, skillDir, type ScopeTarget } from './scope';
 import { parseSkillMarkdown, SKILL_FILE, validateSkillMarkdown } from './skill';
@@ -38,6 +50,10 @@ const info = (message: string, detail?: string[], verboseOnly = false): Diagnost
 
 function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? '' : 's'}`;
+}
+
+function rendererLabel(revision: number | undefined): string {
+  return revision === undefined ? 'renderer not recorded' : `renderer ${revision}`;
 }
 
 /** `agileflow check` for one scope. With `fix`, repairs only AgileFlow-owned artifacts. */
@@ -95,19 +111,14 @@ export async function checkScope(
     if (entry.ownership === 'managed' && !entry.integrity) ignored.push(`${id}: lock entry has no integrity; run \`agileflow update ${id}\``);
   }
   if (ignored.length) configuration.diagnostics.push(warn('settings that have no effect', ignored));
-  if (await pathExists(journalPath(services, scope))) {
-    configuration.diagnostics.push(
-      warn('an earlier AgileFlow command was interrupted', ['The next `agileflow sync` (or any change) completes or rolls it back.']),
-    );
-  }
-
   let fixed: SyncReport | null = null;
   if (options.fix && !mismatches.length) {
     fixed = await syncWorkspace(services, ws, { missingOnly: true });
     ws = await loadWorkspace(scope);
   }
 
-  sections.push(await checkSkills(services, ws));
+  // `--fix` runs after recovery (the caller holds the scope lock), so nothing is pending then.
+  sections.push(await checkSkills(services, ws, await pendingSkillWrites(services, scope)));
   sections.push(await checkProviders(services, ws, options.verbose ?? false));
   const optional = await checkOptionalFeatures(services, ws);
   if (optional.diagnostics.length) sections.push(optional);
@@ -116,19 +127,37 @@ export async function checkScope(
   return { scope, sections, healthy, fixed };
 }
 
-async function checkSkills(services: Services, ws: Workspace): Promise<CheckSection> {
+/** Reported once, instead of the missing/modified findings an interrupted write would cause. */
+export const INTERRUPTED_MESSAGE = 'interrupted operation pending recovery';
+
+/**
+ * `interrupted`: skills an interrupted command left between two states
+ * (`pendingSkillWrites`), or null when nothing is pending. Their files may be
+ * new while the lock is old, so they are reported as interrupted, never as
+ * missing, modified, or rendered differently.
+ */
+async function checkSkills(services: Services, ws: Workspace, interrupted: string[] | null): Promise<CheckSection> {
   const section: CheckSection = { title: 'Skills', diagnostics: [] };
+  if (interrupted) {
+    section.diagnostics.push(
+      warn(INTERRUPTED_MESSAGE, [
+        ...(interrupted.length ? [`affected: ${interrupted.join(', ')}`] : []),
+        'Run any agileflow command that changes skills (e.g. `agileflow sync`) to complete or roll it back.',
+      ]),
+    );
+  }
+  const pending = new Set(interrupted ?? []);
   const entries = Object.entries(ws.lock.resolved);
   const managed = entries.filter(([, e]) => e.ownership === 'managed' && e.enabled !== false);
   const local = entries.filter(([, e]) => e.ownership === 'local');
   const disabled = entries.filter(([, e]) => e.enabled === false);
 
   const missing: string[] = [];
-  const modified: string[] = [];
+  const states = new Map<string, Awaited<ReturnType<typeof inspectSkill>>>();
   for (const [id, entry] of entries) {
     const state = await inspectSkill(ws.scope, id, entry);
-    if (state.status === 'missing') missing.push(id);
-    if (state.status === 'modified') modified.push(state.unhashed?.length ? `${id} (untracked entries: ${state.unhashed.join(', ')})` : id);
+    states.set(id, state);
+    if (state.status === 'missing' && !pending.has(id)) missing.push(id);
   }
   const present = managed.length - missing.filter((id) => ws.lock.resolved[id]?.ownership === 'managed').length;
   section.diagnostics.push(
@@ -145,9 +174,11 @@ async function checkSkills(services: Services, ws: Workspace): Promise<CheckSect
   const integrityProblems: string[] = [];
   const unverifiable: string[] = [];
   const notCached: string[] = [];
+  const packages = new Map<string, FetchedPackage>();
   for (const [id, entry] of managed) {
     try {
       const pkg = await services.fetcher.fetchLocked(id, entry, ws.scope.root, { cacheOnly: true });
+      packages.set(id, pkg);
       if (pkg.integrity !== entry.integrity) {
         integrityProblems.push(`${id}: package integrity ${pkg.integrity} != locked ${entry.integrity}`);
       }
@@ -169,6 +200,74 @@ async function checkSkills(services: Services, ws: Workspace): Promise<CheckSect
         notCached.join(', '),
         'Run `agileflow verify` to download and verify them.',
       ]),
+    );
+  }
+
+  // Local modifications, telling user edits apart from renderer differences
+  // between AgileFlow versions (never reported as edits).
+  const modified: string[] = [];
+  const ownRenders: string[] = [];
+  let ownRendersNewer = false;
+  const modeDrift: string[] = [];
+  const drift: string[] = [];
+  const pendingInputs: string[] = [];
+  for (const [id, entry] of entries) {
+    if (pending.has(id)) continue;
+    const state = states.get(id)!;
+    const pkg = packages.get(id);
+    if (state.status === 'modified') {
+      const execBits = await tracksExecBits(ws.scope.root);
+      if (pkg && state.files && !state.unhashed?.length && isOwnRender(services, ws, id, entry, pkg, state.files, { execBits })) {
+        ownRenders.push(`${id}: agileflow.lock records ${rendererLabel(entry.renderer)}; this copy was restored with renderer ${RENDERER_REVISION}`);
+        if ((entry.renderer ?? 0) > RENDERER_REVISION) ownRendersNewer = true;
+      } else {
+        modified.push(state.unhashed?.length ? `${id} (untracked entries: ${state.unhashed.join(', ')})` : id);
+      }
+      continue;
+    }
+    if (state.status === 'clean' && state.modeDrift) modeDrift.push(id);
+    if (state.status !== 'clean' || entry.ownership !== 'managed' || !pkg || pkg.integrity !== entry.integrity) continue;
+    const activation = effectiveActivation(ws.specs[id], entry.activation);
+    let changed = false;
+    try {
+      changed = renderInputsChanged(services, ws, id, pkg, entry, activation);
+      if (!changed && entry.renderer !== RENDERER_REVISION && !matchesRenderedHash(renderFor(services, ws, id, pkg, activation), entry, { execBits: true })) {
+        drift.push(`${id}: ${rendererLabel(entry.renderer)} (this CLI: renderer ${RENDERER_REVISION})`);
+      }
+    } catch {
+      continue; // unrenderable packages are reported by `sync`
+    }
+    if (changed) pendingInputs.push(id);
+  }
+  if (drift.length) {
+    const newer = Object.values(ws.lock.resolved).some((e) => e.renderer !== undefined && e.renderer > RENDERER_REVISION);
+    section.diagnostics.push(
+      info(`${plural(drift.length, 'skill')} rendered by another AgileFlow renderer; left as committed`, [
+        ...drift,
+        newer
+          ? 'A newer AgileFlow rendered some of them; upgrade AgileFlow to reproduce them exactly.'
+          : 'Nothing to fix. `agileflow update` lists them as re-renders and adopts this CLI\'s renderer on request.',
+      ]),
+    );
+  }
+  if (ownRenders.length) {
+    section.diagnostics.push(
+      info(`${plural(ownRenders.length, 'skill')} rendered by this CLI differ from agileflow.lock (not local edits)`, [
+        ...ownRenders,
+        ownRendersNewer
+          ? 'A newer AgileFlow rendered the locked copy; upgrade AgileFlow to reproduce it exactly.'
+          : 'They match again once everyone uses the same AgileFlow version, or run `agileflow update` to record this renderer.',
+      ]),
+    );
+  }
+  if (modeDrift.length) {
+    section.diagnostics.push(
+      info(`${plural(modeDrift.length, 'skill')} with executable bits that differ from agileflow.lock (not local edits; \`agileflow sync\` restores them)`, modeDrift),
+    );
+  }
+  if (pendingInputs.length) {
+    section.diagnostics.push(
+      info(`${plural(pendingInputs.length, 'skill')} will be re-rendered by \`agileflow sync\` (activation or question preference changed)`, pendingInputs),
     );
   }
 
@@ -218,7 +317,9 @@ async function checkSkills(services: Services, ws: Workspace): Promise<CheckSect
       info(
         'lock hashes',
         entries.map(
-          ([id, e]) => `${id} ${e.version} ${e.ownership}${e.integrity ? ` integrity=${e.integrity}` : ''}${e.renderedHash ? ` base=${e.renderedHash}` : ''}`,
+          ([id, e]) =>
+            `${id} ${e.version} ${e.ownership}${e.integrity ? ` integrity=${e.integrity}` : ''}${e.renderedHash ? ` base=${e.renderedHash}` : ''}` +
+            `${e.hashVersion ? ` rule=v${e.hashVersion}` : e.renderedHash ? ' rule=legacy' : ''}${e.renderer ? ` renderer=${e.renderer}` : ''}`,
         ),
         true,
       ),

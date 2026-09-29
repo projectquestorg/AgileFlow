@@ -31,6 +31,8 @@ A provider is detected when its CLI is on PATH, its home directory exists, or th
 | OpenCode | `opencode` | `~/.config/opencode` | `.opencode/`, `opencode.json`, `opencode.jsonc` |
 | Gemini CLI | `gemini` | `~/.gemini` | `.gemini/`, `GEMINI.md` |
 
+`$CODEX_HOME` and `$CLAUDE_CONFIG_DIR` are resolved the way the provider resolves them: a leading `~` is your home directory and a relative value is relative to the directory you run the command in.
+
 Override detection per provider with `providers.<id>.enabled` in [`agileflow.yaml`](/reference/agileflow-yaml#providers). `agileflow check --verbose` shows how each provider was detected and, when its CLI is on PATH, its version, so a provider update that changes skill loading is easy to spot. T3 Code is detected by `~/.t3` or `T3CODE_*` / `T3_CODE_*` environment variables, only so `check` can add its note.
 
 ## What has been verified
@@ -39,9 +41,9 @@ AgileFlow's conformance tests ask each installed provider CLI which skills it se
 
 | Provider | Verified with | Method |
 | --- | --- | --- |
-| Codex | codex-cli 0.128.0 | `codex debug prompt-input` lists auto skills from `.agents/skills`, omits manual skills, and reflects updates and removals. `codex features list` reflects the structured-questions setting. |
-| OpenCode | 1.4.6 | `opencode debug skill` lists the skills from `.agents/skills` and reflects removal. |
-| Claude Code | 2.1.280 | The startup `init` event lists the skills through per-skill links and through generated mirrors. |
+| Codex | codex-cli 0.128.0 | `codex debug prompt-input` lists auto skills from `.agents/skills`, omits manual skills, and reflects updates and removals; the app server's skill list still offers manual skills for explicit `$skill` use. `codex features list` reflects the structured-questions setting. |
+| OpenCode | 1.4.6 | `opencode debug skill` lists the skills from `.agents/skills` (manual ones included) and reflects removal. |
+| Claude Code | 2.1.280 | The startup `init` event lists the skills through per-skill links and through generated mirrors. The first model request leaves manual skills out of the Skill tool listing, and `/<skill>` still loads them. |
 | Gemini CLI | 0.60.0 | `gemini skills list` lists the skills from `.agents/skills` in a trusted folder and reflects removal. |
 | Cursor | not verified | Cursor has no headless command to list skills; support is based on Cursor's documented `.agents/skills` support. |
 | T3 Code | not verified directly | T3 runs the provider CLIs above in the project directory. |
@@ -54,10 +56,20 @@ Activation behavior (which prompts load which skill) has been measured with Clau
 
 | Provider | Mechanism | Enforcement |
 | --- | --- | --- |
-| Claude Code, Cursor | `disable-model-invocation: true` in `SKILL.md` | provider-enforced |
-| OpenCode | none available (OpenCode's skill loader ignores extra metadata) | semantic only, like Gemini CLI. `check` reports "manual-only enforcement: semantic". |
-| Codex | `agents/openai.yaml`: `policy.allow_implicit_invocation: false` | provider-enforced (verified: Codex leaves the skill out of implicit invocation) |
-| Gemini CLI | none available | semantic only: relies on the skill's own description saying to use it only when asked (the official manual skills do). `check` reports "manual-only enforcement: semantic". |
+| Claude Code, Cursor | `disable-model-invocation: true` in `SKILL.md` | enforced (Claude Code verified: not model-invocable, still a slash command; Cursor not verified) |
+| OpenCode | none available (OpenCode's skill loader ignores extra metadata; a `permission.skill` deny rule would also block explicit use) | advisory, like Gemini CLI |
+| Codex | `agents/openai.yaml`: `policy.allow_implicit_invocation: false` | enforced (verified: out of implicit invocation, still explicitly invocable) |
+| Gemini CLI | none available | advisory: relies on the skill's own description saying to use it only when asked (the official manual skills do) |
+
+## What `check` reports
+
+`agileflow check` grades each detected provider instead of printing a bare check mark, and says what it did not verify:
+
+- **visible**: the skill files are where the provider reads skills (`.agents/skills`, or a valid link or mirror in `.claude/skills`), for example `[ok] Claude: visible in .claude/skills (7 skills via symlink; provider discovery not verified)`. Whether the provider then discovers them is provider behavior AgileFlow does not run; the conformance tests above check it.
+- **enforced**: a manual skill carries the provider's hard switch (checked in the installed files): `[ok] Codex manual-only: enforced`. A manual skill without it is a warning: `Codex manual-only: not enforced`.
+- **advisory**: the provider has no manual-only switch, so only the description keeps it from automatic use: `[--] OpenCode manual-only: advisory`.
+
+`check --verbose` adds, per provider and skill, whether it is installed, discovered (not verified), explicitly invocable (not verified), and eligible for automatic invocation, the version of the provider CLI on your PATH, and the provider version AgileFlow's behavior was last verified with.
 
 ## Claude Code links and mirrors
 
@@ -65,20 +77,20 @@ Claude Code reads `.claude/skills/`, not `.agents/skills/`. The Claude adapter m
 
 1. **Symlink** (preferred): `.claude/skills/diagnosing-bugs -> ../../.agents/skills/diagnosing-bugs`
 2. **Junction** on Windows when symlinks are not permitted.
-3. **Generated mirror** as a last resort: a copy containing `.agileflow-mirror.json`, which records where it came from and a hash of its content. AgileFlow refreshes mirrors when the canonical skill changes.
+3. **Generated mirror** as a last resort: a copy containing `.agileflow-mirror.json`, which records where it came from and a hash of its content. AgileFlow refreshes mirrors when the canonical skill changes. The hash follows the same rule as installed skills, so a mirror Git checked out with CRLF line endings is not mistaken for an edited one, while an edit that changes some lines is.
 
 AgileFlow owns only the links and mirrors it created, never the `.claude/skills` directory itself:
 
 - A Claude-only skill with the same name is left alone; `check` reports that it shadows the AgileFlow skill.
 - Link targets are computed from resolved paths, so links work when `.claude`, `~/.claude`, or `.claude/skills` is itself a symlink (dotfile managers).
-- A junction left pointing at a project's old location after you moved it, and a link that Git checked out as a small text file (`core.symlinks=false`, common on Windows), are recognized as AgileFlow's and repaired by `sync`.
+- A junction (junctions store absolute paths) left pointing at a project's old location after you moved it, and a link that Git checked out as a small text file (`core.symlinks=false`, common on Windows), are recognized as AgileFlow's and repaired by `sync`.
 - If `.claude/skills` is itself a link to `.agents/skills`, nothing is created.
 - If you edit a mirror directly, `check` warns and names the canonical copy to edit instead; the mirror is not overwritten.
 - `agileflow configure provider claude off` removes AgileFlow's links; `on` or `auto` (the default: only when Claude Code is detected) creates them.
 
 AgileFlow never modifies `.claude/settings.json`.
 
-Force the mirror fallback with `AGILEFLOW_LINK_MODE=mirror`. If a skill is configured as manual but its `SKILL.md` lacks `disable-model-invocation: true` (for example a fork you edit yourself), `check` warns that Claude may invoke it automatically.
+Force the mirror fallback with `AGILEFLOW_LINK_MODE=mirror` (or `junction` to test junctions). `check --verbose` lists the link types in use. If a skill is configured as manual but its `SKILL.md` lacks `disable-model-invocation: true` (for example a fork you edit yourself), `check` warns that Claude may invoke it automatically.
 
 ## Custom providers
 

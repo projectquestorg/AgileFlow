@@ -168,6 +168,23 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
+/**
+ * A directory from an environment variable (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`)
+ * as the provider resolves it: a leading `~` (a quoted value the shell did
+ * not expand) is the home directory, and a relative value resolves against
+ * the working directory, which the provider shares with AgileFlow. Empty
+ * means unset (null).
+ */
+export function resolveEnvDir(
+  value: string | undefined,
+  ctx: { homeDir: string; cwd: string; platform: NodeJS.Platform },
+): string | null {
+  if (!value) return null;
+  const tilde = ctx.platform === 'win32' ? /^~(?=$|[\\/])/ : /^~(?=$|\/)/;
+  if (tilde.test(value)) return path.resolve(ctx.homeDir, value.slice(1).replace(/^[\\/]+/, ''));
+  return path.resolve(ctx.cwd, value);
+}
+
 /** `~/...` when `abs` is inside the home directory, else `abs`. */
 export function tildify(abs: string, homeDir: string): string {
   const rel = path.relative(homeDir, abs);

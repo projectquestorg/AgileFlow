@@ -1,7 +1,7 @@
 import path from 'node:path';
 import type { ProviderContext } from '@agileflow/core';
 import { createLinkAdapter } from './link-adapter';
-import { detectBySpec, tildify } from './util';
+import { detectBySpec, resolveEnvDir, tildify } from './util';
 
 /**
  * Claude Code reads `.claude/skills` (and `~/.claude/skills`, or
@@ -13,10 +13,15 @@ import { detectBySpec, tildify } from './util';
  * `.claude/settings.json`.
  */
 
-/** Claude's user config directory: `$CLAUDE_CONFIG_DIR`, else `~/.claude`. */
+/**
+ * Claude's user config directory: `$CLAUDE_CONFIG_DIR`, else `~/.claude`.
+ * An empty value counts as unset. A leading `~` (a quoted value the shell did
+ * not expand) means the home directory. A relative value resolves against the
+ * working directory, as it does inside Claude (its cwd is the one AgileFlow
+ * runs in), so both agree on where personal skills live.
+ */
 export function claudeConfigDir(pctx: ProviderContext): string {
-  const env = pctx.ctx.env.CLAUDE_CONFIG_DIR;
-  return env ? path.resolve(pctx.ctx.homeDir, env) : path.join(pctx.ctx.homeDir, '.claude');
+  return resolveEnvDir(pctx.ctx.env.CLAUDE_CONFIG_DIR, pctx.ctx) ?? path.join(pctx.ctx.homeDir, '.claude');
 }
 
 function claudeSkillsDir(pctx: ProviderContext): string {
@@ -40,4 +45,6 @@ export const claudeAdapter = createLinkAdapter({
   linkLabel: (pctx) => (pctx.scope.kind === 'project' ? '.claude/skills' : tildify(claudeSkillsDir(pctx), pctx.ctx.homeDir)),
   manualInvocation: 'hard',
   manualFlag: { key: ['disable-model-invocation'], value: true },
+  // Conformance: skills visible through links and mirrors; manual ones not model-invocable, still a slash command.
+  verifiedWith: 'Claude Code 2.1.280',
 });

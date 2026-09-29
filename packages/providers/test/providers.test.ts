@@ -6,6 +6,7 @@ import { createContext, projectScope, writeTree } from '@agileflow/core';
 import {
   allAdapters,
   claudeAdapter,
+  claudeConfigDir,
   findExecutable,
   geminiAdapter,
   readTomlValue,
@@ -119,5 +120,30 @@ describe('Gemini folder trust', () => {
     expect(geminiTrustHint(pctx)).not.toBeNull();
     fs.writeFileSync(path.join(home, '.gemini/settings.json'), JSON.stringify({ security: { folderTrust: { enabled: false } } }));
     expect(geminiTrustHint(pctx)).toBeNull();
+  });
+});
+
+describe('CLAUDE_CONFIG_DIR resolution', () => {
+  const dir = (value: string | undefined) => {
+    const ctx = createContext({ cwd: '/work/repo', homeDir: '/home/u', env: value === undefined ? {} : { CLAUDE_CONFIG_DIR: value } });
+    return claudeConfigDir({ ctx, scope: projectScope('/work/repo'), settings: undefined });
+  };
+
+  it('expands a leading ~ to the home directory', () => {
+    expect(dir('~')).toBe('/home/u');
+    expect(dir('~/x')).toBe('/home/u/x');
+    expect(dir('~/.claude-work/')).toBe('/home/u/.claude-work');
+  });
+
+  it('keeps an absolute path and resolves a relative one against the working directory, like Claude', () => {
+    expect(dir('/opt/claude')).toBe('/opt/claude');
+    expect(dir('cfg/claude')).toBe('/work/repo/cfg/claude');
+    expect(dir('../shared')).toBe('/work/shared');
+    expect(dir('~other/x')).toBe('/work/repo/~other/x'); // not a home reference
+  });
+
+  it('treats an empty value as unset', () => {
+    expect(dir('')).toBe('/home/u/.claude');
+    expect(dir(undefined)).toBe('/home/u/.claude');
   });
 });

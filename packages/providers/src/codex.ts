@@ -16,6 +16,7 @@ import {
   type TreeFile,
 } from '@agileflow/core';
 import { createStandardAdapter, readSkillText } from './standard-agent-skills';
+import { resolveEnvDir } from './util';
 import { readTomlValue, removeTomlValue, setTomlValue, TomlEditError, type TomlValueState } from './toml-patch';
 
 export const CODEX_OPENAI_YAML = 'agents/openai.yaml';
@@ -24,9 +25,9 @@ const FEATURE_TABLE = 'features';
 const FEATURE_KEY = 'default_mode_request_user_input';
 const PATCH_PATH = `${FEATURE_TABLE}.${FEATURE_KEY}`;
 
-/** `$CODEX_HOME` (Codex honors it for config.toml), else `~/.codex`. */
+/** `$CODEX_HOME` (Codex honors it for config.toml; `~` and relative values as in `resolveEnvDir`), else `~/.codex`. */
 export function codexHome(ctx: Context): string {
-  return ctx.env.CODEX_HOME ? path.resolve(ctx.env.CODEX_HOME) : path.join(ctx.homeDir, '.codex');
+  return resolveEnvDir(ctx.env.CODEX_HOME, ctx) ?? path.join(ctx.homeDir, '.codex');
 }
 
 export function codexConfigPath(ctx: Context): string {
@@ -70,6 +71,14 @@ function tomlStep<T>(file: string, step: () => T): T {
   }
 }
 
+/** Shown when config.toml changed between reading it and writing it. */
+const CHANGED_NOTE = 'The file changed while AgileFlow was editing it, so nothing was written. Run the command again.';
+
+/** True when `file` still holds exactly `text` (null: still absent). Checked immediately before every write. */
+async function unchangedSince(file: string, text: string | null): Promise<boolean> {
+  return (await readConfigFile(file)) === text;
+}
+
 async function isSymlink(file: string): Promise<boolean> {
   try {
     return (await fs.promises.lstat(file)).isSymbolicLink();
@@ -90,12 +99,17 @@ async function isSymlink(file: string): Promise<boolean> {
  * not set, or that the user changed since, is never changed.
  *
  * The write goes through `writeFileAtomic`, which keeps the file mode (a
- * 0600 config stays 0600) and writes through a symlinked config.
+ * 0600 config stays 0600) and writes through a symlinked config. The file is
+ * re-read immediately before writing; if it changed since it was read,
+ * nothing is written and the result says so.
+ *
+ * `deps.beforeWrite` runs just before that re-read (tests simulate a
+ * concurrent edit with it).
  */
 export async function configureStructuredQuestions(
   ctx: Context,
   enabled: boolean,
-  options: { dryRun?: boolean } = {},
+  options: { dryRun?: boolean; deps?: { beforeWrite?: () => Promise<void> } } = {},
 ): Promise<FeatureChange> {
   const file = codexConfigPath(ctx);
   const existing = await readConfigFile(file);
@@ -137,6 +151,12 @@ export async function configureStructuredQuestions(
       },
     ]);
     try {
+      // Re-read right before replacing: an edit made since planning wins.
+      await options.deps?.beforeWrite?.();
+      if (!(await unchangedSince(file, existing))) {
+        await writeGlobalState(ctx, previousState);
+        return { file, setting: PATCH_PATH, before: current, after: current, changed: false, note: CHANGED_NOTE };
+      }
       await writeFileAtomic(file, result.text);
     } catch (err) {
       await writeGlobalState(ctx, previousState).catch(() => undefined);
@@ -175,6 +195,11 @@ export async function configureStructuredQuestions(
   const change: FeatureChange = { file, setting: PATCH_PATH, before: current, after, changed: nextText !== text };
   if (options.dryRun) return change;
   if (change.changed) {
+    // Re-read right before restoring: an edit made since planning wins, and the record is kept for a retry.
+    await options.deps?.beforeWrite?.();
+    if (!(await unchangedSince(file, existing))) {
+      return { file, setting: PATCH_PATH, before: current, after: current, changed: false, note: CHANGED_NOTE };
+    }
     if (recorded.createdFile && !nextText.trim() && !(await isSymlink(file))) {
       // AgileFlow created this file; restoring means it no longer exists.
       await fs.promises.unlink(file);
@@ -223,6 +248,8 @@ const base = createStandardAdapter({
   },
   manualInvocation: 'hard',
   manualMechanism: '`policy.allow_implicit_invocation: false` in agents/openai.yaml',
+  // Conformance: auto skills listed, manual ones absent from implicit use but still explicitly invocable.
+  verifiedWith: 'codex-cli 0.128.0',
   applyManualActivation: applyCodexManual,
   hasManualFlag: hasCodexManualFlag,
   async optionalFeatures(pctx: ProviderContext) {

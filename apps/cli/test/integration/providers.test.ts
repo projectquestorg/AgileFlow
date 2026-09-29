@@ -37,9 +37,17 @@ describe('manual invocation translation', () => {
 
     const check = await sb.af(['check']);
     expect(check.code).toBe(0);
-    expect(check.stdout).toContain('Gemini manual-only enforcement: semantic');
-    expect(check.stdout).toContain('OpenCode manual-only enforcement: semantic');
-    expect(check.stdout).not.toContain('may invoke manual skills automatically');
+    // Graded explicitly: a hard switch present is "enforced", a description-only provider "advisory".
+    expect(check.stdout).toContain('[--] Gemini manual-only: advisory');
+    expect(check.stdout).toContain('[--] OpenCode manual-only: advisory');
+    expect(check.stdout).toContain('[ok] Claude manual-only: enforced');
+    expect(check.stdout).toContain('[ok] Codex manual-only: enforced');
+    expect(check.stdout).toMatch(/\[ok\] OpenCode: visible in \.agents\/skills \(2 skills; provider discovery not verified\)/);
+    expect(check.stdout).not.toContain('not enforced');
+    const verbose = await sb.af(['check', '--verbose']);
+    expect(verbose.stdout).toContain('interviewing-requirements: installed yes; discovered not verified; explicit invocation not verified; automatic blocked (enforced)');
+    expect(verbose.stdout).toContain('interviewing-requirements: installed yes; discovered not verified; explicit invocation not verified; automatic possible (advisory: description only)');
+    expect(verbose.stdout).toContain('behavior last verified with: OpenCode 1.4.6');
   });
 
   it('configure switches activation both ways and re-renders only clean skills', async () => {

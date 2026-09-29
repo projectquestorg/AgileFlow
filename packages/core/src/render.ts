@@ -149,6 +149,33 @@ export function packageUserInteraction(files: TreeFile[]): UserInteraction {
 }
 
 /**
+ * Revision of `renderSkill`. Bump it whenever the output for the same package
+ * and inputs changes (notice or overlay text, frontmatter handling, a new
+ * adapter translating manual activation, ...). The lock records it, so a
+ * teammate's CLI with another revision is recognized as such instead of
+ * being mistaken for a settings change, and neither CLI rewrites the other's
+ * render until someone runs `agileflow update` on purpose.
+ */
+export const RENDERER_REVISION = 1;
+
+/**
+ * The user-controlled inputs of a render, as the lock records them next to
+ * `activation` (the other input): the question overlay that was actually
+ * rendered (absent when none applied, e.g. `provider-default` or a skill
+ * whose contract is `userInteraction: none`). Recording the effective
+ * overlay, not the preference, keeps preference changes that do not affect
+ * a skill from touching its lock entry.
+ */
+export interface RenderInputs {
+  questionOverlay?: Exclude<InteractionPreference, 'provider-default'>;
+}
+
+export function renderInputsFor(packageFiles: TreeFile[], interactionPreference: InteractionPreference): RenderInputs {
+  const overlay = interactionOverlay(packageUserInteraction(packageFiles), interactionPreference);
+  return overlay && interactionPreference !== 'provider-default' ? { questionOverlay: interactionPreference } : {};
+}
+
+/**
  * Deterministically transform package files into the tree AgileFlow writes
  * to `.agents/skills/<id>`. The same inputs always produce the same bytes,
  * which is what lets `sync` and dirty detection compare hashes.

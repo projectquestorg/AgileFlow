@@ -40,6 +40,7 @@ export const opencodeAdapter = createStandardAdapter({
     },
   },
   manualInvocation: 'semantic',
+  verifiedWith: 'OpenCode 1.4.6',
   async extraValidate(pctx) {
     const hint = opencodeExternalSkillsDisabled(pctx);
     return hint ? [hint] : [];
