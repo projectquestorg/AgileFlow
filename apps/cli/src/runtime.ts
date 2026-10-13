@@ -42,6 +42,8 @@ export interface Cli {
   invocation?: { command: string; args: string[] };
   /** Filled by commands: what changed and what was approved (history). */
   record?: { scope?: ScopeTarget; changed?: string[]; approved?: string[] };
+  /** Injected network/credential/clock effects for `agileflow cloud` (tests). */
+  cloud?: Partial<import('./cloud/client').CloudDeps>;
 }
 
 export class UsageError extends Error {

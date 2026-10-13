@@ -32,6 +32,8 @@ export interface RunOptions extends ContextOverrides {
   stderr?: Writer;
   /** Force a prompter (tests). Otherwise interactive only on a TTY outside CI. */
   prompter?: Prompter;
+  /** Injected effects for `agileflow cloud` (tests): fetch, credential store, browser, clock. */
+  cloud?: Cli['cloud'];
 }
 
 const collect = (value: string, previous: string[] = []) => [...previous, value];
@@ -101,7 +103,7 @@ export async function run(argv: string[], options: RunOptions = {}): Promise<num
   // JSON output is for scripts: never prompt, whatever prompter was passed in.
   const prompter = json ? lazyPrompter(false) : (options.prompter ?? lazyPrompter(interactiveTerminal && !wantsYes));
   const commandName = argv.slice(2).find((a) => !a.startsWith('-')) ?? '';
-  const cli: Cli = { ctx, out, prompter, invocation: { command: commandName, args: argv.slice(3) } };
+  const cli: Cli = { ctx, out, prompter, invocation: { command: commandName, args: argv.slice(3) }, cloud: options.cloud };
   let exitCode: number = EXIT.OK;
   const setExit = (code: number) => {
     exitCode = code;
@@ -475,6 +477,81 @@ export async function run(argv: string[], options: RunOptions = {}): Promise<num
     .option('--scope <scope>', 'package scope of your skills, e.g. myorg for @myorg/<skill>')
     .option('--json', 'machine-readable output')
     .action(async (action, opts) => setExit(await (await import('./commands/registry')).runRegistry(cli, action, opts)));
+
+  const cloud = program
+    .command('cloud')
+    .description('Connected mode (optional): sign in to an AgileFlow service, bind this checkout, work, import/export, local companion')
+    .addHelpText('after', '\nConnected mode is opt-in. Local projects never need it. Credentials are kept in the OS credential store; .agileflow/connection.json holds no secrets.');
+  const cloudCommands = () => import('./commands/cloud');
+  const svc = (c: Command) => c.option('--service <url>', 'AgileFlow service URL (default: from .agileflow/connection.json or AGILEFLOW_CLOUD_URL)');
+  svc(cloud.command('login'))
+    .description('Sign in with your browser (OAuth + PKCE); requests only read access unless you add --scope')
+    .option('--scope <scope>', 'extra OAuth scope, e.g. agileflow:work:write (repeatable)', collect)
+    .option('--resource <resource>', 'cli (default) or local-control')
+    .option('--insecure-file-store', 'store credentials as plaintext in ~/.agileflow/credentials.json when no OS credential store exists')
+    .option('--json', 'machine-readable output')
+    .action(async (opts) => setExit(await (await cloudCommands()).runCloudLogin(cli, opts)));
+  svc(cloud.command('logout'))
+    .description('Delete local credentials (revoke remote access in the dashboard Connections page)')
+    .option('--resource <resource>', 'only cli or local-control')
+    .option('--json', 'machine-readable output')
+    .action(async (opts) => setExit(await (await cloudCommands()).runCloudLogout(cli, opts)));
+  svc(cloud.command('status'))
+    .description('Registered, reachable, authorized, and operation verified: four separate checks')
+    .option('--json', 'machine-readable output')
+    .action(async (opts) => setExit(await (await cloudCommands()).runCloudStatus(cli, opts)));
+  svc(cloud.command('connect'))
+    .description('Bind this checkout to a cloud project (.agileflow/connection.json, no tokens)')
+    .requiredOption('--project <id>', 'project ID')
+    .option('--json', 'machine-readable output')
+    .action(async (opts) => setExit(await (await cloudCommands()).runCloudConnect(cli, opts)));
+  cloud
+    .command('disconnect')
+    .description('Remove the binding from this checkout (cloud data is untouched)')
+    .option('--json', 'machine-readable output')
+    .action(async () => setExit(await (await cloudCommands()).runCloudDisconnect(cli)));
+  svc(cloud.command('work'))
+    .description('Connected work: list, show <id>, create <kind> <title...>, move <id> <status>, note <text...>')
+    .argument('<action>', 'list, show, create, move, or note')
+    .argument('[args...]', 'action arguments')
+    .option('--project <id>', 'project ID (default: the connected project)')
+    .option('--type <type>', 'list: epic, story, or decision')
+    .option('--status <status>', 'list: only this status; create: initial status')
+    .option('--epic <id>', 'list: stories of this epic; create: parent epic')
+    .option('--search <text>', 'list: search')
+    .option('--limit <n>', 'list: at most n items (default 50)')
+    .option('--body <markdown>', 'create: body')
+    .option('--priority <p>', 'create: p0-p3')
+    .option('--horizon <h>', 'create: now, next, or later')
+    .option('--reason <text>', 'move: reason')
+    .option('--work <id>', 'note: attach to this work item')
+    .option('--kind <kind>', 'note: comment, progress, blocker, handoff, decision-proposal, correction')
+    .option('--json', 'machine-readable output')
+    .action(async (action, args, opts) => setExit(await (await cloudCommands()).runCloudWork(cli, action, args, opts)));
+  svc(cloud.command('import'))
+    .description('Upload the local Work tree for an import preview; an admin confirms it in the dashboard')
+    .option('--project <id>', 'project ID (default: the connected project)')
+    .option('--work-root <dir>', 'Work root (default: agileflow.yaml work.root or docs/agile)')
+    .option('--json', 'machine-readable output')
+    .action(async (opts) => setExit(await (await cloudCommands()).runCloudImport(cli, opts)));
+  svc(cloud.command('export'))
+    .description('Download native Work files (and with --complete, collaboration JSON) plus a validation report')
+    .option('--project <id>', 'project ID (default: the connected project)')
+    .option('--out <dir>', 'output directory (default agileflow-export-<projectId>)')
+    .option('--complete', 'also export notes, revisions, activity, runs, claims, approvals, controls')
+    .option('--force', 'overwrite existing files in the output directory')
+    .option('--json', 'machine-readable output')
+    .action(async (opts) => setExit(await (await cloudCommands()).runCloudExport(cli, opts)));
+  svc(cloud.command('companion'))
+    .description('Local settings companion: enroll, run [--once], disconnect (macOS arm64/x64, Linux x64)')
+    .argument('<action>', 'enroll, run, or disconnect')
+    .option('--apply', 'enroll: also request permission to apply settings (agileflow:local:apply)')
+    .option('--name <name>', 'enroll: companion name shown in the dashboard')
+    .option('--once', 'run: poll once and exit')
+    .option('--interval <seconds>', 'run: poll interval (default 15)')
+    .option('--insecure-file-store', 'enroll: plaintext credential file when no OS credential store exists')
+    .option('--json', 'machine-readable output')
+    .action(async (action, opts) => setExit(await (await cloudCommands()).runCloudCompanion(cli, action, opts)));
 
   program
     .command('completion')
