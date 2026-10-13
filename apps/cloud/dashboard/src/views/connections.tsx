@@ -1,10 +1,10 @@
 import { useParams, useSearchParams } from 'react-router-dom';
-import { Connections } from '@/views/admin';
+import { ConnectionCapabilities, Connections } from '@/views/admin';
 
 /**
- * Connections and their capabilities. `#/connections/<id>?grant=<capability>` is the link the service
- * returns with CAPABILITY_REQUIRED: it opens that connection's capabilities with the request preselected
- * (only the connection's own user can actually grant it).
+ * `#/connections` lists connections; `#/connections/<id>` manages one connection's capabilities on its
+ * own page (no dialog). `?grant=<capability>` comes from a CAPABILITY_REQUIRED error and is only shown
+ * as a hint: nothing is preselected or granted automatically.
  */
 export function ConnectionsPage() {
   const { cid } = useParams();
@@ -12,10 +12,10 @@ export function ConnectionsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="font-semibold text-2xl">Connections</h1>
-        <p className="text-muted-foreground text-sm">Agents and CLIs signed in to this workspace. New connections can only read until you grant more.</p>
+        <h1 className="font-semibold text-2xl">{cid ? 'Connection' : 'Connections'}</h1>
+        <p className="text-muted-foreground text-sm">Agents and CLIs signed in to this workspace. New connections can only read until their owner grants more.</p>
       </div>
-      <Connections focus={cid ? { id: cid, grant: params.get('grant') ?? undefined } : undefined} />
+      {cid ? <ConnectionCapabilities connectionId={cid} requested={params.get('grant') ?? undefined} /> : <Connections />}
     </div>
   );
 }

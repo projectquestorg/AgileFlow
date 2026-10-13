@@ -322,83 +322,121 @@ const CAPABILITY_LABEL: Record<string, string> = {
   'local:apply': 'Apply local settings',
 };
 
-/**
- * Capabilities this connection may use (when the identity provider cannot issue AgileFlow scopes).
- * The connection's own user grants them; an administrator can only remove them. New connections are
- * read-only, and a grant never exceeds the user's project role.
- */
-function GrantsDialog({ c, own, focus, onDone }: { c: any; own: boolean; focus?: { id: string; grant?: string }; onDone: () => void }) {
-  const granted: string[] = (c.grants ?? []).map((g: any) => g.capability);
-  const [open, setOpen] = useState(!!focus);
-  const [sel, setSel] = useState<Set<string>>(new Set([...granted, ...(focus?.grant && own ? [focus.grant] : [])]));
-  const a = useAction();
+/** Table cell: the capability status plus a plain link to the connection's management page. */
+function GrantsDialog({ c, own }: { c: any; own: boolean; focus?: { id: string; grant?: string }; onDone: () => void }) {
   if (c.capabilitySource !== 'grants') return <span className="text-muted-foreground text-xs">from sign-in scopes</span>;
+  const granted: string[] = (c.grants ?? []).map((g: any) => g.capability);
+  const status = granted.length ? granted.map((g) => CAPABILITY_LABEL[g] ?? g).join(', ') : 'Read only';
+  // The owner manages (grant and revoke); an administrator can only revoke someone else's grants.
+  const action = own ? 'Manage capabilities' : granted.length ? 'Revoke capabilities' : null;
+  return (
+    <div className="flex flex-col items-start gap-1.5">
+      <span className="text-sm">{status}</span>
+      {action ? (
+        <Link className="inline-flex items-center gap-1.5 font-medium text-sm underline underline-offset-4" to={`/connections/${encodeURIComponent(c.id)}`} aria-label={`${action} for ${c.clientId}`}>
+          <KeyRoundIcon className="size-3.5" aria-hidden="true" />
+          {action}
+        </Link>
+      ) : (
+        <span className="text-muted-foreground text-xs">Only {c.userName ?? 'its owner'} can grant</span>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Standalone management page for one connection (no dialog or overlay). The connection's own user
+ * can grant and revoke; a workspace administrator can only revoke. The server enforces both rules.
+ */
+export function ConnectionCapabilities({ connectionId, requested }: { connectionId: string; requested?: string }) {
+  const { me } = useApp();
+  const state = useLoad(() => get('/api/connections'), [connectionId]);
+  return (
+    <Loaded state={state}>
+      {(all: any[]) => {
+        const c = all.find((x) => x.id === connectionId);
+        if (!c) return <StateBox title="Connection not found" message="It may have been removed, or it belongs to another user." />;
+        return <CapabilitiesForm key={`${c.id}:${(c.grants ?? []).length}`} c={c} own={c.userId === me.user.id} requested={requested} onDone={state.reload} />;
+      }}
+    </Loaded>
+  );
+}
+
+function CapabilitiesForm({ c, own, requested, onDone }: { c: any; own: boolean; requested?: string; onDone: () => void }) {
+  const granted: string[] = (c.grants ?? []).map((g: any) => g.capability);
+  const [sel, setSel] = useState<Set<string>>(new Set(granted));
+  const a = useAction();
+  if (c.capabilitySource !== 'grants') {
+    return <StateBox title="Capabilities come from sign-in" message="This service grants access through OAuth scopes chosen at sign-in, not per connection." />;
+  }
+  const changed = sel.size !== granted.length || granted.some((g) => !sel.has(g));
   const save = async () => {
     try {
-      await a.run(() => send('PUT', `/api/connections/${enc(c.id)}/grants`, { capabilities: [...sel] }));
-      toast('Capabilities updated. They apply to the next request from this connection.');
-      setOpen(false);
+      await a.run(() => send('PUT', `/api/connections/${enc(c.id)}/grants`, { capabilities: [...sel] }), { success: 'Saved. The change applies to the next request from this connection.' });
       onDone();
     } catch {
       /* shown */
     }
   };
-  const status = granted.length ? granted.map((g) => CAPABILITY_LABEL[g] ?? g).join(', ') : 'Read only';
-  // The owner manages (grant and revoke); an administrator can only revoke someone else's grants.
-  const action = own ? 'Manage capabilities' : granted.length ? 'Revoke capabilities' : null;
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) { a.reset(); setSel(new Set(granted)); } }}>
-      <div className="flex flex-col items-start gap-1.5">
-        <span className="text-sm">{status}</span>
-        {action ? (
-          <DialogTrigger render={<Button type="button" size="sm" variant="outline" aria-label={`${action} for ${c.clientId}`} />}>
-            <KeyRoundIcon data-icon="inline-start" />
-            {action}
-          </DialogTrigger>
-        ) : (
-          <span className="text-muted-foreground text-xs">Only {c.userName ?? 'its owner'} can grant</span>
-        )}
-      </div>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{own ? 'Manage capabilities' : 'Revoke capabilities'}</DialogTitle>
-          <DialogDescription>
-            What <span className="font-mono">{c.clientId}</span> may do beyond reading, for {c.userName ?? c.userId}. Never more than that person's project role allows.
-            {own ? '' : ' Only the person who connected this client can grant capabilities; you can remove them.'}
-          </DialogDescription>
-        </DialogHeader>
-        <FieldGroup className="gap-2">
-          {(c.grantable ?? []).map((cap: string) => {
-            const has = granted.includes(cap);
-            const canToggle = own || has;
-            return (
-              <Field key={cap} orientation="horizontal" data-disabled={!canToggle || undefined}>
-                <Checkbox
-                  id={`gr-${c.id}-${cap}`}
-                  disabled={!canToggle || a.pending}
-                  checked={sel.has(cap)}
-                  onCheckedChange={(v) => {
-                    const n = new Set(sel);
-                    if (v) n.add(cap);
-                    else n.delete(cap);
-                    setSel(n);
-                  }}
-                />
-                <FieldLabel htmlFor={`gr-${c.id}-${cap}`}>
-                  {CAPABILITY_LABEL[cap] ?? cap} <span className="font-mono text-muted-foreground text-xs">{cap}</span>
-                </FieldLabel>
-              </Field>
-            );
-          })}
-        </FieldGroup>
-        <ActionStatus action={a} />
-        <DialogFooter>
-          <Button onClick={save} disabled={a.pending}>
-            Save capabilities
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <Card>
+      <CardHeader>
+        <CardTitle>{own ? 'Manage capabilities' : 'Revoke capabilities'}</CardTitle>
+        <CardDescription>
+          Client <span className="font-mono">{c.clientId}</span> for {c.userName ?? c.userId}, endpoint <span className="font-mono">{c.endpoint}</span>. It can always read. Anything below is extra, and never more than that person's project role allows.
+          {own ? '' : ' Only the person who connected this client can grant capabilities; you can remove them.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void save();
+          }}
+        >
+          <FieldSet>
+            <FieldLegend variant="label">Capabilities</FieldLegend>
+            <FieldGroup className="gap-3">
+              {(c.grantable ?? []).map((cap: string) => {
+                const has = granted.includes(cap);
+                const canToggle = own || has;
+                return (
+                  <Field key={cap} orientation="horizontal" data-disabled={!canToggle || undefined}>
+                    <Checkbox
+                      id={`cap-${cap}`}
+                      name={cap}
+                      disabled={!canToggle || a.pending}
+                      checked={sel.has(cap)}
+                      onCheckedChange={(v) => {
+                        const n = new Set(sel);
+                        if (v) n.add(cap);
+                        else n.delete(cap);
+                        setSel(n);
+                      }}
+                    />
+                    <FieldContent>
+                      <FieldLabel htmlFor={`cap-${cap}`}>
+                        {CAPABILITY_LABEL[cap] ?? cap} <span className="font-mono text-muted-foreground text-xs">{cap}</span>
+                      </FieldLabel>
+                      {requested === cap && !has ? <FieldDescription>Requested by this client. Grant it only if you want it to do this.</FieldDescription> : null}
+                    </FieldContent>
+                  </Field>
+                );
+              })}
+            </FieldGroup>
+          </FieldSet>
+          <div className="mt-4 flex items-center gap-3">
+            <Button type="submit" disabled={a.pending || !changed}>
+              Save capabilities
+            </Button>
+            <Link className="text-sm underline underline-offset-4" to="/connections">
+              Back to connections
+            </Link>
+          </div>
+          <ActionStatus action={a} />
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
