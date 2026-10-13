@@ -17,7 +17,7 @@ export default defineConfig({
   },
   test: {
     root: fileURLToPath(new URL('.', import.meta.url)),
-    include: ['packages/*/test/**/*.test.ts', 'packages/*/tests/**/*.test.ts', 'apps/cli/test/**/*.test.ts'],
+    include: ['packages/*/test/**/*.test.ts', 'packages/*/tests/**/*.test.ts', 'apps/cli/test/**/*.test.ts', 'apps/cloud/test/**/*.test.ts'],
     environment: 'node',
     // Tests must not depend on the developer's git setup (autocrlf, hooks,
     // signing, URL rewrites). Each test that commits sets its own identity.

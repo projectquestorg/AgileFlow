@@ -5,7 +5,8 @@
   "description": "AgileFlow monorepo: portable workflows for coding agents (CLI, skills, registry, website, docs)",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "apps/cloud/dashboard"
   ],
   "scripts": {
     "dev:website": "npm run dev -w apps/website",

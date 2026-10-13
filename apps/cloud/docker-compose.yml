@@ -1,0 +1,14 @@
+# Local production-like stack: Postgres + the service. Fill .env from .env.example first.
+services:
+  db:
+    image: postgres:17
+    environment: { POSTGRES_USER: agileflow, POSTGRES_PASSWORD: agileflow, POSTGRES_DB: agileflow }
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD", "pg_isready", "-U", "agileflow"], interval: 5s }
+  app:
+    build: { context: ../.., dockerfile: apps/cloud/Dockerfile }
+    env_file: .env
+    environment: { DATABASE_URL: "postgres://agileflow:agileflow@db:5432/agileflow" }
+    ports: ["8787:8787"]
+    depends_on: { db: { condition: service_healthy } }
+volumes: { pgdata: {} }

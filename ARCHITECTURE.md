@@ -45,7 +45,7 @@ packages/work       Agile Work: types + frontmatter schemas, paths, ids, frontma
                     patch, serialize), scanner, queries (incl. board), lifecycle, templates, writer, validate
 ```
 
-Core defines the `ProviderAdapter` and `PackageFetcher` interfaces; providers and registry implement them; the CLI wires the concrete implementations. There is no dependency injection framework, event bus, plugin runtime, daemon, or database.
+Core defines the `ProviderAdapter` and `PackageFetcher` interfaces; providers and registry implement them; the CLI wires the concrete implementations. There is no dependency injection framework, event bus, plugin runtime, daemon, or database in the CLI (the optional connected service in `apps/cloud` is a separate deployment).
 
 ## Files
 
@@ -166,6 +166,19 @@ Opt-in and decoupled from the skill manager (`agileflow work init` sets `work.en
 - The lifecycle is a recommended state machine, not a workflow engine: off-path story moves are applied with warnings; closing an epic with unfinished stories needs `--force`. Validation never changes a status.
 - The `agile` pack (`creating-epics`, `writing-stories`, `working-story`, `reviewing-story`, `recording-decisions`) is optional; the workspace and CLI work without it.
 - `work import v4` converts a v4 backlog into Work items conservatively: a preview shows old and new status, IDs (stable, derived from the v4 ID), and dependencies; items keep `legacy_id` and `legacy_source`; items whose `status.json` and Markdown disagree are held back unless `--prefer json|markdown`; re-runs are idempotent and the v4 files are never touched.
+
+## Connected service (optional)
+
+`apps/cloud` is a separate, private deployment. It is not part of the published CLI, and nothing local depends on it. It provides a browser dashboard, an OAuth-protected remote MCP endpoint (`/mcp`, 22 tools), a connected-CLI API (`/cli/v1`), and an outbound-only companion API (`/local-control/v1`) over one domain layer. Clerk supplies identity, Organizations (one per workspace), and OAuth issuance. AgileFlow owns projects, grants, work, connection policy, and controls.
+
+- **Hosted deployment:** Convex (`apps/cloud/convex`) holds the data and runs every endpoint as an HTTP action. Vercel serves only the static dashboard and proxies the service paths to Convex, so everything shares one origin. See `apps/cloud/DEPLOY.md`.
+- **Reference implementation:** a Node/PostgreSQL version (`apps/cloud/src`, Docker) with the same contract and tests, used for parity and self-hosting.
+- **Clerk compatibility:** Clerk cannot issue custom OAuth scopes and omits `aud` on public-client tokens. With `AGILEFLOW_CAPABILITY_SOURCE=grants`, capabilities are granted per connection by its owner in the dashboard (new connections are read-only), and each endpoint accepts only its own clients. See `apps/cloud/CLERK-ADAPTATION.md`.
+
+- **Authority:** a checkout is in local mode (native files authoritative) unless `.agileflow/connection.json` binds it to a cloud project. In connected mode the service is authoritative, and files are exports or explicit three-way re-import input. Nothing falls back silently.
+- **Permissions:** a request is allowed when it passes the user's own permission, the OAuth scopes (or, with Clerk, the connection's granted capabilities), the project grant, and the connection policy. `/mcp`, `/cli`, and `/local-control` are distinct audiences. Token clients never get admin rights.
+- **Consistency:** every mutation runs in one transaction that takes a project lock, rechecks policy, applies an idempotency key and version check, and writes a revision, an activity event, and an outbox row. Native lifecycle, readiness, and validation come from `packages/work`.
+- **Tests:** `apps/cloud/test` runs the real HTTP app in-process on PGlite, with a development OAuth issuer and a real MCP SDK client.
 
 ## Hooks
 
