@@ -1,6 +1,6 @@
 import { BOARD_STATUSES, HORIZONS, OPEN_STORY_STATUSES, PRIORITIES } from './constants';
 import { duplicateIdError, resolvePartialId } from './ids';
-import { WorkError } from './paths';
+import { WorkError } from './work-error';
 import { type WorkScan } from './scanner';
 import type { Artifact, ArtifactType, Decision, Epic, Horizon, Story, StoryStatus } from './types';
 

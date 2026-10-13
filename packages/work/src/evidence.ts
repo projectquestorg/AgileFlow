@@ -5,7 +5,7 @@ import YAML from 'yaml';
 import { z } from 'zod';
 import { parse } from './frontmatter';
 import { gitHead } from './git';
-import { WorkError } from './paths';
+import { WorkError } from './work-error';
 import { acceptanceCriteria } from './queries';
 import type { WorkScan } from './scanner';
 import { contentHash, hasControlCharacters, oneLine } from './text';
