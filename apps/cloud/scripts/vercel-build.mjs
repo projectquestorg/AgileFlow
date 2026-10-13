@@ -30,7 +30,7 @@ fs.cpSync(path.join(cloud, 'src/dashboard/public'), path.join(out, 'static'), { 
 const csp = [
   "default-src 'self'",
   `script-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com https://${clerkHost}`,
-  `connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://${clerkHost}`,
+  `connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://*.client.protect.clerk.com:* https://${clerkHost}`,
   "img-src 'self' data: https://img.clerk.com",
   "style-src 'self' 'unsafe-inline'",
   'frame-src https://challenges.cloudflare.com',
