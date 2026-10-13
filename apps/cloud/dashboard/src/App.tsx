@@ -243,6 +243,7 @@ const router = createHashRouter([
     children: [
       { index: true, element: <Home /> },
       { path: 'connect', element: <ConnectView /> },
+      { path: 'organizations', element: <NeedsOrganization /> },
       { path: 'connections', element: <ConnectionsPage /> },
       { path: 'connections/:cid', element: <ConnectionsPage /> },
       {

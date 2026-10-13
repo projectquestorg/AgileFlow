@@ -1,12 +1,14 @@
 import { StrictMode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ClerkProvider, useAuth } from '@clerk/clerk-react';
+import { AuthenticateWithRedirectCallback, ClerkProvider, useAuth, useSession } from '@clerk/clerk-react';
+import { OrganizationChooser } from '@/components/auth/organization-chooser';
+import { SSO_FLAG } from '@/components/auth/sign-in-form';
 import './index.css';
 import App from './App';
 import { discovery, setTokenProvider, type Discovery } from '@/lib/api';
 import { AuthContext, type AuthValue, type DevIdentity } from '@/lib/app-context';
 import { Logo } from '@/components/logo';
-import { clerkAppearance, IDENT_KEY, TOKEN_KEY } from '@/lib/auth-keys';
+import { setClerkFrontendApi, IDENT_KEY, TOKEN_KEY } from '@/lib/auth-keys';
 import { StateBox } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -63,7 +65,15 @@ function ClerkBridge() {
     () => ({ mode: 'clerk', signedIn: !!isSignedIn, identityKey: `${userId ?? ''}|${orgId ?? ''}`, signOut: () => void signOut({ redirectUrl: '/#/signin' }) }),
     [isSignedIn, userId, orgId, signOut],
   );
+  const { session } = useSession();
   if (!isLoaded) return <Splash />;
+  // Clerk requires an organization: finish that step on our own page before the app loads.
+  if (session?.status === 'pending')
+    return (
+      <Splash>
+        <OrganizationChooser />
+      </Splash>
+    );
   return (
     <AuthContext value={value}>
       <App />
@@ -91,10 +101,18 @@ function Boot() {
   if (!disc) return <Splash />;
   const d = disc.dashboard;
   if (d.devAuth) return <DevAuth />;
+  setClerkFrontendApi(d.clerkFrontendApi);
   if (d.clerkPublishableKey)
     return (
-      <ClerkProvider publishableKey={d.clerkPublishableKey} appearance={clerkAppearance} afterSignOutUrl="/#/signin">
-        <ClerkBridge />
+      <ClerkProvider publishableKey={d.clerkPublishableKey} signInUrl="/#/signin" signUpUrl="/#/signin" afterSignOutUrl="/#/signin">
+        {new URLSearchParams(location.search).has(SSO_FLAG) ? (
+          <Splash>
+            {/* Finishes the Google redirect; renders nothing of its own. */}
+            <AuthenticateWithRedirectCallback signInFallbackRedirectUrl="/#/" signUpFallbackRedirectUrl="/#/" />
+          </Splash>
+        ) : (
+          <ClerkBridge />
+        )}
       </ClerkProvider>
     );
   return (

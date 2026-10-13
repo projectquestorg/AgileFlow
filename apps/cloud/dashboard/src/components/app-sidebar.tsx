@@ -1,5 +1,4 @@
 import { RouterLink } from "@/components/router-link";
-import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 import {
 	Sidebar,
@@ -14,21 +13,24 @@ import type { SidebarNavGroup, SidebarNavItem } from "@/components/app-shared";
 import type { Project } from "@/lib/app-context";
 import { LatestChange } from "@/components/latest-change";
 import { NavGroup } from "@/components/nav-group";
+import { NavUser } from "@/components/nav-user";
 import { ProjectSwitcher } from "@/components/project-switcher";
 
 export function AppSidebar({ navGroups, footerNavLinks, project }: { navGroups: SidebarNavGroup[]; footerNavLinks: SidebarNavItem[]; project: Project | null }) {
 	return (
 		<Sidebar
-			className={cn(
-				"*:data-[slot=sidebar-inner]:bg-background",
-				"*:data-[slot=sidebar-inner]:dark:bg-[radial-gradient(60%_18%_at_10%_0%,--theme(--color-foreground/.08),transparent)]",
-				"**:data-[slot=sidebar-menu-button]:[&>span]:text-foreground/75"
-			)}
-			collapsible="icon"
+			className="static min-h-full *:data-[slot=sidebar-inner]:bg-background"
+			collapsible="offcanvas"
 			variant="sidebar"
 		>
-			<SidebarHeader className="h-14 justify-center border-b px-2">
-				<SidebarMenuButton render={<RouterLink href="#/" aria-label="AgileFlow projects" />}><Logo /></SidebarMenuButton>
+			<SidebarHeader className="relative h-14 justify-center px-2 py-0">
+				<RouterLink
+					className="flex h-10 w-max items-center justify-center rounded-lg px-3 hover:bg-muted dark:hover:bg-muted/50"
+					href="#/"
+					aria-label="AgileFlow projects"
+				>
+					<Logo />
+				</RouterLink>
 			</SidebarHeader>
 			<SidebarContent>
 				<ProjectSwitcher current={project} />
@@ -45,11 +47,7 @@ export function AppSidebar({ navGroups, footerNavLinks, project }: { navGroups: 
 						</SidebarMenuItem>
 					))}
 				</SidebarMenu>
-				<div className="px-4 pt-4 pb-2 transition-opacity group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:opacity-0">
-					<p className="text-nowrap text-[9px] text-muted-foreground">
-						AgileFlow connected service
-					</p>
-				</div>
+				<NavUser />
 			</SidebarFooter>
 		</Sidebar>
 	);

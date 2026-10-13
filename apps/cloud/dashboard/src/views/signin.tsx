@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { OrganizationList, SignIn } from '@clerk/clerk-react';
 import { useAuthValue, type DevIdentity } from '@/lib/app-context';
-import { clerkAppearance, EXPIRED_KEY, IDENT_KEY, RETURN_KEY, TOKEN_KEY } from '@/lib/auth-keys';
+import { externalContinueUrl, EXPIRED_KEY, IDENT_KEY, RETURN_KEY, TOKEN_KEY } from '@/lib/auth-keys';
 import { Logo } from '@/components/logo';
+import { SignInForm } from '@/components/auth/sign-in-form';
+import { OrganizationChooser } from '@/components/auth/organization-chooser';
 import { Notice, SimpleSelect, StateBox } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +22,12 @@ export function SignInView() {
   const navigate = useNavigate();
   const expired = !!sessionStorage.getItem(EXPIRED_KEY);
 
+  const external = externalContinueUrl();
   const finish = () => {
+    if (external) {
+      location.assign(external);
+      return;
+    }
     const back = returnTo();
     sessionStorage.removeItem(RETURN_KEY);
     sessionStorage.removeItem(EXPIRED_KEY);
@@ -38,7 +44,7 @@ export function SignInView() {
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 p-6">
       <Logo className="text-lg" />
       {auth.mode === 'clerk' ? (
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex w-full max-w-sm flex-col items-center gap-4">
           {expired ? <Notice role="alert" title="Session ended">Your session expired or was signed out. Sign in again to return to where you were.</Notice> : null}
           {auth.signedIn ? (
             <div className="flex gap-2">
@@ -46,7 +52,7 @@ export function SignInView() {
               <Button variant="outline" onClick={auth.signOut}>Sign out</Button>
             </div>
           ) : (
-            <SignIn routing="virtual" appearance={clerkAppearance} fallbackRedirectUrl={`/#${returnTo()}`} signUpFallbackRedirectUrl={`/#${returnTo()}`} />
+            <SignInForm completeUrl={external ?? `${location.origin}/#${returnTo()}`} />
           )}
         </div>
       ) : (
@@ -137,16 +143,18 @@ function DevSignIn({ expired, onDone }: { expired: boolean; onDone: () => void }
 
 export function NeedsOrganization() {
   const auth = useAuthValue();
+  if (auth.mode === 'clerk')
+    return (
+      <div className="flex flex-1 items-start justify-center py-10">
+        <OrganizationChooser />
+      </div>
+    );
   return (
-    <StateBox title="Choose or create an organization" message="AgileFlow projects live in an organization workspace. Select one, or create one and invite your team.">
-      {auth.mode === 'clerk' ? (
-        <OrganizationList hidePersonal appearance={clerkAppearance} afterSelectOrganizationUrl="/#/" afterCreateOrganizationUrl="/#/" />
-      ) : (
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-sm text-muted-foreground">Development mode: sign out and sign in again with an organization ID.</p>
-          <Button variant="outline" onClick={auth.signOut}>Sign out</Button>
-        </div>
-      )}
+    <StateBox title="Choose or create an organization" message="AgileFlow projects live in an organization workspace.">
+      <div className="flex flex-col items-center gap-2">
+        <p className="text-sm text-muted-foreground">Development mode: sign out and sign in again with an organization ID.</p>
+        <Button variant="outline" onClick={auth.signOut}>Sign out</Button>
+      </div>
     </StateBox>
   );
 }
