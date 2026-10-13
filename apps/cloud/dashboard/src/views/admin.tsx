@@ -251,6 +251,7 @@ export function Connections({ ownOnly = false, focus }: { ownOnly?: boolean; foc
       {(all: any[]) => {
         const rows = ownOnly ? all.filter((c) => c.userId === me.user.id) : all;
         return rows.length ? (
+          <div className="flex flex-col gap-4">
           <div className="rounded-xl border">
             <Table>
               <TableHeader>
@@ -266,6 +267,8 @@ export function Connections({ ownOnly = false, focus }: { ownOnly?: boolean; foc
                 ))}
               </TableBody>
             </Table>
+          </div>
+          <ManageLinks rows={rows} me={me.user.id} />
           </div>
         ) : (
           <StateBox title="No connections" message="Nobody has connected an agent or CLI yet. Connections appear after the first authorized request." />
@@ -329,18 +332,38 @@ function GrantsDialog({ c, own }: { c: any; own: boolean; focus?: { id: string; 
   const status = granted.length ? granted.map((g) => CAPABILITY_LABEL[g] ?? g).join(', ') : 'Read only';
   // The owner manages (grant and revoke); an administrator can only revoke someone else's grants.
   const action = own ? 'Manage capabilities' : granted.length ? 'Revoke capabilities' : null;
+  void action;
+  // Status only: the management links are rendered outside the table (Safari exposes links inside
+  // these cells as plain cell text, and a click selects text instead of navigating).
+  return <span className="text-sm">{status}</span>;
+}
+
+/** Plain links to each connection's management page, outside the table. */
+function ManageLinks({ rows, me }: { rows: any[]; me: string }) {
+  const items = rows
+    .filter((c) => c.capabilitySource === 'grants')
+    .map((c) => {
+      const own = c.userId === me;
+      const granted = (c.grants ?? []).length > 0;
+      const action = own ? 'Manage capabilities' : granted ? 'Revoke capabilities' : null;
+      return { c, action };
+    })
+    .filter((x) => x.action);
+  if (!items.length) return null;
   return (
-    <div className="flex flex-col items-start gap-1.5">
-      <span className="text-sm">{status}</span>
-      {action ? (
-        <Link className="inline-flex items-center gap-1.5 font-medium text-sm underline underline-offset-4" to={`/connections/${encodeURIComponent(c.id)}`} aria-label={`${action} for ${c.clientId}`}>
-          <KeyRoundIcon className="size-3.5" aria-hidden="true" />
-          {action}
-        </Link>
-      ) : (
-        <span className="text-muted-foreground text-xs">Only {c.userName ?? 'its owner'} can grant</span>
-      )}
-    </div>
+    <nav aria-label="Manage connections" className="flex flex-col gap-2">
+      <h2 className="font-medium text-sm">Manage connections</h2>
+      <ul className="flex flex-col gap-1.5">
+        {items.map(({ c, action }) => (
+          <li key={c.id}>
+            <Link className="inline-flex items-center gap-1.5 text-sm underline underline-offset-4" to={`/connections/${encodeURIComponent(c.id)}`}>
+              <KeyRoundIcon className="size-3.5" aria-hidden="true" />
+              {action}: <span className="font-mono">{c.clientId}</span> ({c.endpoint}, {c.userName ?? c.userId})
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 
