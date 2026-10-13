@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthValue, type DevIdentity } from '@/lib/app-context';
-import { externalContinueUrl, EXPIRED_KEY, IDENT_KEY, RETURN_KEY, TOKEN_KEY } from '@/lib/auth-keys';
+import { continueExternal, externalContinueUrl, EXPIRED_KEY, IDENT_KEY, RETURN_KEY, TOKEN_KEY } from '@/lib/auth-keys';
 import { Logo } from '@/components/logo';
 import { SignInForm } from '@/components/auth/sign-in-form';
 import { OrganizationChooser } from '@/components/auth/organization-chooser';
@@ -24,10 +24,7 @@ export function SignInView() {
 
   const external = externalContinueUrl();
   const finish = () => {
-    if (external) {
-      location.assign(external);
-      return;
-    }
+    if (continueExternal()) return;
     const back = returnTo();
     sessionStorage.removeItem(RETURN_KEY);
     sessionStorage.removeItem(EXPIRED_KEY);
@@ -52,7 +49,7 @@ export function SignInView() {
               <Button variant="outline" onClick={auth.signOut}>Sign out</Button>
             </div>
           ) : (
-            <SignInForm completeUrl={external ?? `${location.origin}/#${returnTo()}`} />
+            <SignInForm completeUrl={`${location.origin}/#${external ? "/signin" : returnTo()}`} />
           )}
         </div>
       ) : (

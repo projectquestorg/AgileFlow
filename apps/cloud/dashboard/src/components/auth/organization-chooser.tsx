@@ -8,7 +8,13 @@ import { Spinner } from "@/components/ui/spinner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Notice } from "@/components/common";
 import { clerkMessage } from "@/components/auth/clerk-error";
+import { continueExternal } from "@/lib/auth-keys";
 import { ChevronRightIcon, PlusIcon } from "lucide-react";
+
+/** After choosing, continue a pending OAuth request (CLI sign-in) or open the app. */
+function done() {
+	if (!continueExternal()) location.hash = "#/";
+}
 
 /** Choose one of the user's organizations, or create one. */
 export function OrganizationChooser() {
@@ -23,7 +29,7 @@ export function OrganizationChooser() {
 		setError(null);
 		try {
 			await setActive!({ organization: orgId });
-			location.hash = "#/";
+			done();
 		} catch (err) {
 			setError(clerkMessage(err));
 		} finally {
@@ -38,7 +44,7 @@ export function OrganizationChooser() {
 		try {
 			const org = await createOrganization!({ name: name.trim() });
 			await setActive!({ organization: org.id });
-			location.hash = "#/";
+			done();
 		} catch (err) {
 			setError(clerkMessage(err));
 		} finally {

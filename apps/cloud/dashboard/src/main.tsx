@@ -8,7 +8,7 @@ import App from './App';
 import { discovery, setTokenProvider, type Discovery } from '@/lib/api';
 import { AuthContext, type AuthValue, type DevIdentity } from '@/lib/app-context';
 import { Logo } from '@/components/logo';
-import { setClerkFrontendApi, IDENT_KEY, TOKEN_KEY } from '@/lib/auth-keys';
+import { captureContinueUrl, setClerkFrontendApi, IDENT_KEY, TOKEN_KEY } from '@/lib/auth-keys';
 import { StateBox } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -81,6 +81,21 @@ function ClerkBridge() {
   );
 }
 
+/**
+ * Clerk navigation for a hash-routed app: same-document targets (`/#/...`) only change the
+ * hash (no reload, the router follows); anything else is a full navigation.
+ */
+function clerkNavigate(to: string, replace: boolean) {
+  const u = new URL(to, location.href);
+  if (u.origin === location.origin && u.pathname === '/' && u.search === location.search && u.hash) {
+    if (replace) location.replace(u.hash);
+    else location.hash = u.hash;
+    return;
+  }
+  if (replace) location.replace(u.href);
+  else location.assign(u.href);
+}
+
 function Boot() {
   const [disc, setDisc] = useState<Discovery | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -104,11 +119,11 @@ function Boot() {
   setClerkFrontendApi(d.clerkFrontendApi);
   if (d.clerkPublishableKey)
     return (
-      <ClerkProvider publishableKey={d.clerkPublishableKey} signInUrl="/#/signin" signUpUrl="/#/signin" afterSignOutUrl="/#/signin">
+      <ClerkProvider publishableKey={d.clerkPublishableKey} signInUrl="/sign-in" signUpUrl="/sign-up" afterSignOutUrl="/#/signin" routerPush={(to) => clerkNavigate(to, false)} routerReplace={(to) => clerkNavigate(to, true)}>
         {new URLSearchParams(location.search).has(SSO_FLAG) ? (
           <Splash>
             {/* Finishes the Google redirect; renders nothing of its own. */}
-            <AuthenticateWithRedirectCallback signInFallbackRedirectUrl="/#/" signUpFallbackRedirectUrl="/#/" />
+            <AuthenticateWithRedirectCallback signInFallbackRedirectUrl="/#/" signUpFallbackRedirectUrl="/#/" continueSignUpUrl="/sign-up" />
           </Splash>
         ) : (
           <ClerkBridge />
@@ -121,6 +136,11 @@ function Boot() {
     </Splash>
   );
 }
+
+// Clerk's configured sign-in/sign-up paths are real paths; the router uses #/signin. Keep the
+// query (redirect_url and Clerk's parameters) on the real query string where Clerk put it.
+if (/^\/(sign-in|sign-up)\/?$/.test(location.pathname)) history.replaceState(null, '', `/${location.search}#/signin`);
+captureContinueUrl();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -12,7 +12,8 @@ export function dashboardRoutes(publicUrl: string, clerkFrontendApi?: string): H
   const clerk = clerkFrontendApi && /^[a-z0-9.-]+$/i.test(clerkFrontendApi) ? ` https://${clerkFrontendApi}` : '';
   const app = new Hono();
   app.get('/*', (c) => {
-    const rel = c.req.path === '/' ? 'index.html' : c.req.path.replace(/^\/+/, '');
+    // /sign-in and /sign-up are the paths configured in Clerk; the app moves them to #/signin.
+    const rel = /^\/(sign-in|sign-up)?\/?$/.test(c.req.path) ? 'index.html' : c.req.path.replace(/^\/+/, '');
     const file = path.join(DIR, rel);
     if (!file.startsWith(DIR + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) return c.notFound();
     c.header('Content-Type', TYPES[path.extname(file)] ?? 'application/octet-stream');

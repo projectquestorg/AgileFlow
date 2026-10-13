@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSignIn, useSignUp } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +36,18 @@ export function SignInForm({ completeUrl }: { completeUrl: string }) {
 	const [details, setDetails] = useState<Record<string, string>>({});
 	const [busy, setBusy] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
+
+	// Returning from Google with a sign-up that still needs details (Clerk's continue step).
+	useEffect(() => {
+		if (signUp?.status === "missing_requirements" && signUp.verifications.externalAccount.status === "verified" && signUp.missingFields.length && step.kind === "email") {
+			try {
+				askDetails(signUp.missingFields);
+			} catch (err) {
+				setError(clerkMessage(err));
+			}
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [signUp?.status]);
 
 	const run = async (what: string, fn: () => Promise<void>) => {
 		setBusy(what);

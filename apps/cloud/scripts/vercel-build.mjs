@@ -50,6 +50,8 @@ const config = {
     { src: '^/\\.well-known/(.*)$', dest: `${site}/.well-known/$1` },
     // Dashboard: strict CSP; HTML never cached, hashed assets immutable.
     { src: '^/(index\\.html)?$', headers: { ...security, 'Content-Security-Policy': csp, 'Cache-Control': 'no-cache' }, continue: true },
+    // Real paths for Clerk's sign-in/sign-up settings; the app moves them to #/signin, keeping the query.
+    { src: '^/(sign-in|sign-up)/?$', dest: '/index.html', headers: { ...security, 'Content-Security-Policy': csp, 'Cache-Control': 'no-cache' } },
     { src: '^/assets/(.*)$', headers: { ...security, 'Cache-Control': 'public, max-age=31536000, immutable' }, continue: true },
     { handle: 'filesystem' },
   ],
