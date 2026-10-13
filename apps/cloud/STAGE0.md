@@ -14,11 +14,19 @@ The OAuth audiences are therefore `https://app.agileflow.projectquestorg.com/mcp
 
 ## 1. Configure Clerk
 
-1. Create a Clerk application and enable **Organizations** (membership required).
-2. **OAuth applications:** create first-party public clients (PKCE) for the CLI and for the companion. Allow loopback redirect URIs (`http://127.0.0.1/*`). Enable dynamic client registration or CIMD for MCP clients.
-3. **Custom scopes:** `agileflow:read`, `agileflow:notes:write`, `agileflow:work:write`, `agileflow:runs:write`, `agileflow:controls:request`, `agileflow:local:observe`, `agileflow:local:apply`. Access tokens must be JWT (`at+jwt`) and include `org_id`.
-4. **Webhook:** point it at `<service>/webhooks/clerk` with membership, organization and user events.
-5. Fill in `apps/cloud/.env` from `.env.example`, then run `docker compose -f apps/cloud/docker-compose.yml up --build`.
+Measured against Clerk on 2026-10-13 (details in `CLERK-ADAPTATION.md`):
+- Clerk rejects custom scopes in OAuth app, default and dynamic-client scopes. The allowed set is `email`, `offline_access`, `openid`, `private_metadata`, `profile`, `public_metadata`, `user:org:read`.
+- Public (PKCE) apps cannot set `audience_uri`, so their access tokens carry no `aud`. They are `at+jwt` with `org_id` and `client_id`.
+
+The service therefore runs with `AGILEFLOW_CAPABILITY_SOURCE=grants`:
+- Every client signs in with only `user:org:read offline_access`. A new connection is read-only, and its write capabilities (`notes:write`, `work:write`, `runs:write`, `controls:request`) are granted per connection by the organization owner in the dashboard; admins can only revoke.
+- A token without `aud` is accepted only with client binding: the CLI client only at `/cli`, the companion only at `/local-control`, dynamically registered clients only at `/mcp`. A present `aud` must still match exactly.
+
+Setup:
+1. Enable **Organizations** (membership required), `aud_claim_enabled`, and dynamic client registration for MCP clients.
+2. **OAuth applications:** public PKCE clients for the CLI and the companion, scopes `user:org:read offline_access`, loopback redirect `http://127.0.0.1/callback`. No device grant in production.
+3. **Webhook:** `<service>/webhooks/clerk` with membership, organization and user events; the signing secret goes into the Convex environment as `CLERK_WEBHOOK_SECRET`.
+4. Set the Convex environment (`CLERK_ISSUER`, `CLERK_FRONTEND_API`, client IDs, `AGILEFLOW_CAPABILITY_SOURCE=grants`; never `AGILEFLOW_DEV_AUTH` on a hosted deployment) and deploy.
 
 ## 2. Run the harness
 
@@ -27,11 +35,22 @@ AGILEFLOW_SERVICE=<url> STAGE0_MCP_READ_TOKEN=... STAGE0_MCP_WRITE_TOKEN=... \
 STAGE0_CLI_TOKEN=... STAGE0_PROJECT_ID=... npx tsx apps/cloud/scripts/stage0.ts > stage0-results.json
 ```
 
-Get the tokens through real flows:
-- `agileflow cloud login --service <url>` for the CLI token. Add `--scope agileflow:work:write` for writes.
-- The MCP read and write tokens come from a client's consent, or from a manual authorization-code request against Clerk.
+Every token variable is optional; checks without one are recorded as skipped. The harness reads `capabilitySource` from discovery and expects specific rejections:
 
-Checked against the dev server on 2026-10-13: the discovery and anonymous-rejection checks passed; the real-token checks were skipped.
+| Check | `scopes` mode | `grants` mode |
+|---|---|---|
+| Write without capability | HTTP 403, `insufficient_scope` challenge | HTTP 200 tool result, `isError`, `structuredContent.error.code` `CAPABILITY_REQUIRED` |
+| CLI token at `/mcp` or `/local-control` | 401 (audience) | 403 `CLIENT_NOT_ALLOWED` (401 if the token carries an `aud`) |
+
+Get the tokens through real flows:
+- CLI token: `agileflow cloud login --service <url>`, or `python3 -I apps/cloud/scripts/stage0-pkce.py login` (stdlib only; 127.0.0.1 loopback receiver; token file `~/.af-probe/prod-cli-token.json`, mode 600; never prints tokens). Then run `stage0-pkce.py test` for read and rejection checks and `stage0-pkce.py refresh` for rotation. Both are read-only.
+- MCP read token: a client's consent (Claude Code or Codex through DCR). MCP write token (grants mode): the same kind of connection after the owner grants `notes:write` in the dashboard. The write check adds a note to `STAGE0_PROJECT_ID`, so use a test project.
+
+### Receipts
+
+- 2026-10-13, production `https://app.agileflow.projectquestorg.com` (Convex `calm-marten-391` and Vercel `dpl_AqZ6DWU4PLWr7i6WMLMbDq9pKspv`, both from `cb6e03c4`), no tokens: all discovery and anonymous-rejection checks passed. `capabilitySource` is `grants`, dev auth off, issuer `https://clerk.agileflow.projectquestorg.com`, S256, anonymous `/mcp`, `/cli` and `/local-control` 401, garbage token 401, `/dev/session` 404. Independent checks from a Mac matched, plus an unsigned webhook POST returned 400.
+- 2026-10-13, development deployment with a real Clerk development CLI token: CLI token accepted at `/cli`; refused at `/mcp` and `/local-control` with 403 `CLIENT_NOT_ALLOWED`; `stage0-pkce.py refresh` rotated the refresh token; a fake refresh token got 400 `invalid_grant`. Grant probe (owner dashboard grants only): with `work:write` alone a story was created and notes/runs were denied `CAPABILITY_REQUIRED`; after revoking every grant a create was denied `CAPABILITY_REQUIRED`. The owner then restored the four grants and cancelled the probe story in the dashboard.
+- **Pending (real production tokens):** CLI sign-in, read, refresh and cross-endpoint rejection with `stage0-pkce.py`; MCP read and grant-denied write through Claude Code and Codex; companion enrollment. They wait on a production account in an organization. The `stage0-pkce.py login` step has not been run against any deployment yet; its token exchange mirrors `apps/cli/src/cloud/client.ts`.
 
 ## 3. Client matrix
 
