@@ -4,10 +4,10 @@ import { PlusIcon } from 'lucide-react';
 import { enc, send } from '@/lib/api';
 import { useApp } from '@/lib/app-context';
 import { useAction } from '@/lib/hooks';
-import { ActionStatus, Chip, PageHeader, Section, StateBox, TimeAgo } from '@/components/common';
+import { ActionStatus, Chip, PageHeader, Section, TimeAgo } from '@/components/common';
 import { NeedsOrganization } from '@/views/signin';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel, PanelGrid, StatPanel } from '@/components/panel-grid';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -41,19 +41,16 @@ export function Home() {
   return (
     <>
       <PageHeader title={me.workspace.name} description={`Organization ${me.workspace.orgId} - you are ${isAdmin ? 'an administrator' : 'a member'}`} />
-      {!me.projects.length ? (
-        isAdmin ? (
-          <StateBox title="No projects yet" message="Create a project, then import existing Work files or start planning in the dashboard." />
-        ) : (
-          <StateBox title="No project access" message="You are a member of this organization but have not been granted any project. Ask an administrator for access." />
-        )
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Projects</CardTitle>
-            <CardDescription>Projects you can open in this workspace.</CardDescription>
-          </CardHeader>
-          <CardContent>
+      <PanelGrid className="sm:grid-cols-3">
+        <StatPanel label="Projects" value={me.projects.length} />
+        <StatPanel label="Active" value={me.projects.filter((p) => !p.archived && !p.clientWritesPaused).length} />
+        <StatPanel label="Your role" value={isAdmin ? 'Administrator' : 'Member'} />
+        <Panel className="sm:col-span-3" title="Projects" description="Projects you can open in this workspace.">
+          {!me.projects.length ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              {isAdmin ? 'No projects yet. Create one below, then import existing Work files or start planning in the dashboard.' : 'You are a member of this organization but have not been granted any project. Ask an administrator for access.'}
+            </p>
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -89,24 +86,24 @@ export function Home() {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      )}
-      {isAdmin ? (
-        <Section title="Create a project">
-          <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
-            <Field className="max-w-sm">
-              <FieldLabel htmlFor="new-project">Project name</FieldLabel>
-              <Input id="new-project" required maxLength={120} value={name} onChange={(e) => setName(e.target.value)} placeholder="Project name" />
-            </Field>
-            <Button type="submit" disabled={create.pending || !name.trim()}>
-              <PlusIcon data-icon="inline-start" />
-              Create project
-            </Button>
-          </form>
-          <ActionStatus action={create} onRetried={async (p) => { await reloadMe(); navigate(`/p/${enc(p.id)}/overview`); }} />
-        </Section>
-      ) : null}
+          )}
+        </Panel>
+        {isAdmin ? (
+          <Panel className="sm:col-span-3" title="Create a project">
+            <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+              <Field className="max-w-sm">
+                <FieldLabel htmlFor="new-project">Project name</FieldLabel>
+                <Input id="new-project" required maxLength={120} value={name} onChange={(e) => setName(e.target.value)} placeholder="Project name" />
+              </Field>
+              <Button type="submit" disabled={create.pending || !name.trim()}>
+                <PlusIcon data-icon="inline-start" />
+                Create project
+              </Button>
+            </form>
+            <ActionStatus action={create} onRetried={async (p) => { await reloadMe(); navigate(`/p/${enc(p.id)}/overview`); }} />
+          </Panel>
+        ) : null}
+      </PanelGrid>
       {isAdmin && me.deletedProjects?.length ? (
         <Section title="Deleted projects">
           <p className="text-sm text-muted-foreground">Deleted projects can be restored until they are purged.</p>

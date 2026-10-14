@@ -5,7 +5,9 @@ import { useProject } from '@/lib/app-context';
 import { useLoad } from '@/lib/hooks';
 import { Chip, excerpt, Loaded, PageHeader, SafeMarkdown, StateBox, StatusBadge, TimeAgo, WorkLink } from '@/components/common';
 import { Button } from '@/components/ui/button';
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel, PanelGrid, StatPanel } from '@/components/panel-grid';
+import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
+import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Progress } from '@/components/ui/progress';
 
 export function EpicProgress({ pid, epic }: { pid: string; epic: any }) {
@@ -52,16 +54,6 @@ export function Overview() {
         const epics = d.board.epics as any[];
         const totalStories = Object.values(cols).reduce((a: number, c: any) => a + c.total, 0);
         const last = d.events[0];
-        const stat = (label: string, n: number | string, to: string) => (
-          <Link to={to} className="rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
-            <Card size="sm" className="h-full transition-colors hover:bg-muted/40">
-              <CardHeader>
-                <CardDescription>{label}</CardDescription>
-                <CardTitle className="text-3xl font-semibold tabular-nums">{n}</CardTitle>
-              </CardHeader>
-            </Card>
-          </Link>
-        );
         const base = `/p/${enc(pid)}`;
         return (
           <>
@@ -89,109 +81,110 @@ export function Overview() {
                 </StateBox>
               </div>
             ) : null}
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-              {stat('Ready', cols.ready?.total ?? 0, `${base}/board`)}
-              {stat('In progress', (cols['in-progress']?.total ?? 0) + (cols['in-review']?.total ?? 0), `${base}/board`)}
-              {stat('Blocked', cols.blocked?.total ?? 0, `${base}/board`)}
-              {stat('Done', cols.done?.total ?? 0, `${base}/board`)}
-              {d.waiting ? stat('Waiting on dependencies', d.waiting.items.length ? (d.waiting.hasMore ? '1+' : '1') : 0, `${base}/work`) : null}
-            </div>
-            <div className="mt-6 grid gap-4 lg:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Product</CardTitle>
-                  <CardAction>
-                    <Button size="sm" variant="ghost" render={<Link to={`${base}/docs/product`} />} nativeButton={false}>Open</Button>
-                  </CardAction>
-                </CardHeader>
-                <CardContent>{d.product.content.body.trim() ? <SafeMarkdown>{excerpt(d.product.content.body)}</SafeMarkdown> : <p className="text-sm text-muted-foreground">No product description yet.</p>}</CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Epic progress</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                  {epics.length ? epics.map((e) => <EpicProgress key={e.id} pid={pid} epic={e} />) : <p className="text-sm text-muted-foreground">No epics yet.</p>}
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Reported runs</CardTitle>
-                  <CardAction>
-                    <Button size="sm" variant="ghost" render={<Link to={`${base}/agents`} />} nativeButton={false}>All runs</Button>
-                  </CardAction>
-                </CardHeader>
-                <CardContent>
-                  {d.runs.items.length ? (
-                    <ul className="flex flex-col gap-2 text-sm">
-                      {d.runs.items.map((r: any) => (
-                        <li key={r.id} className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium">{r.name}</span>
-                          <StatusBadge status={r.state} />
-                          {r.stale ? <Chip tone="warn">stale report</Chip> : null}
-                          <span className="text-muted-foreground">
-                            last report <TimeAgo iso={r.lastReportAt} />
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No agent has reported a run in this project. Connected agents appear here when they start work.</p>
-                  )}
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent notes</CardTitle>
-                  <CardAction>
-                    <Button size="sm" variant="ghost" render={<Link to={`${base}/notes`} />} nativeButton={false}>All notes</Button>
-                  </CardAction>
-                </CardHeader>
-                <CardContent>
-                  {d.notes.length ? (
-                    <ul className="flex flex-col gap-3 text-sm">
-                      {d.notes.slice(-5).reverse().map((n: any) => (
-                        <li key={n.id} className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            <Chip>{n.kind}</Chip>
-                            <span className="truncate">{n.body.slice(0, 140)}</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {actorLabel(n.author)} - <TimeAgo iso={n.createdAt} />
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No notes yet.</p>
-                  )}
-                </CardContent>
-              </Card>
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle>Latest activity</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {d.events.length ? (
-                    <ul className="flex flex-col gap-2 text-sm">
-                      {d.events.map((e: any) => (
-                        <li key={e.seq} className="flex flex-col">
-                          <span>{e.summary}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {actorLabel(e.actor)} - <TimeAgo iso={e.at} />
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No activity.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            <PanelGrid className={d.waiting ? "sm:grid-cols-2 lg:grid-cols-5" : "sm:grid-cols-2 lg:grid-cols-4"}>
+              <StatPanel label="Ready" value={cols.ready?.total ?? 0} to={`${base}/board`} />
+              <StatPanel label="In progress" value={(cols['in-progress']?.total ?? 0) + (cols['in-review']?.total ?? 0)} to={`${base}/board`} />
+              <StatPanel label="Blocked" value={cols.blocked?.total ?? 0} to={`${base}/board`} />
+              <StatPanel label="Done" value={cols.done?.total ?? 0} hint={totalStories ? `${Math.round(((cols.done?.total ?? 0) / totalStories) * 100)}% of ${totalStories}` : undefined} to={`${base}/board`} />
+              {d.waiting ? <StatPanel label="Waiting on dependencies" value={d.waiting.items.length ? (d.waiting.hasMore ? '1+' : '1') : 0} to={`${base}/work`} /> : null}
+              <Panel
+                className="sm:col-span-2 lg:col-span-full"
+                title="Stories by status"
+                description={`${totalStories} ${totalStories === 1 ? 'story' : 'stories'} across ${epics.length} ${epics.length === 1 ? 'epic' : 'epics'}`}
+                action={<Button size="sm" variant="ghost" render={<Link to={`${base}/board`} />} nativeButton={false}>Board</Button>}
+              >
+                <StatusChart columns={cols} />
+              </Panel>
+            </PanelGrid>
+            <PanelGrid className="mt-6 lg:grid-cols-2">
+              <Panel title="Product" contentClassName="max-h-72 overflow-hidden [mask-image:linear-gradient(to_bottom,black_75%,transparent)]" action={<Button size="sm" variant="ghost" render={<Link to={`${base}/docs/product`} />} nativeButton={false}>Open</Button>}>
+                {d.product.content.body.trim() ? <SafeMarkdown>{excerpt(d.product.content.body)}</SafeMarkdown> : <p className="text-sm text-muted-foreground">No product description yet.</p>}
+              </Panel>
+              <Panel title="Epic progress" contentClassName="flex flex-col gap-4">
+                {epics.length ? epics.map((e) => <EpicProgress key={e.id} pid={pid} epic={e} />) : <p className="text-sm text-muted-foreground">No epics yet.</p>}
+              </Panel>
+              <Panel title="Reported runs" action={<Button size="sm" variant="ghost" render={<Link to={`${base}/agents`} />} nativeButton={false}>All runs</Button>}>
+                {d.runs.items.length ? (
+                  <ul className="flex flex-col gap-2 text-sm">
+                    {d.runs.items.map((r: any) => (
+                      <li key={r.id} className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{r.name}</span>
+                        <StatusBadge status={r.state} />
+                        {r.stale ? <Chip tone="warn">stale report</Chip> : null}
+                        <span className="text-muted-foreground">
+                          last report <TimeAgo iso={r.lastReportAt} />
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No agent has reported a run in this project. Connected agents appear here when they start work.</p>
+                )}
+              </Panel>
+              <Panel title="Recent notes" action={<Button size="sm" variant="ghost" render={<Link to={`${base}/notes`} />} nativeButton={false}>All notes</Button>}>
+                {d.notes.length ? (
+                  <ul className="flex flex-col gap-3 text-sm">
+                    {d.notes.slice(-5).reverse().map((n: any) => (
+                      <li key={n.id} className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <Chip>{n.kind}</Chip>
+                          <span className="truncate">{n.body.slice(0, 140)}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {actorLabel(n.author)} - <TimeAgo iso={n.createdAt} />
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No notes yet.</p>
+                )}
+              </Panel>
+              <Panel className="lg:col-span-2" title="Latest activity">
+                {d.events.length ? (
+                  <ul className="flex flex-col divide-y text-sm">
+                    {d.events.map((e: any) => (
+                      <li key={e.seq} className="flex items-center justify-between gap-4 py-2 first:pt-0 last:pb-0">
+                        <span className="min-w-0 truncate">{e.summary}</span>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {actorLabel(e.actor)} - <TimeAgo iso={e.at} />
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No activity.</p>
+                )}
+              </Panel>
+            </PanelGrid>
           </>
         );
       }}
     </Loaded>
+  );
+}
+
+const STATUS_ORDER: Array<[string, string]> = [
+  ['backlog', 'Backlog'],
+  ['ready', 'Ready'],
+  ['in-progress', 'In progress'],
+  ['in-review', 'In review'],
+  ['blocked', 'Blocked'],
+  ['done', 'Done'],
+];
+const statusChartConfig = { stories: { label: 'Stories', color: 'var(--chart-1)' } } satisfies ChartConfig;
+
+/** Story counts per board column. */
+function StatusChart({ columns }: { columns: Record<string, { total: number }> }) {
+  const rows = STATUS_ORDER.filter(([key]) => key in columns).map(([key, label]) => ({ status: label, stories: columns[key]?.total ?? 0 }));
+  return (
+    <ChartContainer config={statusChartConfig} className="aspect-auto h-56 w-full">
+      <BarChart data={rows} margin={{ left: 0, right: 0, top: 8 }}>
+        <CartesianGrid vertical={false} />
+        <XAxis dataKey="status" tickLine={false} axisLine={false} tickMargin={8} />
+        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+        <Bar dataKey="stories" fill="var(--color-stories)" radius={4} />
+      </BarChart>
+    </ChartContainer>
   );
 }
