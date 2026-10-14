@@ -5,6 +5,7 @@ prompt: |
   throwing when the user isn't found. What else could this break?
 invocation: implicit
 fixture: eval-service
+path: happy
 assert:
   shouldActivate: true
 rubric:

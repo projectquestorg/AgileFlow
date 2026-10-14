@@ -1,0 +1,10 @@
+name: simpler-explanation-does-not-refactor
+skill: refactoring-safely
+fixture: eval-service
+prompt: |
+  I didn't follow your explanation of the rate limiter at all. Can you
+  explain it more simply?
+invocation: implicit
+neighbor: simplifying-explanations
+assert:
+  shouldActivate: false

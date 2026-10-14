@@ -1,6 +1,6 @@
 ---
 name: verifying-changes
-description: Verify that a code change really works by exercising the changed behavior directly (smallest meaningful proof, not the whole test suite). Use when the user asks to verify, confirm, prove, or make sure a change works or does what it should (e.g. "make sure the new limit actually works", "confirm the flag really skips uploads"), or when you have just changed runtime behavior and need evidence before reporting it done. Not for reviewing a diff for bugs, writing a test suite for existing code, or comment, formatting, or documentation-only edits.
+description: Verify that a specific behavior of a code change really works by exercising it directly (the smallest meaningful proof, at most one focused proof test, not a test suite or the whole suite), and report honestly when it does not. Use when the user asks to verify, confirm, prove, or make sure a change works or does what it should (e.g. "make sure the new limit actually works", "confirm the flag really skips uploads"), or when you have just changed runtime behavior and need evidence before reporting it done. Not for reviewing a diff for defects (reviewing-changes), writing or improving tests for existing code (writing-tests), or comment, formatting, or documentation-only edits.
 ---
 
 # Verifying changes
@@ -16,7 +16,7 @@ Use it when runtime behavior changed: logic, data handling, APIs, UI behavior, C
 1. **State the claim.** Write one or two sentences describing the behavior that should now be true, taken from the user's request, not from the implementation. If the request is vague, derive the claim from the request and the diff and state it; do not stop to ask.
 2. **Pick the smallest meaningful proof** that would fail if the claim were false. In rough order of preference:
    - an existing targeted test that exercises the changed path;
-   - a new focused test when none exists and the project has a test setup for that area;
+   - one new focused proof test when none exists and the project has a test setup for that area;
    - running the actual entry point (CLI command, HTTP request, script, UI flow) and observing the output;
    - type-check or build, only as a supplement: it proves the code compiles, not that it behaves.
 3. **Run it** and read the actual output. Do not assume a pass from exit codes alone when output is available.
@@ -30,6 +30,7 @@ Use it when runtime behavior changed: logic, data handling, APIs, UI behavior, C
 - Do not claim something is verified that was only reasoned about. Say "not verified" and why (missing credentials, no runnable environment, external service).
 - If verification fails, report the failure with its output. Do not silently start rewriting the change unless the user asked you to fix failures.
 - Do not weaken or delete tests to get a pass.
+- Do not write a test suite: at most one focused proof test. If broader coverage is worth adding, suggest it as a separate task (writing-tests).
 
 ## Report
 

@@ -1,0 +1,10 @@
+name: verify-change-does-not-write-tests
+skill: writing-tests
+fixture: eval-service
+prompt: |
+  I just bumped the default rate limit from 60 to 100 requests a minute.
+  Make sure it actually works.
+invocation: implicit
+neighbor: verifying-changes
+assert:
+  shouldActivate: false

@@ -4,6 +4,7 @@ fixture: agile-app
 prompt: |
   Break the collaboration epic into stories.
 invocation: implicit
+path: happy
 assert:
   shouldActivate: true
 rubric:

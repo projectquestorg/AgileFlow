@@ -5,6 +5,7 @@ prompt: |
   Interview me about my plan to move our job queue from cron scripts to
   a Redis-backed worker. Stress-test it before we write any code.
 invocation: explicit
+path: happy
 assert:
   shouldActivate: true
 rubric:

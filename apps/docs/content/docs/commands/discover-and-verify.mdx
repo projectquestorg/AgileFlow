@@ -1,5 +1,5 @@
 ---
-title: search, info, verify, history
+title: search, info, outdated, verify, history
 description: "Find skills in the official catalog and skills.sh, preview them, verify what you run, and see what changed."
 ---
 
@@ -16,6 +16,8 @@ agileflow search pdf --source skills.sh --limit 50 --json
 - the **official catalog** (the AgileFlow registry, or the one you configured). It works offline from the cached catalog.
 - the public **[skills.sh](https://skills.sh)** directory of GitHub-hosted Agent Skills. Results show the repository and install count, and the exact argument to install one, for example `agileflow add anthropics/skills/pdf`.
 
+Official results also show how the skill activates (`auto`, or `manual` when it only runs if invoked by name), what it needs (`needs gh + network`), and the packs that include it (`pack core`); `--json` has them as `activation`, `requirements`, and `packs`.
+
 skills.sh results are third-party content: preview them with `info` before installing. `add` shows a content scan and asks for confirmation.
 
 ## agileflow info
@@ -28,7 +30,23 @@ agileflow info anthropics/skills/pdf --content   # also print SKILL.md
 agileflow info owner/repo --skill release-notes --ref v2 --json
 ```
 
-Everything worth knowing before installing: versions, commit (git), integrity (and whether this AgileFlow release pins it), activation, the Agent Skills fields `license`, `compatibility`, `allowed-tools`, and `metadata`, requirements, files, and the content scan. Nothing is written.
+Everything worth knowing before installing: versions, commit (git), integrity (and whether this AgileFlow release pins it), activation, behavior (whether it edits files, asks questions, or runs long), the Agent Skills fields `license`, `compatibility`, `allowed-tools`, and `metadata`, requirements, files, the eval scenarios it ships (how many should and should not activate), published eval results when the registry has them (pass rate, runs, provider, date; otherwise "no published eval results"), and the content scan. Nothing is written.
+
+## agileflow outdated
+
+```bash
+agileflow outdated            # project skills
+agileflow outdated --global   # personal skills
+agileflow outdated --json
+```
+
+```text
+SKILL            CURRENT  WANTED  LATEST  SOURCE                      NOTE
+diagnosing-bugs  1.0.3    1.0.4   2.0.0   @agileflow/diagnosing-bugs  update available; new major 2.0.0 outside range
+filing-pr        local    -       1.2.1   .agents/skills/filing-pr    fork of @agileflow/filing-pr@1.2.1
+```
+
+`CURRENT` is the locked version, `WANTED` the newest version the range in `agileflow.yaml` allows (what `agileflow update` would install), and `LATEST` the newest published version. A version outside the range (a new major, or anything newer than an exact pin) needs a range change first; `outdated` prints the line to use. Third-party sources are labeled, because their updates are reviewed before they apply. Git sources are checked by `agileflow update --dry-run`. `outdated` never changes anything; offline it answers from the cached catalog and says "not verified" for anything it could not check.
 
 ## agileflow verify
 
@@ -78,7 +96,7 @@ agileflow create releasing-packages \
   --not-trigger "What does semantic versioning mean?"
 ```
 
-Scaffolds `skills/<name>/` with a `SKILL.md` (a Workflow and a "Done when" section), an `agileflow.skill.yaml`, and eval scenarios built from your trigger examples (plus an unrelated negative), then lints it. Interactive runs ask for the description and examples. Edit the workflow, then:
+Scaffolds `skills/<name>/` with a `SKILL.md` (a Workflow and a "Done when" section, and a link to `references/details.md` for detail needed only sometimes), an `agileflow.skill.yaml` whose `userInteraction: optional` matches the workflow (it asks only when a decision matters), and eval scenarios: one per `--trigger` and `--not-trigger`, a `blocked-path` template that checks the skill stops and reports when it cannot finish, and an unrelated negative. Scenario files carry commented `fixture:` and `neighbor:` lines to fill in. If the description has no "Not for ..." clause, a TODO in the frontmatter reminds you to add one: it is how agents tell your skill from its neighbors. The result is linted. Interactive runs ask for the description and examples. Edit the workflow, then:
 
 ```bash
 agileflow eval --lint skills/releasing-packages                 # release gate

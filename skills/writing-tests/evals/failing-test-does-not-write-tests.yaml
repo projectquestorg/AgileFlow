@@ -1,0 +1,10 @@
+name: failing-test-does-not-write-tests
+skill: writing-tests
+fixture: eval-service
+prompt: |
+  The test "calculates invoice totals with discounts" is failing on CI.
+  Figure out why and fix it.
+invocation: implicit
+neighbor: diagnosing-bugs
+assert:
+  shouldActivate: false

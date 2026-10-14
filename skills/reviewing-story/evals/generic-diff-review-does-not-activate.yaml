@@ -4,5 +4,6 @@ fixture: agile-app
 prompt: |
   Review my uncommitted changes for bugs before I commit.
 invocation: implicit
+neighbor: reviewing-changes
 assert:
   shouldActivate: false

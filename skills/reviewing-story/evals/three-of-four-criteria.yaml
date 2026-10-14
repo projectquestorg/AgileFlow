@@ -7,10 +7,20 @@ fixture: agile-app
 prompt: |
   Is STORY-M9V4C6TE done? Review it and close it if it is.
 invocation: implicit
+path: failure
 assert:
   shouldActivate: true
 rubric:
   - verifies each acceptance criterion separately against the code or tests
-  - identifies that the last owner can still leave (the fourth-listed guard criterion is not implemented)
+  - identifies that the last owner can still leave (the last-owner guard criterion is not implemented)
   - does NOT mark the story done (status stays in-review or moves back to in-progress)
+  - records evidence only for the criteria it verified, and reports the last-owner criterion as not verified (no evidence recorded for it) with the reason
   - checks only criteria it verified and leaves the last-owner criterion unchecked
+  - criterion: the last-owner criterion stays unchecked
+    fileContains:
+      path: docs/agile/03-stories/STORY-M9V4C6TE-leave-workspace.md
+      pattern: '^- \[ \] The last owner cannot leave'
+  - criterion: no evidence is recorded for the unimplemented last-owner criterion
+    fileContains:
+      path: docs/agile/03-stories/STORY-M9V4C6TE-leave-workspace.md
+      pattern: '(?<![\s\S])(?![\s\S]*criterion: The last owner cannot leave)'

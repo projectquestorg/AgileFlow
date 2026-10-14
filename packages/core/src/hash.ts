@@ -13,10 +13,10 @@ export function sri(content: Buffer | string): string {
 /**
  * Deterministic hash of a file tree.
  *
- * Covers relative path, executable bit, and content of every file, so it
- * changes when anything a provider could observe changes. Used both as the
- * package `integrity` (tree as published) and the lockfile `renderedHash`
- * (tree as materialized into the project).
+ * Covers relative path, executable bit, and exact content of every file, so
+ * it changes when anything a provider could observe changes. This is the
+ * package `integrity` (tree as published), which is always exact. Installed
+ * directories are compared with `matchesRenderedHash` instead.
  */
 export function hashTree(files: TreeFile[]): string {
   const sorted = [...files].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
@@ -32,9 +32,9 @@ function isText(content: Buffer): boolean {
 }
 
 /**
- * The tree as it should compare across machines: text files with LF line
- * endings and no executable bits. Git's `core.autocrlf` and Windows (which
- * has no executable bit) otherwise make identical skills hash differently.
+ * Legacy (hash version 1) normalization: every CRLF becomes LF in text files
+ * and executable bits are dropped. Kept for lock entries written before
+ * `hashVersion` existed; it also hides a partial CRLF edit and a chmod.
  */
 export function normalizeTree(files: TreeFile[]): TreeFile[] {
   return files.map((f) => ({
@@ -47,20 +47,92 @@ export function normalizeTree(files: TreeFile[]): TreeFile[] {
 }
 
 /**
- * Hash recorded as the lockfile `renderedHash`: line-ending and exec-bit
- * insensitive, so a skill checked out on Windows or with autocrlf is still
- * clean. For LF-only trees without executables it equals `hashTree`.
+ * Installed-file comparison rule written by this CLI (`hashVersion` in the
+ * lock and in mirror markers). Readers accept every version up to this one.
+ *
+ * Version 2:
+ * - Line endings: the only permitted difference is a whole-file conversion,
+ *   which is what Git does (`core.autocrlf`, `eol`). A text file whose every
+ *   LF is preceded by CR compares as its LF form; any other file, including
+ *   one that mixes CRLF and LF lines, compares byte for byte. So a checkout
+ *   with CRLF is clean, while an edit that introduced CRLF on some lines of an
+ *   LF file is a modification. (A package that itself mixes line endings can
+ *   therefore read as modified after Git normalizes it: the safe direction.)
+ * - Executable bits are recorded separately (`executables`), so the content
+ *   hash is the same on every platform and the bits are compared only where
+ *   the filesystem keeps them (see `execBits`).
  */
+export const HASH_VERSION = 2;
+
+/** LF form of a text file that uses CRLF throughout; anything else unchanged. */
+export function canonicalContent(content: Buffer): Buffer {
+  if (!isText(content) || !content.includes(0x0d)) return content;
+  let lf = 0;
+  for (let i = content.indexOf(0x0a); i !== -1; i = content.indexOf(0x0a, i + 1)) {
+    if (i === 0 || content[i - 1] !== 0x0d) return content;
+    lf++;
+  }
+  if (!lf) return content;
+  return Buffer.from(content.toString('latin1').replace(/\r\n/g, '\n'), 'latin1');
+}
+
+/** Content hash under the current rule: canonical line endings, no executable bits. */
 export function renderedHashOf(files: TreeFile[]): string {
-  return hashTree(normalizeTree(files));
+  return hashTree(files.map((f) => ({ path: f.path, executable: false, content: canonicalContent(f.content) })));
+}
+
+/** Sorted paths of executable files; recorded next to `renderedHash`. */
+export function executablePaths(files: TreeFile[]): string[] {
+  return files
+    .filter((f) => f.executable)
+    .map((f) => f.path)
+    .sort();
+}
+
+/** What AgileFlow recorded about an installed tree (a lock entry or a mirror marker). */
+export interface RenderedRecord {
+  renderedHash?: string;
+  /** Absent: legacy entry (hash version 1 or exact). */
+  hashVersion?: number;
+  /** Version 2: paths that were written executable (absent means none). */
+  executables?: string[];
+}
+
+export interface MatchOptions {
+  /**
+   * Compare executable bits (version 2 records only). Off on Windows and in
+   * repositories with `core.fileMode=false`, where the bits say nothing about
+   * the file (see `tracksExecBits`). Default: off, the lenient choice.
+   */
+  execBits?: boolean;
 }
 
 /**
- * True when `files` are what AgileFlow recorded. Accepts the exact hash
- * (locks written before normalization) and the normalized one.
+ * True when `files` are what AgileFlow recorded. A plain string (or a record
+ * without `hashVersion`) is a legacy hash: the exact tree hash or the version
+ * 1 normalized one both match, as before. A record from a newer rule than
+ * this CLI knows never matches, so nothing is overwritten on a guess.
  */
-export function matchesRenderedHash(files: TreeFile[], expected: string | undefined): boolean {
-  if (!expected) return false;
-  return hashTree(files) === expected || renderedHashOf(files) === expected;
+export function matchesRenderedHash(
+  files: TreeFile[],
+  expected: string | RenderedRecord | undefined,
+  options: MatchOptions = {},
+): boolean {
+  const record: RenderedRecord = typeof expected === 'string' ? { renderedHash: expected } : (expected ?? {});
+  const hash = record.renderedHash;
+  if (!hash) return false;
+  if (record.hashVersion === undefined) return hashTree(files) === hash || hashTree(normalizeTree(files)) === hash;
+  if (record.hashVersion !== HASH_VERSION) return false;
+  if (renderedHashOf(files) !== hash) return false;
+  if (!options.execBits) return true;
+  const want = [...(record.executables ?? [])].sort();
+  const have = executablePaths(files);
+  return want.length === have.length && want.every((p, i) => p === have[i]);
 }
 
+/** The record this CLI writes for `files`: content hash, rule version, executable paths. */
+export function renderedRecordOf(files: TreeFile[]): Required<Pick<RenderedRecord, 'renderedHash' | 'hashVersion'>> &
+  Pick<RenderedRecord, 'executables'> {
+  const executables = executablePaths(files);
+  return { renderedHash: renderedHashOf(files), hashVersion: HASH_VERSION, ...(executables.length ? { executables } : {}) };
+}

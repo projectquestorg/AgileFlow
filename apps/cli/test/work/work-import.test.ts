@@ -33,10 +33,13 @@ describe('agileflow work import v4', () => {
     const preview = await sb.af(['work', 'import', 'v4']);
     expect(preview.code).toBe(0);
     expect(preview.stdout).toContain('Import the v4 backlog into docs/agile/');
-    expect(preview.stdout).toContain('Read: docs/09-agents/status.json, docs/06-stories');
-    expect(preview.stdout).toMatch(/EP-0001\s+EPIC-\w{8}\s+active\s+Onboarding/);
-    expect(preview.stdout).toMatch(/US-0002\s+STORY-\w{8}\s+ready\s+EP-0001\s+Tour/);
-    expect(preview.stdout).toContain('Nothing was written. Run `agileflow work import v4 --yes`');
+    expect(preview.stdout).toContain('Read: docs/09-agents/status.json, docs/06-stories (never changed)');
+    expect(preview.stdout).toMatch(/V4\s+NEW ID\s+V4 STATUS\s+STATUS\s+PRIORITY\s+EPIC\s+DEPENDS ON\s+TITLE/);
+    const epicId = /EP-0001\s+(EPIC-\w{8})\s+active\s+active\s+-\s+Onboarding/.exec(preview.stdout)![1];
+    const us1 = /US-0001\s+(STORY-\w{8})\s+completed\s+done\s+p1\s+EP-0001\s+-\s+Welcome screen/.exec(preview.stdout)![1];
+    expect(preview.stdout).toMatch(/US-0002\s+STORY-\w{8}\s+ready\s+ready\s+-\s+EP-0001\s+US-0001\s+Tour/);
+    expect(preview.stdout).toContain('Remapped values (v4 -> Work)\n  story status: completed -> done  (1: US-0001)');
+    expect(preview.stdout).toContain('Nothing was written. Run `agileflow work import v4 --yes` to import (with the IDs shown above).');
     expect(workFiles(sb.project)).toEqual([]);
     expect((await sb.af(['work', 'import', 'v4', '--preview', '--yes'])).stdout).toContain('Nothing was written.');
     expect(workFiles(sb.project)).toEqual([]);
@@ -50,7 +53,9 @@ describe('agileflow work import v4', () => {
     const stories = await json<Array<Record<string, unknown>>>(sb, ['work', 'list', '--type', 'story']);
     const byLegacy = Object.fromEntries(stories.map((s) => [s.legacy_id, s]));
     const [epic] = await json<Array<Record<string, unknown>>>(sb, ['work', 'list', '--type', 'epic']);
-    expect(epic).toMatchObject({ title: 'Onboarding', status: 'active', legacy_id: 'EP-0001' });
+    expect(epic).toMatchObject({ id: epicId, title: 'Onboarding', status: 'active', legacy_id: 'EP-0001', legacy_source: ['docs/09-agents/status.json'] });
+    expect(byLegacy['US-0001']!.id).toBe(us1);
+    expect(byLegacy['US-0002']!.legacy_source).toEqual(['docs/09-agents/status.json', 'docs/06-stories/US-0002-tour.md']);
     expect(byLegacy['US-0001']).toMatchObject({ title: 'Welcome screen', status: 'done', priority: 'p1', epic: epic!.id, acceptanceCriteria: { total: 1, checked: 1 } });
     expect(byLegacy['US-0002']).toMatchObject({ status: 'ready', epic: epic!.id, depends_on: [byLegacy['US-0001']!.id], ready: true });
     expect((await sb.af(['check'])).code).toBe(0);
@@ -98,5 +103,49 @@ describe('agileflow work import v4', () => {
     expect(JSON.parse((await empty.af(['work', 'import', 'v3', '--json'])).stdout).error.message).toBe('Cannot import from "v3"');
     const off = await sandbox();
     expect((await off.af(['work', 'import', 'v4'])).stderr).toContain('AgileFlow Work is not enabled');
+  });
+  it('holds back conflicting items unless --prefer picks a side; check and migrate point at the import', async () => {
+    const sb = await workSandbox();
+    writeV4(sb.project);
+    // The Markdown file disagrees with status.json on the status (done vs in progress) and the title.
+    fs.writeFileSync(
+      path.join(sb.project, 'docs/06-stories/US-0001.md'),
+      '---\nstory_id: US-0001\nstatus: in progress\n---\n\n# US-0001: Welcome page\n\n**Status**: in progress\n\nBody.\n',
+    );
+    const check = await sb.af(['check']);
+    expect(check.stdout).toContain('v4 backlog found (docs/09-agents/status.json, docs/06-stories): 3 items not imported');
+    expect(check.stdout).toContain('`agileflow work import v4 --preview`');
+    expect((await sb.af(['migrate', 'v4', '--preview'])).stdout).toContain('agileflow work import v4 --preview');
+
+    const preview = await sb.af(['work', 'import', 'v4', '--preview']);
+    expect(preview.stdout).toContain('Held back (1): status.json and Markdown disagree, or the item is ambiguous');
+    expect(preview.stdout).toContain('  US-0001  title: status.json "Welcome screen", Markdown "Welcome page"');
+    expect(preview.stdout).toContain('           status: status.json "completed", Markdown "in progress"');
+    expect(preview.stdout).toContain('Nothing is guessed. Fix the v4 files so they agree, or rerun with --prefer json or --prefer markdown.');
+    expect(preview.stdout).not.toMatch(/US-0001\s+STORY-/);
+
+    const partial = await json<{ created: string[]; conflicts: Array<{ legacyId: string }> }>(sb, ['work', 'import', 'v4', '--yes']);
+    expect(partial.created).toHaveLength(2);
+    expect(partial.conflicts.map((c) => c.legacyId)).toEqual(['US-0001']);
+    expect(read(path.join(sb.project, 'docs/06-stories/US-0001.md'))).toContain('**Status**: in progress');
+
+    const resolved = await sb.af(['work', 'import', 'v4', '--yes', '--prefer', 'markdown']);
+    expect(resolved.code).toBe(0);
+    expect(resolved.stdout).toContain('Imported 0 epics and 1 story');
+    expect(resolved.stderr).toContain('US-0001: status.json and Markdown disagree on title ("Welcome screen" vs "Welcome page"); using Markdown (--prefer markdown)');
+    const stories = await json<Array<Record<string, unknown>>>(sb, ['work', 'list', '--type', 'story']);
+    const us1 = stories.find((s) => s.legacy_id === 'US-0001')!;
+    expect(us1).toMatchObject({ title: 'Welcome page', status: 'in-progress' });
+    const body = String((await json<{ body: string }>(sb, ['work', 'show', String(us1.id)])).body);
+    expect(body).not.toContain('**Status**');
+    expect(body).toContain('Body.');
+    // The dependency recorded earlier (US-0002 -> US-0001) now resolves: IDs are derived from legacy IDs.
+    expect(stories.find((s) => s.legacy_id === 'US-0002')).toMatchObject({ depends_on: [us1.id], dependenciesDone: false });
+    expect((await sb.af(['check'])).code).toBe(0);
+    // Re-running is quiet.
+    const again = await sb.af(['work', 'import', 'v4', '--preview']);
+    expect(again.stdout).toContain('Already imported: 3 (skipped)');
+    expect(again.stderr).toBe('');
+    expect((await sb.af(['work', 'import', 'v4', '--prefer', 'yaml'])).stderr).toContain('--prefer must be json or markdown');
   });
 });

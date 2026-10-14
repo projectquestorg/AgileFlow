@@ -1,0 +1,93 @@
+name: export-download-branch
+skill: reviewing-security
+description: >
+  A feature branch adds GET /exports?file=<name>. The file name is joined into
+  a path without containment (../ escapes the exports directory), and the
+  route, documented as admin only, is wrapped in requireAuth without the admin
+  role. The export writer in the same diff takes no user input and is safe.
+fixture: eval-service
+setup: |
+  git checkout -q -b feature/export-downloads
+  cat > src/export/files.js <<'JS'
+  import fs from 'node:fs';
+  import path from 'node:path';
+  import { exportCsv } from './index.js';
+
+  export const EXPORT_DIR = path.resolve(process.env.EXPORT_DIR ?? 'exports');
+
+  /** Write a CSV export of `invoices` and return its file name. */
+  export function writeExport(invoices, now = new Date()) {
+    fs.mkdirSync(EXPORT_DIR, { recursive: true });
+    const name = `invoices-${now.toISOString().slice(0, 10)}.csv`;
+    fs.writeFileSync(path.join(EXPORT_DIR, name), exportCsv(invoices));
+    return name;
+  }
+
+  /** GET /exports?file=<name> (admins only): download a generated export. */
+  export function handleExportDownload(req) {
+    const name = new URL(req.url, 'http://localhost').searchParams.get('file');
+    if (!name) return { status: 400, body: { error: 'file is required' } };
+    const file = path.join(EXPORT_DIR, name);
+    if (!fs.existsSync(file)) return { status: 404, body: { error: 'not found' } };
+    return { status: 200, body: fs.readFileSync(file, 'utf8') };
+  }
+  JS
+  node --input-type=module <<'JS'
+  import fs from 'node:fs';
+  const file = 'src/app.js';
+  let src = fs.readFileSync(file, 'utf8');
+  src = src.replace(
+    "import { createRateLimiter } from './rate-limit.js';",
+    "import { createRateLimiter } from './rate-limit.js';\nimport { handleExportDownload } from './export/files.js';",
+  );
+  src = src.replace(
+    "const deactivate = requireAuth(handleDeactivate, { role: 'admin' });",
+    "const deactivate = requireAuth(handleDeactivate, { role: 'admin' });\nconst exportDownload = requireAuth(handleExportDownload);",
+  );
+  src = src.replace(
+    "  if (method === 'POST' && url === '/webhooks/payment') return paymentWebhook(req);",
+    "  if (method === 'POST' && url === '/webhooks/payment') return paymentWebhook(req);\n  if (method === 'GET' && url.split('?')[0] === '/exports') return exportDownload(req);",
+  );
+  fs.writeFileSync(file, src);
+  JS
+  grep -q 'exportDownload(req)' src/app.js
+  printf 'node_modules/\nexports/\n' > .gitignore
+  cat > test/export-files.test.js <<'JS'
+  import { test } from 'node:test';
+  import assert from 'node:assert/strict';
+  import fs from 'node:fs';
+  import os from 'node:os';
+  import path from 'node:path';
+
+  process.env.EXPORT_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'exports-'));
+  const { writeExport, handleExportDownload } = await import('../src/export/files.js');
+
+  test('writes an export and downloads it by name', () => {
+    const name = writeExport([{ id: 'inv_1', customerId: 'c1', total: 90, status: 'paid' }], new Date('2026-03-01'));
+    assert.equal(name, 'invoices-2026-03-01.csv');
+    const res = handleExportDownload({ url: `/exports?file=${name}` });
+    assert.equal(res.status, 200);
+    assert.match(res.body, /^id,customerId,total,status\ninv_1,c1,90,paid$/);
+  });
+
+  test('unknown exports are 404', () => {
+    assert.equal(handleExportDownload({ url: '/exports?file=nope.csv' }).status, 404);
+  });
+  JS
+  node --test test/export-files.test.js > /dev/null
+  git add -A
+  git commit -qm 'feat(export): let admins download generated CSV exports'
+prompt: |
+  Before I merge this branch, do a security review of it.
+invocation: implicit
+path: happy
+assert:
+  shouldActivate: true
+rubric:
+  - reviews the branch diff against main and identifies where untrusted input enters (the file query parameter)
+  - finds the path traversal in src/export/files.js (path.join with a user-supplied name, e.g. file=../package.json or ../../.env) with a concrete request and its impact (reading any file the service can read)
+  - finds that the route is documented as admin only but is wrapped in requireAuth without role admin in src/app.js, so any signed-in user can reach it
+  - gives each finding a severity and a specific fix (resolve and contain the path or allow only generated names; require the admin role)
+  - does not report writeExport or generic checklist items as findings
+  - criterion: does not edit code
+    fileUnchanged: 'src/**'

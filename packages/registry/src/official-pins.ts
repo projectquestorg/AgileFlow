@@ -4,56 +4,88 @@ export const OFFICIAL_PINS: Record<string, Record<string, string>> = {
   "@agileflow/babysitting-pr": {
     "1.0.0": "sha256-lZzuxxX/sL/ZfAA/lbbbmtMmMbV8leV/rspPoTn8LaY=",
     "1.1.1": "sha256-/cvtgmO1qdbRbRVmPlPryPHJQlGWhpYh+Wx9+21YWD4=",
-    "1.1.2": "sha256-8DVIUvsdLSFul7oOfUUaGtNn6uGrrizxfFAmd/yaAkI="
+    "1.1.2": "sha256-8DVIUvsdLSFul7oOfUUaGtNn6uGrrizxfFAmd/yaAkI=",
+    "1.1.3": "sha256-UIzberZZXBQHO7zYFBSsCGrjyXWoNpChJ+JNBYznc64="
   },
   "@agileflow/checking-blast-radius": {
     "1.0.0": "sha256-VyIb+9zFN1mOS1WY2E4T6rc2J7/b0WOri5tV7Cm+aN8=",
     "1.0.1": "sha256-4ZXdY/zc4afnanyP8SBlASwluP0IDdQ1EutrbyHYIEs=",
-    "1.0.2": "sha256-q3z9VejmGn3fwlbzmGIb3Ws8dw8RtmSoumnK+0qqX5A="
+    "1.0.2": "sha256-q3z9VejmGn3fwlbzmGIb3Ws8dw8RtmSoumnK+0qqX5A=",
+    "1.0.3": "sha256-ew1AqR6UzeCETdHp38JefsGGMcesXqoQe7cr776+6JM="
   },
   "@agileflow/creating-epics": {
-    "1.0.1": "sha256-hINvQFPRrSeGaGXn1I9WreNASbRhY5e2WLN7xXaVzuU="
+    "1.0.1": "sha256-hINvQFPRrSeGaGXn1I9WreNASbRhY5e2WLN7xXaVzuU=",
+    "1.0.2": "sha256-wfDz4F6083t/9TD4TQSg8XlNa+rJE19vpF+XCBCor3s="
   },
   "@agileflow/diagnosing-bugs": {
     "1.0.0": "sha256-XsFe6rTBc7rDhel0MbeYm9LdIcQPRyfsdAqwOlnTQvE=",
     "1.0.2": "sha256-7vpsFKUip7MPEYbSqhRtVgPFd72W3DcoBPJMcWgKj78=",
-    "1.0.3": "sha256-h9f787UOfcMx9U6Z/JCwAIyQr7IAv7R1RYYbTB7DX6k="
+    "1.0.3": "sha256-h9f787UOfcMx9U6Z/JCwAIyQr7IAv7R1RYYbTB7DX6k=",
+    "1.0.4": "sha256-b9vNyHSZyMh7shuu/UUpYj7RfpTvoF2LBXqPp9jwGbw="
   },
   "@agileflow/filing-pr": {
     "1.0.0": "sha256-aKfF1XHH5V46vO9mckaoMAIi6Uz15CPHtHV2rsdQD2U=",
-    "1.2.0": "sha256-BBcnGHApD0cbTB78Uh3Hdn8GX3okhSxx4AiU+k6GjgI="
+    "1.2.0": "sha256-BBcnGHApD0cbTB78Uh3Hdn8GX3okhSxx4AiU+k6GjgI=",
+    "1.2.1": "sha256-VXk/sQiyPXpA0hFfz9f0G3PIQs622XoyvGHSRb6OYDQ="
   },
   "@agileflow/interviewing-requirements": {
     "1.0.0": "sha256-jnHmq9JYNNz0caIhBjlxDgKDj2Bi7dcIaGUSyJ2L8Vk=",
     "1.0.2": "sha256-uaxjuI8DKtZgxQAXvozADFTK50A7frGN+wglZWVHuRY=",
-    "1.0.3": "sha256-N0qlSOO8pvJ+B3lbpQ+NuXWadjMgr/NmSgYTq+vQQ5U="
+    "1.0.3": "sha256-N0qlSOO8pvJ+B3lbpQ+NuXWadjMgr/NmSgYTq+vQQ5U=",
+    "1.0.4": "sha256-nDqr9WAcu2mpJX9l60kKF6bwx1Qyr92k1MDOR5YIrgE="
+  },
+  "@agileflow/planning-migrations": {
+    "1.0.0": "sha256-I8mvqbvDIL7bOPIT611v1UzMfdVy4NzLkwqQaOa+dpU="
+  },
+  "@agileflow/profiling-performance": {
+    "1.0.0": "sha256-xZWtkBZDavPSf5AqepVJSV4NHofU2MnFu0uw5ocdEBY="
   },
   "@agileflow/recording-decisions": {
-    "1.0.0": "sha256-hLSm0hKZJAoE4Ktpd/8XqlyHJjM+aXm4FJmtaAzCKHk="
+    "1.0.0": "sha256-hLSm0hKZJAoE4Ktpd/8XqlyHJjM+aXm4FJmtaAzCKHk=",
+    "1.0.1": "sha256-PQd5drP5tx9MKyqyLGGXY00F58sG5+SAblrpZA0Dxtc="
+  },
+  "@agileflow/refactoring-safely": {
+    "1.0.0": "sha256-ACkeT1Rai0JMRRVt1/A9+rDIzvc5abSaaO0Eaiwxo5U="
   },
   "@agileflow/resolving-conflicts": {
     "1.0.0": "sha256-QFYa6A9L13y5NGqR1XasOcHdiLtJcjL50aY7+A1UQcs=",
-    "1.0.1": "sha256-hhhVqfgGgatupwW0Co0N5SXT2lCWHy0k3FS17LxANhI="
+    "1.0.1": "sha256-hhhVqfgGgatupwW0Co0N5SXT2lCWHy0k3FS17LxANhI=",
+    "1.0.2": "sha256-qr/KI7Ih/OuIO5zNO9crdEPGZ2foJgT0cUOis9mxfIs="
   },
   "@agileflow/reviewing-changes": {
     "1.0.0": "sha256-RpTDg6JXFdPNAcf1Uy5oEShHD6q9ARqNX5oLhYO9N2Q=",
-    "1.0.1": "sha256-l0Z/lBzXXfyJw6gjPE6TKyQ6vIqtrz2lEeiH5OVh4Xs="
+    "1.0.1": "sha256-l0Z/lBzXXfyJw6gjPE6TKyQ6vIqtrz2lEeiH5OVh4Xs=",
+    "1.0.2": "sha256-e7qvIEskEMbABcpna7VlNJ1khbnvs5tYVp/pYKtwD6A="
+  },
+  "@agileflow/reviewing-security": {
+    "1.0.0": "sha256-yWibHDWXDxdKkIvAgbtQUPLbdvYNi4BkxzM62gSE9QE="
   },
   "@agileflow/reviewing-story": {
-    "1.0.1": "sha256-Z9ZvQfe/dvDtWqYtp+ToJ6/DefWr4EGR3m2bnsb6Wj0="
+    "1.0.1": "sha256-Z9ZvQfe/dvDtWqYtp+ToJ6/DefWr4EGR3m2bnsb6Wj0=",
+    "1.1.0": "sha256-5HGuDXjN97+6dEwwo/apNLAVAs2bAKzz0NN1fFahYMA="
   },
   "@agileflow/simplifying-explanations": {
     "1.0.0": "sha256-yUbr6fzm1uN+iNJ7KICznHGKE6lkR0j8P0pMp9gO15A=",
-    "1.0.2": "sha256-un+W/pRtk3Z2u4rzVF0+xhtxBWs+kQr3mWudddA20M0="
+    "1.0.2": "sha256-un+W/pRtk3Z2u4rzVF0+xhtxBWs+kQr3mWudddA20M0=",
+    "1.0.3": "sha256-G07Sqd4KyR2Kf888aF3ZtwQaaBLNP7C3gr6/7wN6azo="
   },
   "@agileflow/verifying-changes": {
     "1.0.0": "sha256-ZGbBDS/iApHbFbrAWvbLcPzJ+32YlFXxGzbs9XemgMY=",
-    "1.0.1": "sha256-Ah2RRemsydmoC+5y0HalGoRBEMlpHeXHS+50KxG9zis="
+    "1.0.1": "sha256-Ah2RRemsydmoC+5y0HalGoRBEMlpHeXHS+50KxG9zis=",
+    "1.0.2": "sha256-Sr7SvYh18ea+esqLdntAqP0dp9w7jnq4dByv/0W/lqI="
   },
   "@agileflow/working-story": {
-    "1.0.1": "sha256-vk2uxtqbZ+WiPSh80uQkKNOWTpSqyynwUS4UcQ1J1Xw="
+    "1.0.1": "sha256-vk2uxtqbZ+WiPSh80uQkKNOWTpSqyynwUS4UcQ1J1Xw=",
+    "1.1.0": "sha256-/k4HDXhB2Du/Nw4/JNiUmXieiVeqVQiDNnFWYUAsAZ8="
+  },
+  "@agileflow/writing-commits": {
+    "1.0.0": "sha256-grNOzzgUFKWNBomf/xujIUd4XcfrhCM5YBcEAWGpop0="
   },
   "@agileflow/writing-stories": {
-    "1.0.1": "sha256-vMZrosRdNXhiBkmbHl3PZJnfhei4PZTUDCiZTyu5Dxs="
+    "1.0.1": "sha256-vMZrosRdNXhiBkmbHl3PZJnfhei4PZTUDCiZTyu5Dxs=",
+    "1.0.2": "sha256-0pLz2AAh9ohqzeYRsTCJpija2Mbodn/w24xazXx6YP8="
+  },
+  "@agileflow/writing-tests": {
+    "1.0.0": "sha256-maOdi0z0qg48iABdl5Es48oZxhFQxtep5MKT2E5HZ2E="
   }
 };

@@ -1,4 +1,5 @@
 import {
+  describeTrust,
   diffTrees,
   loadWorkspace,
   NEEDS_APPROVAL,
@@ -15,6 +16,7 @@ import {
 import type { Cli } from '../runtime';
 import { EXIT, mutate, scopeFor, servicesFor, UsageError } from '../runtime';
 import { checkCliUpdate } from '../version';
+import { mutationEnvelope } from '../ui/output';
 import { printRisks, printSyncReport, syncReportJson } from './shared';
 
 export interface UpdateOptions {
@@ -36,7 +38,9 @@ function itemJson(item: PlannedUpdate) {
     ...(item.localOwned ? { localOwned: true } : {}),
     ...(item.external ? { external: true } : {}),
     ...(item.downgrade ? { downgrade: true } : {}),
+    ...(item.renderer ? { renderer: item.renderer } : {}),
     ...(item.risks?.length ? { risks: item.risks } : {}),
+    ...(item.trust ? { trust: item.trust } : {}),
   };
 }
 
@@ -49,12 +53,18 @@ async function externalDiff(services: Services, ws: Workspace, item: PlannedUpda
   return diffTrees(current, next, `${item.id}@${item.from ?? 'none'} (installed)`, `${item.id}@${item.to} (incoming)`);
 }
 
+/** `renderer 1 -> 2`, or `renderer (not recorded) -> 2` for locks written before renderers were recorded. */
+function rendererChange(item: PlannedUpdate): string {
+  return `renderer ${item.renderer?.from ?? '(not recorded)'} -> ${item.renderer?.to ?? '?'}`;
+}
+
 function describePlan(plan: UpdatePlan): string[] {
   const lines: string[] = [];
   const width = Math.max(0, ...plan.items.map((i) => i.id.length));
   for (const item of plan.items) {
     const name = item.id.padEnd(width + 2);
     if (item.kind === 'add') lines.push(`  ${name}new -> ${item.to}`);
+    else if (item.kind === 'rerender') lines.push(`  ${name}re-render ${item.to}: ${rendererChange(item)}`);
     else if (item.kind === 'remove') lines.push(`  ${name}remove (no longer in config)`);
     else if (item.localOwned) lines.push(`  ${name}now locally owned`);
     else {
@@ -65,8 +75,26 @@ function describePlan(plan: UpdatePlan): string[] {
       ];
       lines.push(`  ${name}${item.from} -> ${item.to}${notes.length ? ` (${notes.join(', ')})` : ''}`);
     }
+    if (item.trust && item.kind !== 'add') {
+      for (const change of describeTrust(item.trust)) lines.push(`  ${''.padEnd(width + 2)}  ${change}`);
+    }
   }
   return lines;
+}
+
+/** Everything a reviewer needs for one third-party change: trust delta, new findings, and optionally the diff. */
+async function printExternalReview(cli: Cli, services: Services, ws: Workspace, item: PlannedUpdate, withDiff: boolean): Promise<void> {
+  const { out } = cli;
+  out.line();
+  out.heading(`Third-party change: ${item.id} ${item.from ?? 'new'} -> ${item.to} (${ws.specs[item.id]?.source})`);
+  if (item.trust) {
+    out.line(`What changes (compared with the ${item.trust.baseline === 'package' ? 'locked package' : item.trust.baseline === 'installed' ? 'installed copy' : 'nothing installed'}):`);
+    out.lines(describeTrust(item.trust).map((l) => `  ${l}`));
+    if (!item.trust.changes.length) out.line('  (no trust-relevant changes)');
+  }
+  const risks = item.trust && item.trust.baseline !== 'none' ? item.trust.newRisks : item.risks;
+  if (risks?.length) printRisks(cli, risks);
+  if (withDiff) out.line((await externalDiff(services, ws, item)) || '  (no content differences)');
 }
 
 export async function runUpdate(cli: Cli, ids: string[], options: UpdateOptions): Promise<number> {
@@ -124,12 +152,7 @@ async function runUpdateBody(
     out.line('Updates available:');
     out.lines(describePlan(plan));
     const external = plan.items.filter((i) => i.external);
-    for (const item of external) {
-      out.line();
-      out.heading(`Third-party change: ${item.id} ${item.from ?? 'new'} -> ${item.to} (${ws.specs[item.id]?.source})`);
-      if (item.risks) printRisks(cli, item.risks);
-      if (interactive && !options.yes) out.line((await externalDiff(services, ws, item)) || '  (no content differences)');
-    }
+    for (const item of external) await printExternalReview(cli, services, ws, item, interactive && !options.yes);
     if (external.length && !interactive && !options.yes) {
       out.line(`Third-party changes need approval and will be skipped: ${external.map((i) => i.id).join(', ')} (rerun with --yes)`);
     }
@@ -171,17 +194,22 @@ async function runUpdateBody(
       ? EXIT.SKIPPED_MODIFIED
       : EXIT.OK;
   if (options.json) {
-    out.json({
-      ok: exitCode === EXIT.OK,
-      dryRun: !!options.dryRun,
-      applied: report.applied.map(itemJson),
-      skipped: report.skipped,
-      forked: report.forked,
-      upToDate: report.upToDate,
-      forkNotices: report.forkNotices,
-      events: report.events,
-      sync: report.sync ? syncReportJson(report.sync) : null,
-    });
+    out.json(
+      mutationEnvelope('update', {
+        ok: exitCode === EXIT.OK,
+        dryRun: !!options.dryRun,
+        applied: report.applied.map(itemJson),
+        skipped: report.skipped,
+        failed: (report.sync?.events ?? []).filter((e) => e.level === 'error').map((e) => ({ id: e.skill ?? null, error: e.message })),
+        events: report.events,
+        extra: {
+          forked: report.forked,
+          upToDate: report.upToDate,
+          forkNotices: report.forkNotices,
+          sync: report.sync ? syncReportJson(report.sync) : null,
+        },
+      }),
+    );
     return exitCode;
   }
 
@@ -189,6 +217,10 @@ async function runUpdateBody(
     if (report.applied.length) {
       out.line('Would update:');
       out.lines(describePlan({ items: report.applied, upToDate: [], forkNotices: [], events: [] }));
+      // A dry run is where third-party changes get reviewed, so show them in full.
+      for (const item of report.applied.filter((i) => i.external)) await printExternalReview(cli, services, ws, item, true);
+      const dirty = report.applied.filter((i) => i.status === 'modified');
+      if (dirty.length) out.line(`Would skip (local modifications): ${dirty.map((i) => i.id).join(', ')}`);
     } else {
       out.line('Everything is up to date.');
     }
@@ -198,6 +230,7 @@ async function runUpdateBody(
     for (const item of report.applied) {
       if (item.kind === 'remove') out.line(`Removed ${item.id}`);
       else if (item.localOwned) out.line(`${item.id} is now locally owned`);
+      else if (item.kind === 'rerender') out.line(`Re-rendered ${item.id} ${item.to} (${rendererChange(item)})`);
       else out.line(`Updated ${item.id}${item.from ? ` ${item.from} ->` : ''} ${item.to}`);
     }
     for (const id of report.forked) out.line(`Forked ${id}; AgileFlow will no longer overwrite it.`);

@@ -1,0 +1,21 @@
+{
+  "name": "@agileflow/writing-tests",
+  "version": "1.0.0",
+  "integrity": "sha256-maOdi0z0qg48iABdl5Es48oZxhFQxtep5MKT2E5HZ2E=",
+  "url": "packages/@agileflow/writing-tests/1.0.0.json",
+  "metadata": {
+    "description": "Write focused automated tests for existing behavior, bug regressions, boundaries, and failure cases in the repository's own test framework and conventions, and prove that each regression test fails against the bug it guards. Use when the user asks to write, add, or improve tests for existing code, to cover a function, module, edge case, or error path, or to add a regression test for a bug. Not for proving that one change just made works (verifying-changes), for diagnosing or fixing a bug (diagnosing-bugs), or for explaining testing concepts.",
+    "activation": "auto",
+    "files": 8,
+    "references": [],
+    "scripts": [],
+    "requirements": {
+      "commands": [],
+      "network": "none"
+    }
+  },
+  "compatibility": {
+    "agentSkills": true,
+    "bundleFormat": 1
+  }
+}

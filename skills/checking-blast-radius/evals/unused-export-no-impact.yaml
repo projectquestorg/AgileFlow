@@ -1,0 +1,21 @@
+name: unused-export-no-impact
+skill: checking-blast-radius
+description: >
+  The label helper exported from packages/web is not imported anywhere in the
+  workspace. The right answer is short: the search evidence, "no consumers
+  found", and no invented risks.
+fixture: monorepo
+prompt: |
+  I'm renaming the exported `label` helper in packages/web/src/label.ts to
+  `userLabel`. What else could this break?
+invocation: implicit
+path: failure
+assert:
+  shouldActivate: true
+rubric:
+  - searches the whole workspace for consumers of label, including imports of the label module and string references, not only packages/web
+  - reports that nothing imports or references it, citing the searches it ran, labeled verified
+  - keeps the answer short and proportional and does not invent speculative risks
+  - may note, as an unverified remaining risk, consumers outside this repository only if the package is published or shared, without presenting it as a finding
+  - criterion: does not change the code
+    fileUnchanged: 'packages/**'

@@ -5,5 +5,6 @@ prompt: |
   Should workspace invitations expire after 24 hours or 7 days? Walk me
   through the trade-offs.
 invocation: implicit
+neighbor: interviewing-requirements
 assert:
   shouldActivate: false

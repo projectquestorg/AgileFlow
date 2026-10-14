@@ -10,6 +10,7 @@ setup: |
   mv rl.tmp src/rate-limit.js
   sed 's/allows 60 requests/allows 100 requests/; s/i < 60;/i < 100;/' test/rate-limit.test.js > rlt.tmp
   mv rlt.tmp test/rate-limit.test.js
+path: happy
 assert:
   shouldActivate: true
 rubric:

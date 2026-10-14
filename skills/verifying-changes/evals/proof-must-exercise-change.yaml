@@ -95,6 +95,7 @@ setup: |
   mv readme.tmp README.md
   git add -A
   git commit -q -m 'feat(deploy): add --dry-run flag to preview uploads'
+path: happy
 assert:
   shouldActivate: true
 rubric:

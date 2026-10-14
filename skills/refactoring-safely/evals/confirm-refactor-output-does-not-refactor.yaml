@@ -1,0 +1,10 @@
+name: confirm-refactor-output-does-not-refactor
+skill: refactoring-safely
+fixture: eval-service
+prompt: |
+  I already refactored src/export so exportCsv and legacyExport share one row
+  builder. Just confirm exportCsv still produces exactly the same output.
+invocation: implicit
+neighbor: verifying-changes
+assert:
+  shouldActivate: false

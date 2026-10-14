@@ -12,6 +12,7 @@ prompt: |
   We need a way for teams to invite other people into their workspace.
   Create an epic for this.
 invocation: implicit
+path: happy
 assert:
   shouldActivate: true
 rubric:

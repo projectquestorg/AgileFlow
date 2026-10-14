@@ -4,5 +4,6 @@ fixture: agile-app
 prompt: |
   Is STORY-M9V4C6TE done? Check it against its acceptance criteria.
 invocation: implicit
+neighbor: reviewing-story
 assert:
   shouldActivate: false

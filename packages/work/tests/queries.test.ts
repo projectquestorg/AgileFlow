@@ -91,12 +91,12 @@ describe('acceptance criteria', () => {
 
 - [ ] also not a criterion
 `;
-    expect(acceptanceCriteria(body)).toEqual({ total: 5, checked: 2, unchecked: ['Two', 'Four', 'Five (a sub-heading stays inside the section)'] });
+    expect(acceptanceCriteria(body)).toMatchObject({ total: 5, checked: 2, unchecked: ['Two', 'Four', 'Five (a sub-heading stays inside the section)'] });
   });
 
   it('falls back to every checkbox when there is no section', () => {
-    expect(acceptanceCriteria('- [ ] a\n- [x] b\n')).toEqual({ total: 2, checked: 1, unchecked: ['a'] });
-    expect(acceptanceCriteria('# Nothing\n')).toEqual({ total: 0, checked: 0, unchecked: [] });
+    expect(acceptanceCriteria('- [ ] a\n- [x] b\n')).toEqual({ total: 2, checked: 1, unchecked: ['a'], items: [{ text: 'a', checked: false }, { text: 'b', checked: true }] });
+    expect(acceptanceCriteria('# Nothing\n')).toEqual({ total: 0, checked: 0, unchecked: [], items: [] });
   });
 });
 

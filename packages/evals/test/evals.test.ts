@@ -10,6 +10,7 @@ import {
   geminiDriver,
   lintSkill,
   listCatalog,
+  loadScenarios,
   opencodeDriver,
   parseClaudeStream,
   parseCodexStream,
@@ -197,9 +198,10 @@ describe('runner', () => {
     expect(seen[0]).toBe('diagnosing-bugs,filing-pr');
     const scenarioFiles = fs.readdirSync(path.join(dir, 'evals')).filter((f) => f.endsWith('.yaml'));
     expect(report.summary.scenarios).toBe(scenarioFiles.length);
-    // Precision/recall count implicit trigger scenarios; the explicit one is a load check.
-    expect(report.summary.truePositive + report.summary.falseNegative).toBe(2);
-    expect(report.skills[0]!.explicit.runs).toBe(1);
+    // Precision/recall count implicit trigger scenarios; explicit ones are load checks.
+    const { scenarios } = await loadScenarios(dir);
+    expect(report.summary.truePositive + report.summary.falseNegative).toBe(scenarios.filter((s) => s.invocation === 'implicit' && s.assert.shouldActivate).length);
+    expect(report.skills[0]!.explicit.runs).toBe(scenarios.filter((s) => s.invocation === 'explicit').length);
     expect(report.results.every((r) => r.runs.length === 1)).toBe(true);
     expect(report.summary.precision).not.toBeNull();
   });
@@ -240,7 +242,7 @@ describe('question preference in evals', () => {
         questionPreference: pref,
         filter: (s) => s.name === 'shared-office-rate-limit',
       });
-      seen[pref] = `${report.questionPreference}:${report.results[0]!.askedRate}`;
+      seen[pref] = `${report.questionPreference}:${report.results.find((r) => r.scenario === 'shared-office-rate-limit')!.askedRate}`;
     }
     expect(seen).toEqual({ 'provider-default': 'provider-default:0', prefer: 'prefer:1', minimize: 'minimize:0' });
   });
@@ -261,6 +263,8 @@ describe('interaction evals (decision boundary, not question count)', () => {
     status: 'ok',
     error: null,
     activated: true,
+    activationObserved: true,
+    provenance: { loadedFrom: [], source: 'unverified', visibilityChecked: false },
     otherActivations: [],
     askedUser: asked,
     askedSource: interaction ? 'judge' : 'heuristic',
@@ -270,7 +274,11 @@ describe('interaction evals (decision boundary, not question count)', () => {
     rubric: null,
     violations: [],
     fileChanges: null,
+    unexpectedChanges: null,
     foreignSkills: [],
+    taskCompleted: null,
+    judgeReply: null,
+    transcriptFile: null,
     passed: true,
     sandbox: null,
   });

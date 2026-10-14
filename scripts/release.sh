@@ -6,7 +6,8 @@
 # Example: ./scripts/release.sh 5.0.0-alpha.1 "Portable skill manager MVP"
 #
 # 1. Preflight: on main, clean tree, tag unused, release gate green, no high
-#    npm audit findings in the published package's dependencies.
+#    npm audit findings in the published package's dependencies, and the
+#    packed CLI works when installed into a clean environment.
 # 2. Moves CHANGELOG "Unreleased" notes under the new version.
 # 3. Bumps apps/cli/package.json and the root package.json together.
 # 4. Syncs the npm README (apps/cli/README.md) from the root README.
@@ -73,6 +74,9 @@ TARBALL=$(cd "$CLI" && npm pack --silent --pack-destination "$AUDIT_DIR")
   && npm audit --omit=dev --audit-level=high \
   && ./node_modules/.bin/agileflow --version >/dev/null)
 rm -rf "$AUDIT_DIR"
+
+echo "Smoke test: packed CLI in a clean HOME/PATH, init + check + sync against this registry"
+(cd "$CLI" && node scripts/smoke-pack.mjs)
 
 echo "Changelog"
 DATE=$(date +%Y-%m-%d)

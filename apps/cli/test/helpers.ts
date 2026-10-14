@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import YAML from 'yaml';
 import { buildRegistry } from '@agileflow/registry';
 import { copyTree } from '@agileflow/core';
-import { run } from '../src/index';
+import { run, type RunOptions } from '../src/index';
 import type { Prompter } from '../src/ui/prompts';
 
 export const REPO = fileURLToPath(new URL('../../../', import.meta.url));
@@ -24,7 +24,7 @@ export interface Sandbox {
   /** Mutable copy of the official catalog used to publish new versions. */
   catalog: string;
   env: Record<string, string | undefined>;
-  af(args: string[], options?: { cwd?: string; prompter?: Prompter; env?: Record<string, string | undefined> }): Promise<{
+  af(args: string[], options?: { cwd?: string; prompter?: Prompter; env?: Record<string, string | undefined>; cloud?: RunOptions['cloud'] }): Promise<{
     code: number;
     stdout: string;
     stderr: string;
@@ -89,6 +89,7 @@ export async function createSandbox(options: { fixture?: string; git?: boolean }
         stdout: out.writer,
         stderr: err.writer,
         prompter: opts.prompter,
+        cloud: opts.cloud,
       });
       return { code, stdout: out.text, stderr: err.text };
     },

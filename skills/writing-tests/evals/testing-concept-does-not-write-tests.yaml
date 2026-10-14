@@ -1,0 +1,7 @@
+name: testing-concept-does-not-write-tests
+skill: writing-tests
+prompt: |
+  When should I use a mock instead of a fake in unit tests?
+invocation: implicit
+assert:
+  shouldActivate: false

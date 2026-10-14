@@ -22,22 +22,43 @@ function title(name: string): string {
     .join(' ');
 }
 
-function scenario(name: string, skill: string, prompt: string, activate: boolean, manual: boolean): string {
+/** Optional scenario fields, as commented template lines (a real `fixture:` needs `--fixtures <dir>` to run). */
+const FIXTURE_HINT =
+  '# fixture: my-repo   # optional: run in <fixtures dir>/my-repo (agileflow eval --fixtures <dir>); default is an empty Node project\n';
+const NEIGHBOR_HINT =
+  '# neighbor: other-skill   # set when this prompt belongs to a similar skill in your catalog (measures trigger conflicts)\n';
+
+function scenario(
+  name: string,
+  skill: string,
+  prompt: string,
+  activate: boolean,
+  manual: boolean,
+  extra: { description?: string; rubric?: string[] } = {},
+): string {
   const doc: Record<string, unknown> = {
     name,
     skill,
+    ...(extra.description ? { description: extra.description } : {}),
     prompt: `${prompt.trim()}\n`,
     invocation: activate && manual ? 'explicit' : 'implicit',
     assert: { shouldActivate: activate },
   };
   if (activate) {
-    doc.rubric = [
+    doc.rubric = extra.rubric ?? [
       'follows the steps in the Workflow section in order',
       'meets every item in the "Done when" section before finishing',
     ];
   }
-  return YAML.stringify(doc, { lineWidth: 0 });
+  return YAML.stringify(doc, { lineWidth: 0 }) + FIXTURE_HINT + (activate ? '' : NEIGHBOR_HINT);
 }
+
+/** Rubric for the blocked-path template: the skill stops and reports instead of guessing. */
+const BLOCKED_RUBRIC = [
+  'stops at the blocker instead of guessing or silently working around it',
+  'tells the user what is missing or failed and what they need to do next',
+  'does not claim the task is complete',
+];
 
 /**
  * `agileflow create <name>`: scaffold a standard Agent Skill that passes the
@@ -69,7 +90,7 @@ export async function runCreate(cli: Cli, name: string, options: CreateOptions):
       description = (
         await prompter.text(
           'Description: what does it do, and when should an agent use it?',
-          'Prepares a release. Use when the user asks to cut, tag, or publish a new version.',
+          'Prepares a release. Use when the user asks to cut, tag, or publish a new version. Not for changelog-only edits.',
         )
       ).trim();
     }
@@ -83,7 +104,7 @@ export async function runCreate(cli: Cli, name: string, options: CreateOptions):
     }
   }
   if (!description) {
-    throw new UsageError('Pass --description "<what it does>. Use when <situation>."', [
+    throw new UsageError('Pass --description "<what it does>. Use when <situation>. Not for <similar requests>."', [
       'The description is how agents decide to load the skill: say what it does and when.',
     ]);
   }
@@ -97,10 +118,13 @@ export async function runCreate(cli: Cli, name: string, options: CreateOptions):
     ]);
   }
 
+  const hasNotFor = /\bnot for\b/i.test(description);
   const skillMd = [
     '---',
     `name: ${name}`,
     `description: ${JSON.stringify(description)}`,
+    // Routing needs both sides: when to use it, and which similar requests belong elsewhere.
+    ...(hasNotFor ? [] : ['# TODO: end the description with "Not for <similar requests that belong to another skill>."']),
     '---',
     '',
     `# ${title(name)}`,
@@ -111,13 +135,25 @@ export async function runCreate(cli: Cli, name: string, options: CreateOptions):
     '## Workflow',
     '',
     '1. Gather the facts the task depends on from the repository before changing anything.',
-    '2. Do the work in small, verifiable steps, following the project\'s conventions.',
-    '3. Verify the result with the project\'s own checks (tests, build, linters).',
+    '2. If a choice would materially change the result and the repository cannot settle it, ask the user before choosing.',
+    '3. Do the work in small, verifiable steps, following the project\'s conventions.',
+    '4. Verify the result with the project\'s own checks (tests, build, linters).',
+    '5. If something blocks the work (a missing tool, a failing prerequisite), stop and report it instead of working around it.',
+    '',
+    'Detail needed only sometimes lives in [references/details.md](references/details.md); read it when a step calls for it.',
     '',
     '## Done when',
     '',
-    '- The requested change is complete and verified.',
+    '- The requested change is complete and verified, or the blocker is reported.',
     '- The user has a short summary of what changed and anything left open.',
+    '',
+  ].join('\n');
+  const reference = [
+    `# ${title(name)}: reference`,
+    '',
+    'Material the agent needs only for some runs: long checklists, command references, examples.',
+    'SKILL.md links here, so it is read on demand instead of loading with every activation.',
+    'Delete this file (and the link in SKILL.md) if the skill does not need it.',
     '',
   ].join('\n');
   const sidecar = YAML.stringify(
@@ -126,7 +162,8 @@ export async function runCreate(cli: Cli, name: string, options: CreateOptions):
       package: { name: `@${scopeName}/${name}`, version: '0.1.0' },
       activation: { mode: options.manual ? 'manual' : 'auto' },
       requirements: { commands: [], network: 'none' },
-      capabilities: { modifiesFiles: 'possible', longRunning: false, userInteraction: 'none' },
+      // Matches the Workflow above: it may edit files and asks only when a decision matters.
+      capabilities: { modifiesFiles: 'possible', longRunning: false, userInteraction: 'optional' },
       compatibility: { agentSkills: true },
     },
     { lineWidth: 0 },
@@ -134,6 +171,7 @@ export async function runCreate(cli: Cli, name: string, options: CreateOptions):
   const files: Record<string, string> = {
     'SKILL.md': skillMd,
     'agileflow.skill.yaml': sidecar,
+    'references/details.md': reference,
   };
   triggers.forEach((t, i) => {
     const n = `should-activate-${i + 1}`;
@@ -142,6 +180,13 @@ export async function runCreate(cli: Cli, name: string, options: CreateOptions):
   notTriggers.forEach((t, i) => {
     const n = `should-not-activate-${i + 1}`;
     files[`evals/${n}.yaml`] = scenario(n, name, t, false, !!options.manual);
+  });
+  // Failure path: in scope, but the work cannot be completed. Edit the prompt (or add a
+  // `setup:` script) so the blocker is real.
+  files['evals/blocked-path.yaml'] = scenario('blocked-path', name, triggers[0]!, true, !!options.manual, {
+    description:
+      'TEMPLATE: an in-scope request that cannot be completed (a prerequisite is missing, a command fails, or only the user can decide). Make the blocker real in the prompt or a setup script; the rubric checks the skill stops and reports instead of guessing.',
+    rubric: BLOCKED_RUBRIC,
   });
   if (triggers.length + notTriggers.length < 3) {
     files['evals/unrelated-question.yaml'] = scenario(
@@ -167,6 +212,8 @@ export async function runCreate(cli: Cli, name: string, options: CreateOptions):
   out.line();
   out.line('Next:');
   out.line(`  Edit ${rel}/SKILL.md: replace the generic workflow with your team's steps.`);
+  if (!hasNotFor) out.line('  Add a "Not for ..." clause to the description (see the TODO in the frontmatter).');
+  out.line(`  Edit ${rel}/evals/blocked-path.yaml so its blocker is real.`);
   out.line(`  Check it:   agileflow eval --lint ${rel}`);
   out.line(`  Measure it: agileflow eval ${rel} --provider claude (activation precision and recall)`);
   out.line(`  Use it:     agileflow add ./${rel.split(path.sep).join('/')}`);

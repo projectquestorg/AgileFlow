@@ -11,3 +11,6 @@ export * from './writer';
 export * from './validate';
 export * from './git';
 export * from './import-v4';
+export * from './text';
+export * from './next';
+export * from './evidence';

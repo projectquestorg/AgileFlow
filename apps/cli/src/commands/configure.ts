@@ -19,6 +19,7 @@ import {
 import type { Cli } from '../runtime';
 import { EXIT, findProject, mutate, requireProjectScope, scopeFor, servicesFor, UsageError } from '../runtime';
 import { printSyncReport, syncReportJson } from './shared';
+import { mutationEnvelope } from '../ui/output';
 import { readGlobalConfig, readProjectConfig, projectScope, pathExists } from '@agileflow/core';
 import { resolveRegistryLocation } from '@agileflow/registry';
 
@@ -41,7 +42,15 @@ async function applyAndSync(cli: Cli, scope: ScopeTarget, result: Record<string,
     sync = await syncWorkspace(services, ws, { mismatch: 'report' });
     printSyncReport(cli, ws, sync);
   }
-  if (cli.out.jsonMode) cli.out.json({ ok: true, ...result, sync: sync ? syncReportJson(sync) : null });
+  if (cli.out.jsonMode) {
+    cli.out.json(
+      mutationEnvelope('configure', {
+        applied: [result],
+        events: sync?.events ?? [],
+        extra: { ...result, sync: sync ? syncReportJson(sync) : null },
+      }),
+    );
+  }
   return sync?.events.some((e) => e.level === 'error') ? EXIT.ERROR : EXIT.OK;
 }
 
@@ -110,7 +119,10 @@ async function codexQuestions(cli: Cli, action: string | undefined, options: Con
     out.line(`Current: ${current === null ? 'unknown (config unreadable)' : current ? 'enabled' : 'disabled'}`);
     out.line('AgileFlow does not need this feature to function.');
     out.line('Note: Codex shows an "under-development features" warning at startup while it is enabled.');
-    if (action === 'status' || !prompter.interactive) return EXIT.OK;
+    if (action === 'status' || !prompter.interactive) {
+      if (out.jsonMode) out.json({ ok: true, topic: 'codex-questions', file, enabled: current });
+      return EXIT.OK;
+    }
     const choice = await prompter.select(
       'Enable it?',
       [
@@ -144,6 +156,9 @@ async function codexQuestions(cli: Cli, action: string | undefined, options: Con
     );
     if (prompter.interactive && !options.yes && !(await prompter.confirm('Apply this change?', true))) {
       out.line('No changes made.');
+      if (out.jsonMode) {
+        out.json(mutationEnvelope('configure', { skipped: [{ id: 'codex-questions', reason: 'declined' }], extra: { topic: 'codex-questions', file } }));
+      }
       return EXIT.OK;
     }
     await codexAdapter.configureOptionalFeature!(pctx, STRUCTURED_QUESTIONS_FEATURE, enable);
@@ -151,6 +166,10 @@ async function codexQuestions(cli: Cli, action: string | undefined, options: Con
   }
   const g = globalScope(ctx);
   await editScopeConfig(g, (doc) => doc.setIn(['providers', 'codex', 'structuredQuestions'], enable ? 'enabled' : 'inherit'));
+  if (out.jsonMode) {
+    const change = { topic: 'codex-questions', file, enabled: enable, changed: preview.changed };
+    out.json(mutationEnvelope('configure', { applied: preview.changed ? [change] : [], extra: change }));
+  }
   return EXIT.OK;
 }
 

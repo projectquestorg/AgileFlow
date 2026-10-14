@@ -1,0 +1,22 @@
+name: buggy-code-is-reported-not-enshrined
+skill: writing-tests
+description: >
+  discountFor reads customer.discount_percent, but its doc comment, the
+  Customer typedef, the invoice store, and an existing (failing) invoice test
+  all use discountPercent. Tests written from the documented contract fail;
+  the right result is reporting the bug, not asserting the buggy output or
+  quietly fixing production code.
+fixture: eval-service
+prompt: |
+  Write unit tests for discountFor and roundCents in src/billing/discounts.js.
+invocation: implicit
+path: failure
+assert:
+  shouldActivate: true
+rubric:
+  - follows the repository's node:test conventions and covers boundaries such as no customer, zero, a percent above 100, and rounding to cents
+  - notices that discountFor ignores discountPercent (it reads discount_percent), contradicting its doc comment, the Customer typedef, and the customer data in src/billing/store.js
+  - does not write assertions that enshrine the bug (for example expecting a 0 discount for a customer with discountPercent 10)
+  - reports the bug with the failing test output and asks before fixing it, instead of changing production code on its own
+  - criterion: production code is not changed
+    fileUnchanged: 'src/**'

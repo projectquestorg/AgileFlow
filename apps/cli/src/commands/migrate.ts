@@ -31,6 +31,7 @@ import { CORE_SKILLS } from './init';
 import { runDetach } from './remove';
 import { mutate } from '../runtime';
 import { installRequests, printSyncReport } from './shared';
+import { mutationEnvelope } from '../ui/output';
 
 export interface MigrateOptions {
   preview?: boolean;
@@ -47,6 +48,53 @@ export interface MigrateOptions {
   user?: boolean;
   /** Also remove v4 skill mirrors that cannot be verified against v4's file index. */
   includeUnverified?: boolean;
+  /** Same as `preview`. */
+  dryRun?: boolean;
+  json?: boolean;
+}
+
+function actionJson(a: MigrationAction) {
+  const { description, consent, group, ...rest } = a;
+  return { ...rest, description, ...(consent ? { consent } : {}), ...(group ? { group } : {}) };
+}
+
+export function migrationPlanJson(plan: MigrationPlan) {
+  return {
+    location: plan.location,
+    root: plan.root,
+    detected: plan.detected,
+    findings: plan.findings,
+    actions: plan.actions.map(actionJson),
+    notes: plan.notes,
+    docs: plan.docs,
+    suggestedSkills: plan.suggestedSkills,
+  };
+}
+
+/** A migration that changed nothing (used for JSON results of no-op runs). */
+const EMPTY_RESULT: MigrationResult = { backupDir: null, applied: [], failed: [], skipped: [] };
+
+/** The `--json` result of `migrate`: the plan (preview) or what was applied. */
+function migrationEnvelope(
+  plan: MigrationPlan,
+  result: MigrationResult | null,
+  extra: Record<string, unknown> = {},
+) {
+  const errors = migrationErrors(plan);
+  return mutationEnvelope('migrate', {
+    dryRun: result === null,
+    applied: (result ? result.applied : plan.actions.filter((a) => !a.consent)).map(actionJson),
+    skipped: (result ? result.skipped : plan.actions.filter((a) => a.consent)).map((a) => ({
+      id: a.kind === 'remove' ? a.path : a.file,
+      reason: a.consent ? `needs consent (${a.consent})` : 'not confirmed',
+    })),
+    failed: [
+      ...(result?.failed ?? []).map((f) => ({ id: null, error: `${f.action.description}: ${f.error}` })),
+      ...(result ? errors.map((e) => ({ id: null, error: e.message })) : []),
+    ],
+    warnings: plan.notes.filter((n) => n.level !== 'info').map((n) => n.message),
+    extra: { plan: migrationPlanJson(plan), ...(result ? { backupDir: result.backupDir } : {}), ...extra },
+  });
 }
 
 function summarizeActions(plan: MigrationPlan, actions: MigrationAction[]): string[] {
@@ -106,7 +154,7 @@ function printNotes(cli: Cli, plan: MigrationPlan, levels: Array<'info' | 'warn'
   const notes = plan.notes.filter((n) => levels.includes(n.level)).sort((a, b) => rank[a.level] - rank[b.level]);
   for (const note of notes) {
     if (note.level === 'error') {
-      out.error(note.message, note.detail ?? []);
+      if (!out.jsonMode) out.error(note.message, note.detail ?? []);
       continue;
     }
     if (note.level === 'warn') out.warn(note.message);
@@ -169,7 +217,9 @@ async function decideConsents(cli: Cli, plan: MigrationPlan, options: MigrateOpt
 async function confirmApply(cli: Cli, options: MigrateOptions, what: string): Promise<boolean | null> {
   const { out, prompter } = cli;
   if (!prompter.interactive && !options.yes) {
-    out.error('Refusing to change files without confirmation', ['Re-run with --yes to apply, or --preview to only report.']);
+    const hints = ['Re-run with --yes to apply, or --preview to only report.'];
+    if (out.jsonMode) throw new UsageError('Refusing to change files without confirmation', hints);
+    out.error('Refusing to change files without confirmation', hints);
     return null;
   }
   if (prompter.interactive && !options.yes && !(await prompter.confirm(what, true))) {
@@ -214,7 +264,8 @@ function printIncomplete(cli: Cli, plan: MigrationPlan, result: MigrationResult 
   const failed = result?.failed ?? [];
   if (!errors.length && !failed.length) return EXIT.OK;
   const where = plan.location === 'user' ? ' --global' : '';
-  cli.out.error('Migration incomplete: some AgileFlow v4 files or hooks could not be changed', [
+  // In JSON mode the envelope's `failed` carries these.
+  if (!cli.out.jsonMode) cli.out.error('Migration incomplete: some AgileFlow v4 files or hooks could not be changed', [
     ...errors.map((e) => e.message),
     ...failed.map((f) => `${f.action.description}: ${f.error}`),
     `Fix these by hand (see above), then re-run \`agileflow migrate v4${where}\`.`,
@@ -280,6 +331,7 @@ async function finishBootstrap(cli: Cli, boot: Bootstrap): Promise<void> {
 
 export async function runMigrate(cli: Cli, target: string | undefined, options: MigrateOptions): Promise<number> {
   const { ctx, out } = cli;
+  if (options.dryRun) options = { ...options, preview: true };
   if (target && target !== 'v4') throw new UsageError(`Unknown migration "${target}". Supported: v4`);
   if (options.keepSkills && options.deleteSkills) throw new UsageError('Use either --keep-skills or --delete-skills, not both');
   if (options.detach) return runMigrateDetach(cli, options);
@@ -300,6 +352,7 @@ export async function runMigrate(cli: Cli, target: string | undefined, options: 
   if (options.reportDocs) {
     out.lines(formatDocsReport(plan));
     if (userPlan.docs.length) out.lines(formatDocsReport(userPlan));
+    if (out.jsonMode) out.json(mutationEnvelope('migrate', { dryRun: true, extra: { docs: [...plan.docs, ...userPlan.docs] } }));
     return EXIT.OK;
   }
 
@@ -311,6 +364,9 @@ export async function runMigrate(cli: Cli, target: string | undefined, options: 
     printUserHint(cli, userPlan);
     if (options.skills !== undefined) out.warn('--skills was ignored; use `agileflow init --skills <ids>` or `agileflow add <ids>`.');
     if (!ws.configExists) out.line('Run `agileflow init` to set up AgileFlow v5.');
+    if (out.jsonMode) {
+      out.json(migrationEnvelope(plan, options.preview ? null : EMPTY_RESULT, { detected: false, userPlan: migrationPlanJson(userPlan) }));
+    }
     return EXIT.OK;
   }
 
@@ -319,18 +375,23 @@ export async function runMigrate(cli: Cli, target: string | undefined, options: 
 
   if (options.preview) {
     out.line('Preview only; nothing was changed. Run `agileflow migrate v4` to apply.');
+    if (out.jsonMode) out.json(migrationEnvelope(plan, null, { userPlan: migrationPlanJson(userPlan) }));
     return EXIT.OK;
   }
 
   const nothingToDo = !plan.actions.length && ws.configExists && !setupPending && options.skills === undefined;
   if (nothingToDo) {
     out.line('Nothing left to migrate automatically; remaining v4 items need manual review (see above).');
+    if (out.jsonMode) out.json(migrationEnvelope(plan, EMPTY_RESULT, { userPlan: migrationPlanJson(userPlan) }));
     return printIncomplete(cli, plan, null);
   }
 
   const ok = await confirmApply(cli, options, 'Apply these changes?');
   if (ok === null) return EXIT.ERROR;
-  if (!ok) return EXIT.OK;
+  if (!ok) {
+    if (out.jsonMode) out.json(migrationEnvelope(plan, { ...EMPTY_RESULT, skipped: plan.actions }, { declined: true }));
+    return EXIT.OK;
+  }
   const consent = await decideConsents(cli, plan, options);
   const backup = await decideBackup(cli, plan, options);
 
@@ -341,11 +402,15 @@ export async function runMigrate(cli: Cli, target: string | undefined, options: 
     const applied = await applyMigration(plan, { backup, consent });
     reportResult(cli, applied);
     if (plan.docs.length) out.line('Legacy docs directories were left unchanged (`agileflow migrate v4 --report-docs`).');
+    if (plan.findings.some((f) => f.includes('work import v4'))) out.line('Import the v4 backlog into Agile Work: `agileflow work import v4 --preview`.');
     if (boot) await finishBootstrap(cli, boot);
     return applied;
   });
 
   out.line();
+  if (out.jsonMode) {
+    out.json(migrationEnvelope(plan, result, { userPlan: migrationPlanJson(userPlan), installed: boot?.requests.map((r) => r.id) ?? [] }));
+  }
   const code = printIncomplete(cli, plan, result);
   if (code !== EXIT.OK) return code;
   if (userHooksRemain(userPlan)) {
@@ -366,30 +431,38 @@ async function runUserMigration(cli: Cli, options: MigrateOptions): Promise<numb
   const plan = await planMigration(ctx.homeDir, ctx.homeDir, { location: 'user', env: ctx.env });
   if (options.reportDocs) {
     out.lines(formatDocsReport(plan));
+    if (out.jsonMode) out.json(mutationEnvelope('migrate', { dryRun: true, extra: { docs: plan.docs } }));
     return EXIT.OK;
   }
   if (!plan.detected) {
     out.line('No AgileFlow v4 files found in your home directory. Nothing to migrate.');
+    if (out.jsonMode) out.json(migrationEnvelope(plan, options.preview ? null : EMPTY_RESULT, { detected: false }));
     return EXIT.OK;
   }
   printPlan(cli, plan, 'AgileFlow v4 detected in your home directory (personal install):');
   if (options.preview) {
     out.line('Preview only; nothing was changed. Run `agileflow migrate v4 --global` to apply.');
+    if (out.jsonMode) out.json(migrationEnvelope(plan, null));
     return EXIT.OK;
   }
   if (!plan.actions.length) {
     out.line('Nothing left to migrate automatically; remaining v4 items need manual review (see above).');
+    if (out.jsonMode) out.json(migrationEnvelope(plan, EMPTY_RESULT));
     return printIncomplete(cli, plan, null);
   }
   const ok = await confirmApply(cli, options, 'Apply these changes to your home directory?');
   if (ok === null) return EXIT.ERROR;
-  if (!ok) return EXIT.OK;
+  if (!ok) {
+    if (out.jsonMode) out.json(migrationEnvelope(plan, { ...EMPTY_RESULT, skipped: plan.actions }, { declined: true }));
+    return EXIT.OK;
+  }
   const consent = await decideConsents(cli, plan, options);
   const backup = await decideBackup(cli, plan, options);
   const result = await applyMigration(plan, { backup, consent });
   reportResult(cli, result);
   if (plan.docs.length) out.line('Legacy docs directories were left unchanged (`agileflow migrate v4 --global --report-docs`).');
   out.line();
+  if (out.jsonMode) out.json(migrationEnvelope(plan, result));
   const code = printIncomplete(cli, plan, result);
   if (code !== EXIT.OK) return code;
   out.line('Migration complete. AgileFlow no longer runs hooks; restart open agent sessions to drop the old ones.');
@@ -405,7 +478,7 @@ async function runMigrateDetach(cli: Cli, options: MigrateOptions): Promise<numb
   const scope = await requireProjectScope(ctx);
   const services = await servicesFor(ctx, scope);
   const ws = await loadWorkspace(scope);
-  if (!ws.configExists && !ws.lockExists) return runDetach(cli, services, scope, { yes: true });
+  if (!ws.configExists && !ws.lockExists) return runDetach(cli, services, scope, { yes: true, json: out.jsonMode });
 
   let keepSkills = options.deleteSkills ? false : options.keepSkills ?? true;
   if (options.keepSkills === undefined && !options.deleteSkills && prompter.interactive && !options.yes) {
@@ -431,6 +504,7 @@ async function runMigrateDetach(cli: Cli, options: MigrateOptions): Promise<numb
   }
   out.line();
   if (!prompter.interactive && !options.yes) {
+    if (out.jsonMode) throw new UsageError('Refusing to detach without confirmation', ['Re-run with --yes to apply.']);
     out.error('Refusing to detach without confirmation', ['Re-run with --yes to apply.']);
     return EXIT.ERROR;
   }
@@ -443,5 +517,5 @@ async function runMigrateDetach(cli: Cli, options: MigrateOptions): Promise<numb
       return EXIT.OK;
     }
   }
-  return runDetach(cli, services, scope, { keepSkills, yes: true });
+  return runDetach(cli, services, scope, { keepSkills, yes: true, json: out.jsonMode });
 }

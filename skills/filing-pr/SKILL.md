@@ -1,6 +1,6 @@
 ---
 name: filing-pr
-description: Open a pull request for the current branch with a title that follows repository conventions and a description that leads with the problem, summarizes the solution, and includes verification evidence, then return the PR URL. Use when the user asks to file, open, create, raise, or submit a pull request (PR). Not for reviewing an existing PR or monitoring one through CI.
+description: Open a pull request for the current branch with a title that follows repository conventions and a description that leads with the problem, summarizes the solution, and includes verification evidence, then return the PR URL. Use when the user asks to file, open, create, raise, or submit a pull request (PR). Not for reviewing an existing PR (reviewing-changes), monitoring one through CI (babysitting-pr), or only writing a commit message (writing-commits).
 ---
 
 # Filing a PR

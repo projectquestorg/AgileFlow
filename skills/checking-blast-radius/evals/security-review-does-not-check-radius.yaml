@@ -1,0 +1,10 @@
+name: security-review-does-not-check-radius
+skill: checking-blast-radius
+fixture: eval-service
+prompt: |
+  Is the payment webhook endpoint safe from attackers? Do a security review
+  of it: could someone forge or replay a payment?
+invocation: implicit
+neighbor: reviewing-security
+assert:
+  shouldActivate: false

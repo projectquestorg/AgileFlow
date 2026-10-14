@@ -1,0 +1,20 @@
+name: work-not-enabled-offers-init
+skill: creating-epics
+description: >
+  The repository has no AgileFlow Work workspace (no agileflow.yaml, no
+  docs/agile). The right result says so and suggests `agileflow work init`
+  instead of inventing a docs/agile tree or an epic file.
+fixture: eval-service
+prompt: |
+  Create an epic for self-serve billing: customers should be able to see their
+  invoices and pay them without emailing support.
+invocation: implicit
+path: blocked
+assert:
+  shouldActivate: true
+rubric:
+  - checks for an AgileFlow Work workspace (agileflow.yaml and its work settings, or docs/agile) before writing anything
+  - tells the user that Work is not set up in this repository and suggests agileflow work init (or asks whether to set it up)
+  - does not invent a docs/agile folder structure or an epic file without the workspace
+  - criterion: no Work files are fabricated
+    fileUnchanged: 'docs/**'

@@ -28,8 +28,12 @@ Skills
   [ok] no duplicate names
   [ok] no unexpected local modifications
 Providers
-  [ok] Codex reads .agents/skills
-  [ok] Claude compatibility links valid
+  [ok] Codex: visible in .agents/skills (4 skills; provider discovery not verified)
+  [ok] Codex manual-only: enforced
+       interviewing-requirements: `policy.allow_implicit_invocation: false` in agents/openai.yaml present
+  [ok] Claude: visible in .claude/skills (4 skills via symlink; provider discovery not verified)
+  [ok] Claude manual-only: enforced
+       interviewing-requirements: `disable-model-invocation: true` in SKILL.md present
 Optional features
   [--] Codex structured questions (Default mode request_user_input) disabled
        This is optional. Enable with `agileflow configure`.
@@ -39,8 +43,8 @@ Result: healthy
 ## What it checks
 
 - **Configuration:** `agileflow.yaml` and `agileflow.lock` parse and validate, and the lockfile matches the config.
-- **Skills:** every locked skill is present; cached packages match their locked integrity (a warning, not an error, when the package cannot be loaded offline); every `SKILL.md` has valid frontmatter (name matching its directory, a description of at most 1024 characters); no duplicate names; which managed skills have local modifications. Unmanaged skills are listed as "left untouched" and are never errors.
-- **Providers:** for each detected provider, whether it can see the skills. For Claude Code: links present and pointing at the canonical skills, mirrors not edited directly or out of date, Claude-only skills that shadow an AgileFlow skill. For manual skills: whether each provider's manual-only flag is present, and "manual-only enforcement: semantic" for Gemini CLI. For Gemini CLI: a reminder that project skills load only in trusted folders.
+- **Skills:** every locked skill is present; cached packages match their locked integrity (a warning, not an error, when the package cannot be loaded offline); every `SKILL.md` has valid frontmatter (name matching its directory, a description of at most 1024 characters); no duplicate names; which managed skills have local modifications. A copy Git checked out with CRLF line endings, or without executable bits on Windows (or with `core.fileMode=false`), is not a modification; a script that lost or gained `+x` on macOS/Linux, or CRLF introduced on some lines, is. Skills rendered by another AgileFlow version's renderer are reported as information ("left as committed"), never as local modifications. Unmanaged skills are listed as "left untouched" and are never errors.
+- **Providers:** for each detected provider, a graded result instead of a bare check mark: **visible** (the skills are where the provider reads them; provider discovery is not verified by `check`), manual-only **enforced** (the provider's hard switch is present) or **advisory** (Gemini CLI, OpenCode: description only). For Claude Code: links present and pointing at the canonical skills (and whether they are symlinks, junctions, or mirrors), mirrors not edited directly or out of date, Claude-only skills that shadow an AgileFlow skill. For Gemini CLI: a reminder that project skills load only in trusted folders. `--verbose` adds per-skill status (installed, discovered, explicitly invocable, eligible for automatic invocation), the provider CLI version, and the version AgileFlow's behavior was last verified with. See [Providers](/concepts/providers#what-check-reports).
 - **Same skill in both scopes:** "`filing-pr` exists in both this project and your personal skills" (informational; which copy an agent uses depends on the provider).
 - **Legacy files:** AgileFlow v4 residue, with a pointer to `agileflow migrate v4 --preview`.
 - **Optional features:** for detected providers, whether optional features such as [Codex structured questions](/commands/configure#codex-structured-questions) are enabled (informational).

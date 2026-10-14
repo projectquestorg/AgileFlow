@@ -71,6 +71,7 @@ setup: |
 
   git merge --no-edit feature/legacy-export-archived >/dev/null 2>&1 || true
   git diff --name-only --diff-filter=U | grep -qx 'src/export/legacy.js'
+path: blocked
 assert:
   shouldActivate: true
 rubric:

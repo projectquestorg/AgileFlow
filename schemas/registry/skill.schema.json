@@ -96,6 +96,46 @@
               },
               "compatibility": {
                 "type": "string"
+              },
+              "evals": {
+                "type": "object",
+                "properties": {
+                  "scenarios": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "lastRun": {
+                    "type": "object",
+                    "properties": {
+                      "passRate": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "runs": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "date": {
+                        "type": "string"
+                      },
+                      "provider": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "passRate",
+                      "runs",
+                      "date",
+                      "provider"
+                    ]
+                  }
+                },
+                "required": [
+                  "scenarios"
+                ]
               }
             },
             "required": [

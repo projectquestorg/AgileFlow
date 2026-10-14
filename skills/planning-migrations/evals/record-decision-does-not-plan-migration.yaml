@@ -1,0 +1,11 @@
+name: record-decision-does-not-plan-migration
+skill: planning-migrations
+fixture: eval-service
+prompt: |
+  We've decided that every schema change must use expand and contract, never
+  an in-place rename or drop in the same release. Write that up as a decision
+  record.
+invocation: implicit
+neighbor: recording-decisions
+assert:
+  shouldActivate: false

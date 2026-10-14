@@ -1,0 +1,10 @@
+name: wrong-result-does-not-profile
+skill: profiling-performance
+fixture: eval-service
+prompt: |
+  The invoice for Acme Corp shows a total of 100 but they have a 10% discount,
+  so it should be 90. Fix it.
+invocation: implicit
+neighbor: diagnosing-bugs
+assert:
+  shouldActivate: false

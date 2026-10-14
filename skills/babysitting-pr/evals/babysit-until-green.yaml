@@ -103,6 +103,7 @@ bin:
 prompt: |
   Babysit PR #231 until it's green and ready to merge.
 invocation: implicit
+path: happy
 assert:
   shouldActivate: true
 rubric:

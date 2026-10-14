@@ -11,7 +11,9 @@ import {
   lintSkill,
   listCatalog,
   neighborSkills,
+  referencedSkillIds,
   splitAllowedTools,
+  tellsAgentToAsk,
 } from '@agileflow/evals';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
@@ -173,5 +175,70 @@ describe('scenario checks', () => {
     const result = await lintSkill(dir, { fixturesDir: path.join(REPO, 'fixtures') });
     expect(result.issues.filter((i) => i.level === 'error')).toEqual([]);
     expect(result.scenarios).toBe(3);
+  });
+});
+
+describe('official catalog rules', () => {
+  const catalog = [
+    { id: 'filing-pr', description: 'Open a pull request for the current branch with a title and description. Use when the user asks to open a PR.' },
+    { id: 'babysitting-pr', description: 'Monitor a pull request through CI and review until checks pass. Use when the user asks to watch a PR.' },
+  ];
+  const sidecar = (interaction = 'none') =>
+    `schema: 1\npackage:\n  name: "@agileflow/filing-pr"\n  version: 1.0.0\ncapabilities:\n  userInteraction: ${interaction}\n`;
+  const messages = async (dir: string, level?: string) =>
+    (await lintSkill(dir, { official: true, catalog })).issues.filter((i) => !level || i.level === level).map((i) => i.message).join('\n');
+
+  it('an uncovered near neighbor is an error for official skills; no neighbor-tagged negative at all is a warning', async () => {
+    const dir = writeSkill(tempDir(), 'filing-pr', catalog[0]!.description, { a: positive, b: negative(), c: negative() });
+    fs.writeFileSync(path.join(dir, 'agileflow.skill.yaml'), sidecar());
+    expect(await messages(dir, 'error')).toContain('no negative scenario covers the neighboring skill babysitting-pr');
+    expect(await messages(dir, 'warning')).toContain('no negative scenario names a neighbor');
+    fs.writeFileSync(path.join(dir, 'evals', 'c.yaml'), `name: c\nskill: filing-pr\n${negative('babysitting-pr')}`);
+    expect(await messages(dir)).not.toContain('neighbor');
+  });
+
+  it('requires a happy and a blocked or failure path once positives declare path', async () => {
+    const dir = writeSkill(tempDir(), 'filing-pr', catalog[0]!.description, { a: positive, b: negative('babysitting-pr'), c: negative() });
+    fs.writeFileSync(path.join(dir, 'agileflow.skill.yaml'), sidecar());
+    expect(await messages(dir, 'warning')).toContain('mark positive scenarios with path');
+    fs.writeFileSync(path.join(dir, 'evals', 'a.yaml'), `name: a\nskill: filing-pr\n${positive}path: happy\n`);
+    expect(await messages(dir, 'error')).toContain('positive scenarios need a blocked or failure path');
+    fs.writeFileSync(path.join(dir, 'evals', 'd.yaml'), `name: d\nskill: filing-pr\n${positive}path: blocked\n`);
+    fs.writeFileSync(path.join(dir, 'evals', 'c.yaml'), `name: c\nskill: filing-pr\n${negative()}path: failure\n`);
+    const all = await messages(dir);
+    expect(all).not.toContain('positive scenarios need');
+    expect(all).toContain('eval c: path only applies to positive scenarios');
+  });
+
+  it('checks skill ids named in the description, references/ files, the interaction contract, and lean bodies', async () => {
+    expect(referencedSkillIds('Not for reviewing (reviewing-changes), or plans (planning-migrations or writing-stories). Use (e.g. "x-y z") when...')).toEqual([
+      'reviewing-changes',
+      'planning-migrations',
+      'writing-stories',
+    ]);
+    expect(tellsAgentToAsk('Never ask what the repository answers. Ask only about real product choices.')).toBe(true);
+    expect(tellsAgentToAsk('Do not stop to ask. Do not edit code unless the user asked for fixes.')).toBe(false);
+
+    const description = `${catalog[0]!.description} Not for watching CI (babysitting-pr) or reviews (reviewing-changes).`;
+    const dir = writeSkill(tempDir(), 'filing-pr', description, { a: `${positive}path: happy\n`, d: `${positive}path: blocked\n`, b: negative('babysitting-pr'), c: negative() });
+    fs.writeFileSync(path.join(dir, 'agileflow.skill.yaml'), sidecar('none'));
+    const body = ['# filing-pr', '', 'See references/checklist.md and references/missing.md.', '', 'Stop and ask the user which base branch to use.', ...Array.from({ length: 60 }, (_, i) => `- step ${i}`), '', '## Done when', '', 'Done.'];
+    fs.writeFileSync(path.join(dir, 'SKILL.md'), `---\nname: filing-pr\ndescription: ${description}\n---\n\n${body.join('\n')}\n`);
+    fs.mkdirSync(path.join(dir, 'references'));
+    fs.writeFileSync(path.join(dir, 'references', 'checklist.md'), '# checklist\n');
+    fs.writeFileSync(path.join(dir, 'references', 'orphan.md'), '# orphan\n');
+    const result = await lintSkill(dir, { official: true, catalog });
+    const text = (level: string) => result.issues.filter((i) => i.level === level).map((i) => i.message).join('\n');
+    expect(text('warning')).toContain('description names (reviewing-changes), which is not in the catalog');
+    expect(text('warning')).not.toContain('(babysitting-pr)');
+    expect(text('error')).toContain('SKILL.md mentions references/missing.md, which does not exist');
+    expect(text('warning')).toContain('references/orphan.md is not mentioned');
+    expect(text('warning')).not.toContain('references/checklist.md');
+    expect(text('warning')).toContain('tells the agent to ask the user, but agileflow.skill.yaml declares capabilities.userInteraction: none');
+    expect(text('info')).toMatch(/official skills aim for 60 or fewer/);
+
+    fs.writeFileSync(path.join(dir, 'agileflow.skill.yaml'), sidecar('optional'));
+    fs.writeFileSync(path.join(dir, 'SKILL.md'), `---\nname: filing-pr\ndescription: ${catalog[0]!.description}\n---\n\n# filing-pr\n\nOpen it.\n\n## Done when\n\nDone.\n`);
+    expect(await messages(dir, 'warning')).toContain('declares capabilities.userInteraction: optional, but SKILL.md never says when to ask the user');
   });
 });

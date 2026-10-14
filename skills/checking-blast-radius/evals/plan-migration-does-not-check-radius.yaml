@@ -1,0 +1,10 @@
+name: plan-migration-does-not-check-radius
+skill: checking-blast-radius
+fixture: monorepo
+prompt: |
+  Plan how we roll out renaming orders.email to buyer_email: the order of
+  migrations and deploys, the backfill, and how we roll back if it goes wrong.
+invocation: implicit
+neighbor: planning-migrations
+assert:
+  shouldActivate: false

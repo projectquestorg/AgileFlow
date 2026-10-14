@@ -1,3 +1,4 @@
+import type { PackActivation, PackComparison, SkillComparison } from './compare';
 import type { LintResult } from './lint';
 import type { Interval } from './metrics';
 import type { EvalReport, PreferenceComparison, RunResult, ScenarioResult, ScenarioStatus } from './runner';
@@ -6,8 +7,14 @@ import type { EvalReport, PreferenceComparison, RunResult, ScenarioResult, Scena
  * Machine-readable eval report (`agileflow eval --json` / `--out`). The shape
  * is documented in the eval command docs; bump `schemaVersion` on any
  * breaking change (removed or renamed fields, changed meaning).
+ *
+ * 2: scenario status `error` became `inconclusive` (plus `not-run`), summary
+ *    `errored` became `inconclusive`; ungraded judge criteria are inconclusive.
  */
-export const REPORT_SCHEMA_VERSION = 1;
+export const REPORT_SCHEMA_VERSION = 2;
+
+/** Raw transcript kept inline for errored runs (the full one is in `transcriptFile` when written). */
+const RAW_TRANSCRIPT_LIMIT = 20000;
 
 export interface ProviderColumnSummary {
   precision: number | null;
@@ -15,7 +22,7 @@ export interface ProviderColumnSummary {
   f1: number | null;
   passed: number;
   failed: number;
-  errored: number;
+  inconclusive: number;
 }
 
 export interface ProviderComparisonRow {
@@ -45,8 +52,9 @@ export function compareProviders(reports: EvalReport[]): ProviderComparison | nu
   for (const report of reports) {
     const column = reportColumn(report);
     const s = report.summary;
-    summary[column] = { precision: s.precision, recall: s.recall, f1: s.f1, passed: s.passed, failed: s.failed, errored: s.errored };
+    summary[column] = { precision: s.precision, recall: s.recall, f1: s.f1, passed: s.passed, failed: s.failed, inconclusive: s.inconclusive };
     for (const r of report.results) {
+      if (r.status === 'not-run') continue;
       const key = `${r.skill}/${r.scenario}`;
       const row = rows.get(key) ?? { skill: r.skill, scenario: r.scenario, kind: r.kind, results: {} };
       row.results[column] = { status: r.status, passRate: r.passRate.rate, ci95: r.passRate.ci95 };
@@ -58,10 +66,13 @@ export function compareProviders(reports: EvalReport[]): ProviderComparison | nu
 }
 
 function serializeRun(run: RunResult) {
+  const raw = run.transcript.raw;
   return {
     status: run.status,
     error: run.error,
     activated: run.activated,
+    activationObserved: run.activationObserved,
+    provenance: run.provenance,
     otherActivations: run.otherActivations,
     passed: run.passed,
     askedUser: run.askedUser,
@@ -71,8 +82,18 @@ function serializeRun(run: RunResult) {
     rubric: run.rubric,
     violations: run.violations,
     fileChanges: run.fileChanges,
+    unexpectedChanges: run.unexpectedChanges,
+    usage: run.transcript.usage ?? null,
     visibleSkills: run.transcript.visibleSkills,
     foreignSkills: run.foreignSkills,
+    taskCompleted: run.taskCompleted,
+    judgeReply: run.judgeReply,
+    transcriptFile: run.transcriptFile,
+    // Errored runs keep their evidence inline even without a transcript file.
+    ...(run.status === 'error' && raw
+      ? { rawTranscript: raw.length > RAW_TRANSCRIPT_LIMIT ? `${raw.slice(0, RAW_TRANSCRIPT_LIMIT)}\n...[truncated]` : raw }
+      : {}),
+    model: run.transcript.model ?? null,
     sandbox: run.sandbox,
     exitCode: run.transcript.exitCode,
     durationMs: run.transcript.durationMs,
@@ -90,21 +111,54 @@ export function serializeReport(report: EvalReport) {
   return { ...report, results: report.results.map(serializeScenario) };
 }
 
+/** A problem found before any provider run; any one stops the eval. */
+export interface PreflightIssue {
+  /** `skill/scenario`, a skill id, or a flag. */
+  subject: string;
+  message: string;
+}
+
+/** Pack activation across every skill installed together (`--pack` without `--compare`). */
+export interface PackActivationReport {
+  pack: string;
+  provider: string;
+  authoring: PackActivation;
+  heldOut: PackActivation;
+}
+
+function serializeComparison(c: SkillComparison | PackComparison) {
+  return { ...c, reports: Object.fromEntries(Object.entries(c.reports).map(([arm, r]) => [arm, serializeReport(r)])) };
+}
+
 export interface JsonReportInput {
   lint: LintResult[];
   reports: EvalReport[];
   preferenceComparisons?: Array<PreferenceComparison & { provider: string }>;
   exitCode: number;
+  /** false while runs are still going or after an interruption. Default true. */
+  complete?: boolean;
+  /** Signal or failure that stopped the eval early. */
+  interrupted?: string | null;
+  preflight?: PreflightIssue[];
+  agileflowVersion?: string | null;
+  comparisons?: Array<SkillComparison | PackComparison>;
+  packActivation?: PackActivationReport[];
 }
 
 export function buildJsonReport(input: JsonReportInput) {
   return {
     schemaVersion: REPORT_SCHEMA_VERSION,
-    ok: input.exitCode === 0,
+    ok: input.exitCode === 0 && input.complete !== false,
     exitCode: input.exitCode,
+    complete: input.complete ?? true,
+    interrupted: input.interrupted ?? null,
+    agileflowVersion: input.agileflowVersion ?? null,
+    preflight: input.preflight ?? [],
     lint: input.lint,
     reports: input.reports.map(serializeReport),
     providerComparison: compareProviders(input.reports),
+    comparisons: (input.comparisons ?? []).map(serializeComparison),
+    packActivation: input.packActivation ?? [],
     preferenceComparisons: input.preferenceComparisons ?? [],
   };
 }

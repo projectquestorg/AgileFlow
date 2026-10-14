@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "name": "@agileflow/creating-epics",
-  "description": "Create or refine an AgileFlow Work epic, one outcome-level body of work with its problem, outcome, scope, non-goals, and success signals. Use when the user asks to create, draft, or refine an epic, or to frame a multi-story initiative or roadmap item as an epic. Not for splitting an epic into stories, writing a single story, implementing work, or explaining what an epic is.",
-  "latest": "1.0.1",
+  "description": "Create or refine an AgileFlow Work epic, one outcome-level body of work with its problem, outcome, scope, non-goals, and success signals. Use when the user asks to create, draft, or refine an epic, or to frame a multi-story initiative or roadmap item as an epic. Not for splitting an epic into stories or writing a single story (writing-stories), implementing work, or explaining what an epic is.",
+  "latest": "1.0.2",
   "versions": {
     "1.0.1": {
       "name": "@agileflow/creating-epics",
@@ -13,6 +13,27 @@
         "description": "Create or refine an AgileFlow Work epic, one outcome-level body of work with its problem, outcome, scope, non-goals, and success signals. Use when the user asks to create, draft, or refine an epic, or to frame a multi-story initiative or roadmap item as an epic. Not for splitting an epic into stories, writing a single story, implementing work, or explaining what an epic is.",
         "activation": "auto",
         "files": 6,
+        "references": [],
+        "scripts": [],
+        "requirements": {
+          "commands": [],
+          "network": "none"
+        }
+      },
+      "compatibility": {
+        "agentSkills": true,
+        "bundleFormat": 1
+      }
+    },
+    "1.0.2": {
+      "name": "@agileflow/creating-epics",
+      "version": "1.0.2",
+      "integrity": "sha256-wfDz4F6083t/9TD4TQSg8XlNa+rJE19vpF+XCBCor3s=",
+      "url": "packages/@agileflow/creating-epics/1.0.2.json",
+      "metadata": {
+        "description": "Create or refine an AgileFlow Work epic, one outcome-level body of work with its problem, outcome, scope, non-goals, and success signals. Use when the user asks to create, draft, or refine an epic, or to frame a multi-story initiative or roadmap item as an epic. Not for splitting an epic into stories or writing a single story (writing-stories), implementing work, or explaining what an epic is.",
+        "activation": "auto",
+        "files": 8,
         "references": [],
         "scripts": [],
         "requirements": {

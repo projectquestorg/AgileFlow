@@ -22,12 +22,15 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Release tags are the baseline registry:check verifies history against.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
       - run: npm ci --legacy-peer-deps --no-audit --no-fund --ignore-scripts
-      - name: Registry is consistent before attesting
+      - name: Registry is consistent and matches released history before attesting
         run: npm run registry:check
       - uses: actions/attest-build-provenance@v2
         with:

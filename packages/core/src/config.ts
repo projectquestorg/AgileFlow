@@ -4,12 +4,15 @@ import semver from 'semver';
 import YAML from 'yaml';
 import { z } from 'zod';
 import { isNotFound, writeFileAtomic } from './fs';
+import { HASH_VERSION } from './hash';
 import { formatZodError, SKILL_NAME_RE } from './skill';
 
 export const PROJECT_CONFIG_FILE = 'agileflow.yaml';
 export const LOCK_FILE = 'agileflow.lock';
 export const GLOBAL_CONFIG_FILE = 'config.yaml';
 export const GLOBAL_LOCK_FILE = 'agileflow.lock';
+
+const UPGRADE_HINT = 'Upgrade the CLI: npm install -g agileflow@latest';
 
 export const ActivationSchema = z.enum(['auto', 'manual']);
 export type Activation = z.infer<typeof ActivationSchema>;
@@ -25,6 +28,9 @@ export type InteractionPreference = z.infer<typeof InteractionPreferenceSchema>;
 export const GIT_REF_RE = /^(?!-)(?!.*\.\.)(?!.*\/\/)(?!.*@\{)(?!.*\.lock$)(?!.*\/$)(?!.*\.$)[A-Za-z0-9._/+-]{1,200}$/;
 /** A full git commit id (SHA-1 or SHA-256). */
 export const COMMIT_RE = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
+
+/** A package hash as AgileFlow records it: `sha256-<base64>`. */
+export const INTEGRITY_RE = /^sha256-[A-Za-z0-9+/]{43}=$/;
 
 export function isSafeGitRef(ref: string): boolean {
   return GIT_REF_RE.test(ref);
@@ -129,29 +135,68 @@ export const LockEntrySchema = z
     /** Git sources: the ref from agileflow.yaml that `resolved` came from. */
     ref: GitRefSchema.optional(),
     /** Hash of the source package as published (absent for locally owned skills). */
-    integrity: z.string().min(1).optional(),
+    integrity: z.string().regex(INTEGRITY_RE, 'must be a sha256- package hash').optional(),
     /** Install location relative to the scope root (POSIX separators). */
     path: z.string().min(1),
     /**
      * Hash of the rendered skill directory as AgileFlow wrote it: source plus
-     * render inputs (managed notice, interaction overlay, activation metadata).
-     * Same `integrity` with a different `renderedHash` means only the render
-     * inputs changed, and `sync` re-renders clean skills.
+     * render inputs (managed notice, interaction overlay, activation metadata),
+     * compared under the rule `hashVersion` names (see `matchesRenderedHash`).
      */
     renderedHash: z.string().min(1).optional(),
+    /**
+     * Installed-file comparison rule of `renderedHash` (absent: legacy, exact or
+     * line-ending/exec-bit insensitive). A rule newer than this CLI knows is
+     * refused: this CLI could not tell a local edit from a clean copy.
+     */
+    hashVersion: z
+      .number()
+      .int()
+      .min(2)
+      .max(HASH_VERSION, { message: `uses a newer installed-file hash rule than this AgileFlow supports; ${UPGRADE_HINT}` })
+      .optional(),
+    /** Files written executable (hash version 2; absent means none). */
+    executables: z.array(z.string().min(1)).optional(),
+    /**
+     * `RENDERER_REVISION` of the CLI that rendered this entry. Its presence
+     * also means the render inputs below were recorded.
+     */
+    renderer: z.number().int().min(1).optional(),
+    /** Render input: the question-preference overlay that was rendered (absent: none). */
+    questionOverlay: z.enum(['prefer', 'minimize']).optional(),
     activation: ActivationSchema.default('auto'),
     /** `managed`: AgileFlow owns the content. `local`: the user owns it (forks, local skills). */
     ownership: z.enum(['managed', 'local']).default('managed'),
     enabled: z.literal(false).optional(),
   })
-  // Fields written by a newer AgileFlow are kept, not rejected, so teammates
-  // on different CLI versions can share one lockfile.
-  .loose();
+  // Unknown fields are informational and kept, not rejected, so teammates on
+  // different CLI versions can share one lockfile. Anything that changes what
+  // AgileFlow may do is gated instead: the lockfile `version` (older CLIs
+  // refuse a newer format), `hashVersion` (refused above), and `renderer`
+  // (a newer render is never rewritten by an older CLI).
+  .loose()
+  // A managed entry without its package hash would make AgileFlow trust
+  // whatever the source serves next, so the lockfile is malformed instead.
+  .refine((entry) => entry.ownership !== 'managed' || entry.integrity !== undefined, {
+    message:
+      'managed entries must record the package integrity; restore agileflow.lock from version control, or delete this entry from agileflow.lock and run `agileflow update <skill>` to resolve it again',
+    path: ['integrity'],
+  });
 export type LockEntry = z.infer<typeof LockEntrySchema>;
+
+/**
+ * Lockfile format written by this CLI. Format 2 adds the installed-file hash
+ * rule (`hashVersion`, `executables`) and the recorded render (`renderer`,
+ * `questionOverlay`). It is written only when an entry uses them, so a
+ * project whose lock has none stays readable by format-1 CLIs, and a CLI
+ * that predates format 2 refuses to touch one that does (see
+ * `assertSupportedVersion`) instead of ignoring fields it cannot honor.
+ */
+export const LOCK_FORMAT_VERSION = 2;
 
 export const LockfileSchema = z
   .object({
-    version: z.literal(1),
+    version: z.union([z.literal(1), z.literal(2)]),
     resolved: z.record(SkillIdSchema, LockEntrySchema).default({}),
   })
   .loose();
@@ -182,21 +227,21 @@ async function readYamlFile(file: string): Promise<unknown | undefined> {
   }
 }
 
-/** Highest file format version this CLI reads. */
+/** Highest config file format version this CLI reads (agileflow.yaml, config.yaml). */
 export const SUPPORTED_FORMAT_VERSION = 1;
 
-function assertSupportedVersion(raw: unknown, file: string): void {
+function assertSupportedVersion(raw: unknown, file: string, supported: number): void {
   const version = (raw as { version?: unknown } | null)?.version;
-  if (typeof version === 'number' && version > SUPPORTED_FORMAT_VERSION) {
+  if (typeof version === 'number' && version > supported) {
     throw new ConfigError(
-      `${path.basename(file)} uses format version ${version}, written by a newer AgileFlow. Upgrade the CLI: npm install -g agileflow@latest`,
+      `${path.basename(file)} uses format version ${version}, written by a newer AgileFlow. ${UPGRADE_HINT}`,
       file,
     );
   }
 }
 
-function parseWith<T>(schema: z.ZodType<T>, raw: unknown, file: string): T {
-  assertSupportedVersion(raw, file);
+function parseWith<T>(schema: z.ZodType<T>, raw: unknown, file: string, supported = SUPPORTED_FORMAT_VERSION): T {
+  assertSupportedVersion(raw, file, supported);
   const result = schema.safeParse(raw);
   if (!result.success) {
     throw new ConfigError(`${path.basename(file)} is invalid: ${formatZodError(result.error)}`, file);
@@ -219,7 +264,7 @@ export async function readGlobalConfig(file: string): Promise<GlobalConfig | nul
 export async function readLockfile(file: string): Promise<Lockfile | null> {
   const raw = await readYamlFile(file);
   if (raw === undefined) return null;
-  return parseWith(LockfileSchema, raw, file);
+  return parseWith(LockfileSchema, raw, file, LOCK_FORMAT_VERSION);
 }
 
 const LOCK_HEADER =
@@ -238,6 +283,10 @@ const KNOWN_LOCK_KEYS = new Set([
   'integrity',
   'path',
   'renderedHash',
+  'hashVersion',
+  'executables',
+  'renderer',
+  'questionOverlay',
   'activation',
   'ownership',
   'enabled',
@@ -256,6 +305,10 @@ export function serializeLockfile(lock: Lockfile): string {
     if (entry.integrity) ordered.integrity = entry.integrity;
     ordered.path = entry.path;
     if (entry.renderedHash) ordered.renderedHash = entry.renderedHash;
+    if (entry.hashVersion !== undefined) ordered.hashVersion = entry.hashVersion;
+    if (entry.executables?.length) ordered.executables = entry.executables;
+    if (entry.renderer !== undefined) ordered.renderer = entry.renderer;
+    if (entry.questionOverlay) ordered.questionOverlay = entry.questionOverlay;
     ordered.activation = entry.activation;
     ordered.ownership = entry.ownership;
     if (entry.enabled === false) ordered.enabled = false;
@@ -266,7 +319,12 @@ export function serializeLockfile(lock: Lockfile): string {
     resolved[id] = ordered;
   }
   const extra = Object.fromEntries(Object.entries(lock).filter(([k]) => k !== 'version' && k !== 'resolved'));
-  return LOCK_HEADER + YAML.stringify({ version: 1, ...extra, resolved }, { lineWidth: 0 });
+  return LOCK_HEADER + YAML.stringify({ version: lockFormatFor(lock), ...extra, resolved }, { lineWidth: 0 });
+}
+
+/** The lowest lockfile format that can carry `lock`: 2 once any entry uses format-2 fields. */
+export function lockFormatFor(lock: Lockfile): 1 | 2 {
+  return Object.values(lock.resolved).some((e) => e.hashVersion !== undefined || e.renderer !== undefined) ? 2 : 1;
 }
 
 export async function writeLockfile(file: string, lock: Lockfile): Promise<void> {

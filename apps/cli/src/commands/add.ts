@@ -1,6 +1,7 @@
 import { loadWorkspace, pathExists, type Activation } from '@agileflow/core';
 import type { Cli } from '../runtime';
 import { EXIT, mutate, scopeFor, servicesFor, UsageError } from '../runtime';
+import { mutationEnvelope } from '../ui/output';
 import { installRequests, preparedJson, resolveAddTargets, syncReportJson } from './shared';
 
 export interface AddOptions {
@@ -11,10 +12,18 @@ export interface AddOptions {
   ref?: string;
   dryRun?: boolean;
   json?: boolean;
+  /** Adopt skills already present in this scope instead of installing new ones. */
+  adopt?: boolean;
 }
 
 export async function runAdd(cli: Cli, targets: string[], options: AddOptions): Promise<number> {
   const { out, prompter } = cli;
+  if (options.adopt) {
+    if (options.activation || options.skill?.length || options.ref) {
+      throw new UsageError('--adopt takes skill ids only (no --activation, --skill, or --ref)');
+    }
+    return (await import('./adopt')).runAdopt(cli, targets, options);
+  }
   let activation: Activation | undefined;
   if (options.activation) {
     if (options.activation !== 'auto' && options.activation !== 'manual') {
@@ -55,7 +64,15 @@ export async function runAdd(cli: Cli, targets: string[], options: AddOptions): 
     const { ws, fresh, already } = await plan();
     const result = await installRequests(cli, services, ws, fresh, { activation, dryRun: true });
     if (options.json) {
-      out.json({ ok: true, dryRun: true, scope: scope.kind, alreadyInstalled: already, plan: result.prepared.map(preparedJson) });
+      const plan = result.prepared.map(preparedJson);
+      out.json(
+        mutationEnvelope('add', {
+          dryRun: true,
+          applied: plan,
+          skipped: already.map((id) => ({ id, reason: 'already installed' })),
+          extra: { scope: scope.kind, alreadyInstalled: already, plan },
+        }),
+      );
     } else {
       out.line(result.prepared.length ? 'Dry run: nothing was installed.' : 'Nothing to install.');
     }
@@ -65,14 +82,28 @@ export async function runAdd(cli: Cli, targets: string[], options: AddOptions): 
   return mutate(cli, scope, async () => {
     const { ws, fresh, already } = await plan();
     if (!fresh.length) {
-      if (options.json) out.json({ ok: true, scope: scope.kind, installed: [], alreadyInstalled: already });
+      if (options.json) {
+        out.json(
+          mutationEnvelope('add', {
+            skipped: already.map((id) => ({ id, reason: 'already installed' })),
+            extra: { scope: scope.kind, installed: [], alreadyInstalled: already },
+          }),
+        );
+      }
       return EXIT.OK;
     }
     const createdConfig = !(await pathExists(scope.configPath));
     const result = await installRequests(cli, services, ws, fresh, { activation, yes: options.yes });
     if (result.declined) {
       out.line('Nothing installed.');
-      if (options.json) out.json({ ok: true, scope: scope.kind, installed: [], declined: true });
+      if (options.json) {
+        out.json(
+          mutationEnvelope('add', {
+            skipped: result.prepared.map((p) => ({ id: p.id, reason: 'declined' })),
+            extra: { scope: scope.kind, installed: [], declined: true },
+          }),
+        );
+      }
       return EXIT.OK;
     }
     if (createdConfig) {
@@ -80,13 +111,20 @@ export async function runAdd(cli: Cli, targets: string[], options: AddOptions): 
     }
     const errors = result.report?.events.filter((e) => e.level === 'error') ?? [];
     if (options.json) {
-      out.json({
-        ok: errors.length === 0,
-        scope: scope.kind,
-        installed: result.prepared.map(preparedJson),
-        alreadyInstalled: already,
-        sync: result.report ? syncReportJson(result.report) : null,
-      });
+      const installed = result.prepared.map(preparedJson);
+      out.json(
+        mutationEnvelope('add', {
+          applied: installed,
+          skipped: already.map((id) => ({ id, reason: 'already installed' })),
+          events: result.report?.events ?? [],
+          extra: {
+            scope: scope.kind,
+            installed,
+            alreadyInstalled: already,
+            sync: result.report ? syncReportJson(result.report) : null,
+          },
+        }),
+      );
     }
     return errors.length ? EXIT.ERROR : EXIT.OK;
   });

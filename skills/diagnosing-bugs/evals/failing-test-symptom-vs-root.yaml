@@ -5,6 +5,7 @@ prompt: |
   It says expected 90 but received 100. Can you sort it out?
 invocation: implicit
 fixture: eval-service
+path: happy
 assert:
   shouldActivate: true
 rubric:

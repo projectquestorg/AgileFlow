@@ -1,6 +1,6 @@
 ---
 name: creating-epics
-description: Create or refine an AgileFlow Work epic, one outcome-level body of work with its problem, outcome, scope, non-goals, and success signals. Use when the user asks to create, draft, or refine an epic, or to frame a multi-story initiative or roadmap item as an epic. Not for splitting an epic into stories, writing a single story, implementing work, or explaining what an epic is.
+description: Create or refine an AgileFlow Work epic, one outcome-level body of work with its problem, outcome, scope, non-goals, and success signals. Use when the user asks to create, draft, or refine an epic, or to frame a multi-story initiative or roadmap item as an epic. Not for splitting an epic into stories or writing a single story (writing-stories), implementing work, or explaining what an epic is.
 ---
 
 # Creating epics

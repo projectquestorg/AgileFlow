@@ -3,5 +3,6 @@ skill: simplifying-explanations
 prompt: |
   Simplify this function, it has too many nested if statements.
 invocation: implicit
+neighbor: refactoring-safely
 assert:
   shouldActivate: false

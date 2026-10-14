@@ -11,6 +11,7 @@ prompt: |
   People at one of our customers keep getting 429 Too Many Requests when they
   log in from their office. They all share a single public IP. Fix it.
 invocation: explicit
+path: blocked
 assert:
   shouldActivate: true
 rubric:

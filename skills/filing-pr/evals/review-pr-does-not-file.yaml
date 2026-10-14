@@ -3,5 +3,6 @@ skill: filing-pr
 prompt: |
   Review PR #482 and tell me if it's safe to merge.
 invocation: implicit
+neighbor: reviewing-changes
 assert:
   shouldActivate: false

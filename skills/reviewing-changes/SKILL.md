@@ -1,6 +1,6 @@
 ---
 name: reviewing-changes
-description: Review the actual diff of a change, branch, or pull request for correctness bugs, regressions, scope mistakes, missing behavior, and security issues where relevant, and report prioritized findings. Use when the user asks to review, critique, or look over code changes, a diff, a commit, a branch, or a PR, typically before merging. Not for explaining unfamiliar code, writing new features, proving by running it that a change works, or judging whether a work item's acceptance criteria are met.
+description: Review the actual diff of a change, branch, or pull request for defects - correctness bugs, regressions, scope mistakes, missing behavior, and security issues where relevant - and report prioritized findings, or say plainly that none were found. Use when the user asks to review, critique, or look over code changes, a diff, a commit, a branch, or a PR, typically before merging. Not for explaining unfamiliar code, writing new features, proving by running it that a specific behavior works (verifying-changes), judging a story against its acceptance criteria (reviewing-story), or a dedicated security review or audit (reviewing-security).
 ---
 
 # Reviewing changes
@@ -17,7 +17,7 @@ Review what actually changed. Findings must be grounded in the diff and the code
    - **Regressions:** behavior that callers or users relied on and that changed without intent.
    - **Missing behavior:** parts of the stated goal not implemented; tests absent for new logic that is easy to test.
    - **Scope mistakes:** unrelated edits, drive-by refactors, debug leftovers, accidental file changes (lockfiles, generated files, secrets).
-   - **Security,** when the change touches input handling, auth, permissions, secrets, queries, shell commands, or file paths.
+   - **Security,** when the change touches input handling, auth, permissions, secrets, queries, shell commands, or file paths. Report the issues you can substantiate from the diff; this is incidental scope, not an audit. If the change needs a threat-level review (new trust boundaries, auth or crypto design), say so and recommend a dedicated security review instead of expanding this one.
 5. **Confirm before reporting.** For each suspected issue, re-read the code or run a quick check to make sure it is real. Drop anything you cannot substantiate or mark it clearly as a question.
 
 ## Constraints

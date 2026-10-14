@@ -1,8 +1,8 @@
 import path from 'node:path';
 import {
   classifyEntry,
-  hashTree,
   MIRROR_MARKER,
+  mirrorMatches,
   readTree,
   type Diagnostic,
   type PlannedChange,
@@ -14,6 +14,7 @@ import {
   type SupportLevel,
   type TreeFile,
 } from '@agileflow/core';
+import { compatibilityDiagnostics } from './compat';
 import { getSkillFrontmatter, setSkillFrontmatter } from './util';
 import { readSkillText } from './standard-agent-skills';
 import { cachedVersion, versionDiagnostics, type MinimumVersion } from './versions';
@@ -44,6 +45,8 @@ export interface LinkAdapterDefinition {
   /** Shown when `linkDir` is null for the scope. */
   noDirMessage?(pctx: ProviderContext): string;
   minimumVersion?: MinimumVersion;
+  /** Provider CLI release this adapter's behavior was last verified with (conformance run). */
+  verifiedWith?: string;
 }
 
 function canonicalLabel(pctx: ProviderContext, id?: string): string {
@@ -92,8 +95,8 @@ export function createLinkAdapter(def: LinkAdapterDefinition): ProviderAdapter {
             });
             break;
           }
-          const canonical = hashTree(await readTree(skill.dir, { exclude: (rel) => rel === MIRROR_MARKER }));
-          if (canonical !== state.marker.hash) {
+          const canonical = await readTree(skill.dir, { exclude: (rel) => rel === MIRROR_MARKER });
+          if (!mirrorMatches(canonical, state.marker)) {
             changes.push({ kind: 'refresh-mirror', provider, skillId: skill.id, path: entryPath, target: skill.dir });
           }
           break;
@@ -162,6 +165,7 @@ export function createLinkAdapter(def: LinkAdapterDefinition): ProviderAdapter {
       const modifiedMirrors: string[] = [];
       const staleMirrors: string[] = [];
       const conflicts: string[] = [];
+      const shadowed: string[] = [];
       const linkTypes = new Map<string, number>();
       const count = (key: string) => linkTypes.set(key, (linkTypes.get(key) ?? 0) + 1);
       for (const skill of skills) {
@@ -172,8 +176,8 @@ export function createLinkAdapter(def: LinkAdapterDefinition): ProviderAdapter {
           count('mirror');
           if (state.modified) modifiedMirrors.push(skill.id);
           else {
-            const canonical = hashTree(await readTree(skill.dir, { exclude: (rel) => rel === MIRROR_MARKER }));
-            if (canonical !== state.marker.hash) staleMirrors.push(skill.id);
+            const canonical = await readTree(skill.dir, { exclude: (rel) => rel === MIRROR_MARKER });
+            if (!mirrorMatches(canonical, state.marker)) staleMirrors.push(skill.id);
           }
         } else if (state.state === 'linked') count(state.linkType);
         else if (state.state === 'same-as-canonical') count('directory link');
@@ -185,6 +189,7 @@ export function createLinkAdapter(def: LinkAdapterDefinition): ProviderAdapter {
                 ? 'a file with the same name'
                 : `${name}-only skill with the same name`;
           conflicts.push(`${label(pctx, skill.id)}: ${why}`);
+          shadowed.push(skill.id);
         }
       }
       if (missing.length) {
@@ -209,9 +214,6 @@ export function createLinkAdapter(def: LinkAdapterDefinition): ProviderAdapter {
         });
       }
       if (conflicts.length) out.push({ level: 'warn', message: `${name} skills shadow AgileFlow skills`, detail: conflicts });
-      if (!missing.length && !modifiedMirrors.length && !staleMirrors.length && !conflicts.length) {
-        out.push({ level: 'ok', message: skills.length ? `${name} compatibility links valid` : `${name} has no skills to link` });
-      }
       if (linkTypes.size) {
         out.push({
           level: 'info',
@@ -220,28 +222,30 @@ export function createLinkAdapter(def: LinkAdapterDefinition): ProviderAdapter {
           verboseOnly: true,
         });
       }
-      const manual = skills.filter((s) => s.activation === 'manual');
-      if (manual.length && def.manualFlag) {
+      const unflagged: string[] = [];
+      if (def.manualFlag) {
         const flag = def.manualFlag;
-        const unflagged: string[] = [];
-        for (const skill of manual) {
+        for (const skill of skills) {
+          if (skill.activation !== 'manual') continue;
           const text = await readSkillText(skill);
           if (text && getSkillFrontmatter(text, flag.key) !== flag.value) unflagged.push(skill.id);
         }
-        if (unflagged.length) {
-          out.push({
-            level: 'warn',
-            message: `${name} may invoke manual skills automatically`,
-            detail: [`${unflagged.join(', ')} lack \`${flag.key.join('.')}: ${String(flag.value)}\`.`],
-          });
-        }
-      } else if (manual.length && def.manualInvocation === 'semantic') {
-        out.push({
-          level: 'info',
-          message: `${name} manual-only enforcement: semantic`,
-          detail: [`${manual.map((s) => s.id).join(', ')} rely on their descriptions to avoid automatic activation.`],
-        });
       }
+      out.push(
+        ...(await compatibilityDiagnostics(pctx, {
+          name,
+          location: def.linkLabel(pctx),
+          skills,
+          notInstalled: [...missing, ...shadowed],
+          via: linkTypes.size === 1 ? [...linkTypes.keys()][0] : [...linkTypes.entries()].map(([k, v]) => `${k}: ${v}`).join(', ') || undefined,
+          // Without a flag this adapter can write, manual-only is advisory.
+          manualInvocation: def.manualFlag ? def.manualInvocation : 'semantic',
+          manualMechanism: def.manualFlag ? `\`${def.manualFlag.key.join('.')}: ${String(def.manualFlag.value)}\` in SKILL.md` : undefined,
+          unflagged,
+          verifiedWith: def.verifiedWith,
+          detect: () => def.detect(pctx),
+        })),
+      );
       out.push(...(await versionDiagnostics(pctx, name, () => def.detect(pctx), def.minimumVersion)));
       return out;
     },

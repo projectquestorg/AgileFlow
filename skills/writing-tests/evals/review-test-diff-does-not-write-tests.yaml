@@ -1,0 +1,10 @@
+name: review-test-diff-does-not-write-tests
+skill: writing-tests
+fixture: eval-service
+prompt: |
+  Review my uncommitted changes to the test files for problems before I
+  commit them.
+invocation: implicit
+neighbor: reviewing-changes
+assert:
+  shouldActivate: false

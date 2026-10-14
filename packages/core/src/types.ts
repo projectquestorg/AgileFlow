@@ -69,6 +69,12 @@ export interface PackageFetcher {
   discover(source: string, root: string, ref?: string): Promise<DiscoveredSkill[]>;
   /** Registry catalog for interactive pickers. */
   listSkills(): Promise<Array<{ name: string; description: string; latest: string }>>;
+  /**
+   * False when the registry location comes from the project's own
+   * agileflow.yaml. A repository chooses that registry, so `@agileflow/*`
+   * names served from it are not official and go through third-party review.
+   */
+  readonly officialRegistry?: boolean;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,0 +1,10 @@
+name: broken-tests-does-not-verify
+skill: verifying-changes
+fixture: eval-service
+prompt: |
+  After my change to the rate limiter, the test "allows 60 requests per
+  minute by default" fails. Figure out what's wrong and fix it.
+invocation: implicit
+neighbor: diagnosing-bugs
+assert:
+  shouldActivate: false

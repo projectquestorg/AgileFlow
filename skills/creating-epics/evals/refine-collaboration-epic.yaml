@@ -7,6 +7,7 @@ prompt: |
   the success signals measurable and make it clear that bulk-importing
   members from a CSV is out of scope.
 invocation: implicit
+path: happy
 assert:
   shouldActivate: true
 rubric:

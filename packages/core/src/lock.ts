@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type { Context } from './context';
-import { isNotFound } from './fs';
+import { isNotFound, isTransientFsError, removePath, withFsRetry } from './fs';
 import { OperationError } from './errors';
 import type { ScopeTarget } from './scope';
 import { projectStateDir } from './state';
@@ -37,11 +37,45 @@ function processAlive(pid: number): boolean {
   }
 }
 
-async function readLockInfo(file: string): Promise<ScopeLockInfo | null> {
+async function readLockText(file: string): Promise<string | null> {
   try {
-    return JSON.parse(await fs.promises.readFile(file, 'utf8')) as ScopeLockInfo;
+    return await withFsRetry(() => fs.promises.readFile(file, 'utf8'));
   } catch {
     return null;
+  }
+}
+
+function parseLockInfo(text: string | null): ScopeLockInfo | null {
+  try {
+    return text === null ? null : (JSON.parse(text) as ScopeLockInfo);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Break a stale lock. Takeovers are serialized through `<lock>.break`
+ * (created exclusively), and inside it the lock is removed only if it still
+ * holds exactly the text that was judged stale. Nobody else can replace a
+ * lock file while it exists (creation is exclusive and owners only remove
+ * their own), so a fresh lock is never removed and nothing is ever put back.
+ */
+async function breakStaleLock(file: string, judged: string | null): Promise<void> {
+  const guard = `${file}.break`;
+  const me = JSON.stringify({ pid: process.pid, host: os.hostname(), at: new Date().toISOString() });
+  try {
+    await fs.promises.writeFile(guard, me, { flag: 'wx' });
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'EEXIST' && !isTransientFsError(err)) throw err;
+    // Another waiter is breaking it. Clear a guard left by a breaker that died.
+    const other = parseLockInfo(await readLockText(guard));
+    if (await isStale(guard, other, 60_000)) await removePath(guard).catch(() => undefined);
+    return;
+  }
+  try {
+    if ((await readLockText(file)) === judged) await removePath(file);
+  } finally {
+    if ((await readLockText(guard)) === me) await removePath(guard);
   }
 }
 
@@ -63,11 +97,17 @@ export interface ScopeLockOptions {
 }
 
 /**
- * Locks held by the current async call chain: a nested operation on the same
- * scope (e.g. `init` offering `work init`) re-enters instead of waiting on
- * itself, while unrelated concurrent calls in the same process still queue.
+ * Locks held by the current async call chain (lock file -> command): a nested
+ * operation on the same scope (e.g. `init` offering `work init`) re-enters
+ * instead of waiting on itself, while unrelated concurrent calls in the same
+ * process still queue.
  */
-const held = new AsyncLocalStorage<Set<string>>();
+const held = new AsyncLocalStorage<Map<string, string>>();
+
+/** The command holding this scope's lock in the current call chain (recorded in crash journals). */
+export function heldScopeCommand(ctx: Context, scope: ScopeTarget): string | undefined {
+  return held.getStore()?.get(scopeLockPath(ctx, scope));
+}
 
 /** Run `fn` while holding the scope lock. Waits for a concurrent command, then fails clearly. */
 export async function withScopeLock<T>(
@@ -94,10 +134,12 @@ export async function withScopeLock<T>(
       await fs.promises.writeFile(file, JSON.stringify(info) + '\n', { flag: 'wx' });
       break;
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
-      const holder = await readLockInfo(file);
-      if (await isStale(file, holder, 10 * 60_000)) {
-        await fs.promises.rm(file, { force: true });
+      // Windows reports a lock file that is being deleted as EPERM: wait like for a held lock.
+      if ((err as NodeJS.ErrnoException).code !== 'EEXIST' && !isTransientFsError(err)) throw err;
+      const text = await readLockText(file);
+      const holder = parseLockInfo(text);
+      if ((err as NodeJS.ErrnoException).code === 'EEXIST' && (await isStale(file, holder, 10 * 60_000))) {
+        await breakStaleLock(file, text);
         continue;
       }
       if (Date.now() >= deadline) {
@@ -115,9 +157,9 @@ export async function withScopeLock<T>(
     }
   }
   try {
-    return await held.run(new Set([...(held.getStore() ?? []), file]), fn);
+    return await held.run(new Map([...(held.getStore() ?? []), [file, info.command]]), fn);
   } finally {
-    const holder = await readLockInfo(file);
-    if (holder && holder.pid === info.pid && holder.at === info.at) await fs.promises.rm(file, { force: true });
+    const holder = parseLockInfo(await readLockText(file));
+    if (holder && holder.pid === info.pid && holder.at === info.at) await removePath(file);
   }
 }

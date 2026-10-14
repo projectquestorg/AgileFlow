@@ -148,6 +148,7 @@ export const geminiAdapter = createStandardAdapter({
     projectMarkers: ['.gemini', 'GEMINI.md'],
   },
   manualInvocation: 'semantic',
+  verifiedWith: 'Gemini CLI 0.60.0',
   minimumVersion: {
     version: '0.36.0',
     feature: 'reading .agents/skills',

@@ -1,8 +1,13 @@
 import fs from 'node:fs';
+import { evidenceProblems } from './evidence';
 import { idType } from './ids';
 import { productFile, readmeFile, relToProject, roadmapFile } from './paths';
 import { acceptanceCriteria, incompleteDependencies, isOpenStory, storiesForEpic } from './queries';
 import { allArtifacts, type WorkScan } from './scanner';
+import { findDependencyCycles } from './graph';
+import { capList } from './text';
+
+export { findDependencyCycles };
 import type { Story, WorkIssue } from './types';
 
 export interface WorkValidation {
@@ -16,61 +21,6 @@ export interface WorkValidation {
 
 const ID_MENTION_RE = /\b(?:EPIC|STORY|DEC)-[0-9A-HJKMNP-TV-Z]{8}\b/g;
 
-/**
- * Find dependency cycles among stories. Each cycle is reported once, starting
- * at its smallest ID. Iterative depth-first search, so arbitrarily long
- * dependency chains cannot overflow the call stack.
- */
-export function findDependencyCycles(stories: Story[]): string[][] {
-  const edges = new Map<string, string[]>();
-  for (const s of stories) if (!edges.has(s.id)) edges.set(s.id, (s.depends_on ?? []).filter((d) => d !== s.id));
-  const cycles = new Map<string, string[]>();
-  const done = new Set<string>();
-  /** Position of each story on the current path (only while it is being visited). */
-  const onPath = new Map<string, number>();
-  const path: string[] = [];
-  const frames: Array<{ id: string; next: number }> = [];
-  const enter = (id: string) => {
-    onPath.set(id, path.length);
-    path.push(id);
-    frames.push({ id, next: 0 });
-  };
-  for (const root of [...edges.keys()].sort()) {
-    if (done.has(root)) continue;
-    enter(root);
-    while (frames.length) {
-      const frame = frames[frames.length - 1]!;
-      const targets = edges.get(frame.id)!;
-      if (frame.next < targets.length) {
-        const next = targets[frame.next++]!;
-        if (!edges.has(next) || done.has(next)) continue;
-        const at = onPath.get(next);
-        if (at === undefined) {
-          enter(next);
-          continue;
-        }
-        const cycle = path.slice(at);
-        let min = 0;
-        for (let i = 1; i < cycle.length; i++) if (cycle[i]! < cycle[min]!) min = i;
-        const rotated = [...cycle.slice(min), ...cycle.slice(0, min)];
-        cycles.set(rotated.join('>'), rotated);
-      } else {
-        frames.pop();
-        path.pop();
-        onPath.delete(frame.id);
-        done.add(frame.id);
-      }
-    }
-  }
-  return [...cycles.values()];
-}
-
-/**
- * Validate workspace integrity: structure, frontmatter, duplicate IDs, epic,
- * dependency, and decision references, dependency cycles, done epics with
- * unfinished stories, and done stories with unchecked acceptance criteria.
- * Reports only; never changes a status.
- */
 export function validateWorkspace(scan: WorkScan): WorkValidation {
   const issues: WorkIssue[] = [];
   const passed: string[] = [];
@@ -143,7 +93,8 @@ export function validateWorkspace(scan: WorkScan): WorkValidation {
   }
   for (const cycle of findDependencyCycles(scan.stories)) {
     graphProblems++;
-    issues.push({ level: 'error', message: 'dependency cycle', detail: [[...cycle, cycle[0]].join(' -> ')] });
+    // Long cycles are shortened: the first ids, then `... (N more)`.
+    issues.push({ level: 'error', message: 'dependency cycle', detail: [capList([...cycle, cycle[0]!])] });
   }
   if (!graphProblems) passed.push('dependency graph valid');
 
@@ -181,6 +132,14 @@ export function validateWorkspace(scan: WorkScan): WorkValidation {
         detail: unchecked.map((c) => `[ ] ${c}`),
         path: story.path,
       });
+    }
+  }
+
+  // Acceptance-criteria evidence blocks that do not parse or point at criteria that no longer exist
+  for (const story of scan.stories) {
+    if (!story.body.includes('agileflow-evidence')) continue;
+    for (const problem of evidenceProblems(story.body)) {
+      issues.push({ level: 'warn', message: `${story.id}: ${problem}`, path: story.path });
     }
   }
 

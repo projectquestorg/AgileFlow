@@ -1,0 +1,80 @@
+name: merged-story-marked-done
+skill: reviewing-story
+description: >
+  The last-owner guard landed through a reviewed pull request that was merged
+  into main (merge commit), so every acceptance criterion and every Definition
+  of Done item is met. The right result checks all four criteria with evidence
+  and marks the story done, not a refusal.
+fixture: agile-app
+setup: |
+  git checkout -q -b fix/last-owner-guard
+  node --input-type=module <<'JS'
+  import fs from 'node:fs';
+  const file = 'src/workspaces.js';
+  const guard = [
+    "  if (workspace.members.get(userId) === 'owner' && ownerCount(workspace) === 1) {",
+    "    throw new Error('the last owner cannot leave; transfer ownership first');",
+    '  }',
+    '  workspace.members.delete(userId);',
+  ].join('\n');
+  const src = fs.readFileSync(file, 'utf8').replace('  workspace.members.delete(userId);', guard);
+  fs.writeFileSync(file, `${src}
+  /** Owners left in a workspace. */
+  export function ownerCount(workspace) {
+    return [...workspace.members.values()].filter((role) => role === 'owner').length;
+  }
+  `);
+  JS
+  cat >> test/workspaces.test.js <<'JS'
+
+  test('the last owner cannot leave', () => {
+    const store = createStore();
+    const ws = createWorkspace(store, { name: 'Acme', ownerId: 'ada' });
+    assert.throws(() => leaveWorkspace(store, ws.id, 'ada'), /transfer ownership/);
+    assert.equal(canAccess(store, ws.id, 'ada'), true);
+  });
+
+  test('an owner can leave when another owner remains', () => {
+    const store = createStore();
+    const ws = createWorkspace(store, { name: 'Acme', ownerId: 'ada' });
+    addMember(store, ws.id, { actorId: 'ada', userId: 'bob', role: 'owner' });
+    leaveWorkspace(store, ws.id, 'ada');
+    assert.equal(canAccess(store, ws.id, 'ada'), false);
+  });
+  JS
+  npm test --silent > /dev/null
+  git commit -qam 'fix(workspaces): keep the last owner from leaving'
+  git checkout -q main
+  git merge -q --no-ff fix/last-owner-guard -m 'Merge pull request #14 from acme/fix/last-owner-guard
+
+  fix(workspaces): keep the last owner from leaving (STORY-M9V4C6TE)
+
+  Reviewed-by: Grace Hopper <grace@example.com>'
+  git branch -q -d fix/last-owner-guard
+prompt: |
+  PR #14 with the last-owner guard for STORY-M9V4C6TE was reviewed and merged
+  this morning. Check the story against its criteria and close it if it's done.
+invocation: implicit
+path: happy
+assert:
+  shouldActivate: true
+rubric:
+  - maps each of the four acceptance criteria to its own concrete evidence (a test it ran and saw pass, or the implementing file:line) rather than relying on the tests passing in general
+  - records that evidence in the story (agileflow work evidence, or the agileflow-evidence block written by hand) with one or more records per criterion, then checks all four boxes
+  - checks the Definition of Done, including the reviewed and merged pull request (the merge commit on main and the user's statement), and npm test passing
+  - sets the story's status to done by changing only its status line (or with agileflow work status), without rewriting the criteria
+  - does not change the implementation
+  - criterion: evidence is recorded for all four criteria
+    fileContains:
+      path: docs/agile/03-stories/STORY-M9V4C6TE-leave-workspace.md
+      pattern: '(?:^\s*- criterion: [\s\S]*?){4}'
+  - criterion: the evidence block exists
+    fileContains:
+      path: docs/agile/03-stories/STORY-M9V4C6TE-leave-workspace.md
+      pattern: '^(```|~~~)\s*(yaml\s+)?agileflow-evidence\s*$'
+  - criterion: the story is marked done
+    fileContains:
+      path: docs/agile/03-stories/STORY-M9V4C6TE-leave-workspace.md
+      pattern: '^status: done$'
+  - criterion: the implementation is unchanged
+    fileUnchanged: 'src/**'

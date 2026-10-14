@@ -1,0 +1,23 @@
+name: webhook-handler-table
+skill: refactoring-safely
+description: >
+  The existing webhook tests cover only payment.succeeded, a bad signature, and
+  duplicates. The handler marks an event as seen only after it was handled, so
+  an event for an unknown invoice gets a 404 and is processed again when the
+  provider retries; unknown event types are ignored. A lookup-table refactor
+  must keep all of that, including for type strings such as "toString".
+fixture: eval-service
+prompt: |
+  The switch in the payment webhook handler keeps growing. Refactor it so each
+  event type has its own small handler function looked up from a table. No
+  behavior changes.
+invocation: implicit
+path: happy
+assert:
+  shouldActivate: true
+rubric:
+  - runs the existing webhook tests before changing the code
+  - adds characterization tests for paths the existing tests miss (payment.failed, an unknown invoice returning 404, ignored event types, malformed JSON) before or alongside the restructure
+  - keeps recording an event as seen only after it was handled, so a retried event for an unknown invoice is processed again rather than reported as a duplicate
+  - the lookup keeps ignoring event types that are not in the table, including strings such as "toString" or "constructor" (for example a Map or an own-property check)
+  - keeps createPaymentWebhookHandler's signature and response shapes, does not change existing test assertions, and reports test results from before and after

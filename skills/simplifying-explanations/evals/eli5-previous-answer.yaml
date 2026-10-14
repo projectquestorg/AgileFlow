@@ -4,6 +4,7 @@ prompt: |
   I didn't follow that explanation of the event loop at all.
   Explain it like I'm five.
 invocation: explicit
+path: happy
 assert:
   shouldActivate: true
 rubric:

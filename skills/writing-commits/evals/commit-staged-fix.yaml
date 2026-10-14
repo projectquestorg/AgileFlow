@@ -1,0 +1,63 @@
+name: commit-staged-fix
+skill: writing-commits
+description: >
+  A conventional-commit history plus a CONTRIBUTING.md that fixes the scope
+  names and forbids attribution trailers. The staged change fixes discountFor
+  and adds a test; an unrelated README edit is left unstaged and must stay out
+  of the commit and its message.
+fixture: eval-service
+setup: |
+  cat > CONTRIBUTING.md <<'MD'
+  # Contributing
+
+  ## Commits
+
+  - Use Conventional Commits: `type(scope): subject`. The scope is the folder
+    under `src/` the change is in (for example `billing`, `auth`, `export`).
+  - Write the subject in the imperative mood, lowercase, with no trailing
+    period, in at most 72 characters.
+  - Do not add `Co-Authored-By`, `Signed-off-by`, or any other attribution
+    trailer.
+  MD
+  git add CONTRIBUTING.md
+  git commit -qm 'docs: add a contributing guide'
+  sed 's/SESSION_TTL_MS = 60 \* 60 \* 1000; \/\/ 1 hour/SESSION_TTL_MS = 60 * 60 * 1000; \/\/ 1 hour, sliding expiry is not supported/' src/auth/sessions.js > sessions.tmp
+  mv sessions.tmp src/auth/sessions.js
+  git commit -qam 'docs(auth): note that sessions do not slide'
+  printf '\n## Exports\n\n`exportCsv` writes RFC 4180 CSV with a header row.\n' >> README.md
+  git commit -qam 'docs(export): describe the CSV format'
+  sed 's/customer?.discount_percent/customer?.discountPercent/' src/billing/discounts.js > discounts.tmp
+  mv discounts.tmp src/billing/discounts.js
+  cat >> test/invoice.test.js <<'JS'
+
+  test('caps the customer discount at 100 percent', () => {
+    const invoice = calculateInvoice({ items, customer: { id: 'c9', name: 'Test', discountPercent: 150 } });
+    assert.equal(invoice.total, 0);
+  });
+  JS
+  git add src/billing/discounts.js test/invoice.test.js
+  printf '\nSee CONTRIBUTING.md before sending changes.\n' >> README.md
+prompt: |
+  Commit what I've staged.
+invocation: implicit
+path: happy
+assert:
+  shouldActivate: true
+rubric:
+  - reads the staged diff (git diff --cached) and the recent history and CONTRIBUTING.md before writing the message
+  - the message describes the actual change (discountFor now reads discountPercent, so customer discounts apply, plus a test for the 100 percent cap)
+  - does not claim that tests pass unless it ran them in this session
+  - commits only the staged files and leaves the unstaged README edit out of the commit and the message
+  - does not push
+  - criterion: subject follows CONTRIBUTING.md (fix(billing), lowercase imperative)
+    fileContains:
+      path: .git/COMMIT_EDITMSG
+      pattern: '(?<![\s\S])fix\(billing\): [a-z]'
+  - criterion: no attribution trailers, as CONTRIBUTING.md forbids
+    fileContains:
+      path: .git/COMMIT_EDITMSG
+      pattern: '(?<![\s\S])(?![\s\S]*(?:[Cc]o-[Aa]uthored-[Bb]y|[Ss]igned-[Oo]ff-[Bb]y))'
+forbid:
+  commands:
+    - '\bgit\b.*\bpush\b'
+    - '--no-verify'

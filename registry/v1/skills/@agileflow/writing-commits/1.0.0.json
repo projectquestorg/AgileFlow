@@ -1,0 +1,23 @@
+{
+  "name": "@agileflow/writing-commits",
+  "version": "1.0.0",
+  "integrity": "sha256-grNOzzgUFKWNBomf/xujIUd4XcfrhCM5YBcEAWGpop0=",
+  "url": "packages/@agileflow/writing-commits/1.0.0.json",
+  "metadata": {
+    "description": "Write accurate commit messages from the actual staged diff and the repository's commit conventions (history style, conventional commits, documented rules such as required or forbidden trailers), without claims the diff or evidence does not support, and flag unrelated or accidental staged changes with a proposed split. Use when the user asks to commit, write or suggest a commit message, or split staged work into commits. Not for opening a pull request (filing-pr), reviewing changes for bugs (reviewing-changes), or pushing.",
+    "activation": "auto",
+    "files": 7,
+    "references": [],
+    "scripts": [],
+    "requirements": {
+      "commands": [
+        "git"
+      ],
+      "network": "none"
+    }
+  },
+  "compatibility": {
+    "agentSkills": true,
+    "bundleFormat": 1
+  }
+}

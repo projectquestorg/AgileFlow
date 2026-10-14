@@ -59,7 +59,7 @@ describe('Claude links when .claude or ~/.claude is itself a symlink', () => {
     expect((await classifyEntry(entry, skill.dir)).state).toBe('linked');
     const diags = await claudeAdapter.validate(pctx, [skill]);
     expect(diags.find((d) => d.level === 'error')).toBeUndefined();
-    expect(diags.map((d) => d.message)).toContain('Claude compatibility links valid');
+    expect(diags.map((d) => d.message)).toContain('Claude: visible in .claude/skills (1 skill via symlink; provider discovery not verified)');
     // Idempotent: nothing left to do.
     expect(await claudeAdapter.planProjectSkillExposure(pctx, [skill])).toEqual([]);
   });

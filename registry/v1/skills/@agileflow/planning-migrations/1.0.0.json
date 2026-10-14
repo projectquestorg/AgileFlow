@@ -1,0 +1,23 @@
+{
+  "name": "@agileflow/planning-migrations",
+  "version": "1.0.0",
+  "integrity": "sha256-I8mvqbvDIL7bOPIT611v1UzMfdVy4NzLkwqQaOa+dpU=",
+  "url": "packages/@agileflow/planning-migrations/1.0.0.json",
+  "metadata": {
+    "description": "Plan a database schema, data, or API migration before it runs - compatibility between old and new code, clients, and data, validation of existing data, deployment order (expand, migrate, contract), backfills, and per-step recovery - stating explicitly which steps lose data or cannot be reversed. Use when the user asks to plan, sequence, roll out, roll back, or de-risk a migration, a schema change such as renaming, retyping, or dropping a column or table, a backfill, or a breaking API change. Not for listing everything a finished change could break (checking-blast-radius), recording a decision already made (recording-decisions), or resolving git merge conflicts.",
+    "activation": "auto",
+    "files": 8,
+    "references": [
+      "references/risky-operations.md"
+    ],
+    "scripts": [],
+    "requirements": {
+      "commands": [],
+      "network": "none"
+    }
+  },
+  "compatibility": {
+    "agentSkills": true,
+    "bundleFormat": 1
+  }
+}

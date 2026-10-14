@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import YAML from 'yaml';
 import { copyTree, createContext, hashTree } from '@agileflow/core';
 import http from 'node:http';
-import { buildRegistry, createFetcher, decodeBundle, encodeBundle, OFFICIAL_PINS, RegistryClient } from '@agileflow/registry';
+import { buildRegistry, cachedBundlePath, createFetcher, decodeBundle, DEFAULT_REGISTRY, encodeBundle, isOfficialRegistry, OFFICIAL_PINS, RegistryClient } from '@agileflow/registry';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 /** Current published version of the skill these tests exercise. */
@@ -106,6 +106,27 @@ describe('append-only history', () => {
     expect(removed.errors.join('\n')).toMatch(/in the registry manifest but its version was removed/);
   });
 
+  it('checks history against the release baseline and the CLI pins, not only against itself', async () => {
+    const { out, skills } = await setup();
+    const opts = { skillsDir: skills, packsDir: path.join(REPO, 'packs'), outDir: out };
+    expect((await buildRegistry(opts)).errors).toEqual([]);
+    const released = JSON.parse(fs.readFileSync(path.join(out, 'v1/manifest.json'), 'utf8'));
+    expect((await buildRegistry({ ...opts, check: true, baseline: released, pinned: released.packages })).errors).toEqual([]);
+
+    // A registry rewritten consistently (bundle, documents, and hashes together)
+    // still differs from what was released.
+    const other = 'sha256-' + 'A'.repeat(43) + '=';
+    const rewritten = structuredClone(released);
+    rewritten.packages['@agileflow/verifying-changes'][VC] = other;
+    const res = await buildRegistry({ ...opts, check: true, baseline: rewritten });
+    expect(res.errors).toEqual([`@agileflow/verifying-changes@${VC}: integrity differs from the release baseline (published versions are immutable)`]);
+    const pinned = await buildRegistry({ ...opts, check: true, pinned: { '@agileflow/verifying-changes': { [VC]: other, '9.9.9': other } } });
+    expect(pinned.errors).toEqual([
+      `@agileflow/verifying-changes@${VC}: integrity differs from the integrity pinned in the CLI (published versions are immutable)`,
+      '@agileflow/verifying-changes@9.9.9: in the integrity pinned in the CLI but no longer published (published versions are immutable)',
+    ]);
+  });
+
   it('refuses hidden files and non-canonical versions in packages', async () => {
     const { root, skills } = await setup();
     fs.writeFileSync(path.join(skills, 'verifying-changes/.env'), 'SECRET=1\n');
@@ -124,6 +145,28 @@ describe('append-only history', () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(out, 'v1/manifest.json'), 'utf8'));
     expect(Object.keys(manifest.packages)).toHaveLength(SKILL_COUNT);
     expect(fs.readFileSync(pins, 'utf8')).toContain(manifest.packages['@agileflow/verifying-changes'][VC]);
+  });
+});
+
+describe('registry trust', () => {
+  it('keeps a separate package cache per registry, so one registry never supplies another\'s bytes', () => {
+    const ctx = createContext({ cwd: '/p', homeDir: '/h', cacheDir: '/c', configDir: '/cfg', env: {} });
+    const official = cachedBundlePath(ctx, '@agileflow/demo', '1.0.0', DEFAULT_REGISTRY);
+    const other = cachedBundlePath(ctx, '@agileflow/demo', '1.0.0', 'file:///repo/registry');
+    expect(official).toBe(path.join('/c', 'packages', '@agileflow', 'demo', '1.0.0', 'bundle.json'));
+    expect(other).not.toBe(official);
+    expect(other).not.toBe(cachedBundlePath(ctx, '@agileflow/demo', '1.0.0', 'https://mirror.example/registry'));
+  });
+
+  it('trusts the environment and personal config, but not a registry the repository names', () => {
+    const ctx = (env: Record<string, string> = {}) => createContext({ cwd: '/p', homeDir: '/h', cacheDir: '/c', configDir: '/cfg', env });
+    expect(isOfficialRegistry({ ctx: ctx() })).toBe(true);
+    expect(isOfficialRegistry({ ctx: ctx(), registry: 'https://mirror.example/registry' })).toBe(true);
+    expect(isOfficialRegistry({ ctx: ctx(), registry: 'https://evil.example/registry', registryFromProject: true })).toBe(false);
+    expect(isOfficialRegistry({ ctx: ctx(), registry: './registry', registryBase: '/p', registryFromProject: true })).toBe(false);
+    expect(isOfficialRegistry({ ctx: ctx(), registry: `${DEFAULT_REGISTRY}/`, registryFromProject: true })).toBe(true);
+    expect(isOfficialRegistry({ ctx: ctx({ AGILEFLOW_REGISTRY: '/r' }), registry: 'https://evil.example/registry', registryFromProject: true })).toBe(true);
+    expect(createFetcher({ ctx: ctx(), registry: 'https://evil.example/registry', registryFromProject: true }).officialRegistry).toBe(false);
   });
 });
 
@@ -241,6 +284,27 @@ describe('fetcher', () => {
     });
     expect((await offline.listSkills()).length).toBe(SKILL_COUNT);
     await expect(offline.resolve('verifying-changes', { source: '@agileflow/verifying-changes', version: VC }, root)).rejects.toThrow(/Offline/);
+  });
+
+  it('refuses redirects to another host unless explicitly allowed', async () => {
+    const target = http.createServer((_req, res) => res.end(JSON.stringify({ schema: 1, skills: [] })));
+    await new Promise<void>((resolve) => target.listen(0, '127.0.0.1', resolve));
+    const targetPort = (target.address() as { port: number }).port;
+    const redirector = http.createServer((req, res) => {
+      res.statusCode = 302;
+      res.setHeader('location', `http://localhost:${targetPort}${req.url}`);
+      res.end();
+    });
+    await new Promise<void>((resolve) => redirector.listen(0, '127.0.0.1', resolve));
+    const url = `http://127.0.0.1:${(redirector.address() as { port: number }).port}/registry`;
+    const ctx = (env: Record<string, string>) => createContext({ cwd: tmpdir(), homeDir: tmpdir(), cacheDir: tmpdir(), env: { AGILEFLOW_REGISTRY: url, ...env } });
+    try {
+      await expect(createFetcher({ ctx: ctx({}) }).listSkills()).rejects.toThrow(/redirected .* to another host/);
+      expect(await createFetcher({ ctx: ctx({ AGILEFLOW_ALLOW_REDIRECTS: '1' }) }).listSkills()).toEqual([]);
+    } finally {
+      await new Promise((resolve) => redirector.close(resolve));
+      await new Promise((resolve) => target.close(resolve));
+    }
   });
 
   it('reports an unreachable remote registry clearly', async () => {

@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "name": "@agileflow/resolving-conflicts",
-  "description": "Resolve git merge, rebase, cherry-pick, or stash conflicts by understanding the intent of both sides and producing a combined result that preserves both behaviors where compatible, then verifying and completing the operation. Use when a merge or rebase stops with conflicts, files contain conflict markers, or the user asks to fix, resolve, or get through merge conflicts.",
-  "latest": "1.0.1",
+  "description": "Resolve git merge, rebase, cherry-pick, or stash conflicts by understanding the intent of both sides and producing a combined result that preserves both behaviors where compatible, then verifying and completing the operation. Use when a merge or rebase stops with conflicts, files contain conflict markers, or the user asks to fix, resolve, or get through merge conflicts. Not for starting a merge or rebase, choosing a branching strategy, or fixing tests or builds that fail after a merge that had no conflicts (diagnosing-bugs).",
+  "latest": "1.0.2",
   "versions": {
     "1.0.0": {
       "name": "@agileflow/resolving-conflicts",
@@ -36,6 +36,29 @@
         "description": "Resolve git merge, rebase, cherry-pick, or stash conflicts by understanding the intent of both sides and producing a combined result that preserves both behaviors where compatible, then verifying and completing the operation. Use when a merge or rebase stops with conflicts, files contain conflict markers, or the user asks to fix, resolve, or get through merge conflicts.",
         "activation": "auto",
         "files": 6,
+        "references": [],
+        "scripts": [],
+        "requirements": {
+          "commands": [
+            "git"
+          ],
+          "network": "none"
+        }
+      },
+      "compatibility": {
+        "agentSkills": true,
+        "bundleFormat": 1
+      }
+    },
+    "1.0.2": {
+      "name": "@agileflow/resolving-conflicts",
+      "version": "1.0.2",
+      "integrity": "sha256-qr/KI7Ih/OuIO5zNO9crdEPGZ2foJgT0cUOis9mxfIs=",
+      "url": "packages/@agileflow/resolving-conflicts/1.0.2.json",
+      "metadata": {
+        "description": "Resolve git merge, rebase, cherry-pick, or stash conflicts by understanding the intent of both sides and producing a combined result that preserves both behaviors where compatible, then verifying and completing the operation. Use when a merge or rebase stops with conflicts, files contain conflict markers, or the user asks to fix, resolve, or get through merge conflicts. Not for starting a merge or rebase, choosing a branching strategy, or fixing tests or builds that fail after a merge that had no conflicts (diagnosing-bugs).",
+        "activation": "auto",
+        "files": 7,
         "references": [],
         "scripts": [],
         "requirements": {

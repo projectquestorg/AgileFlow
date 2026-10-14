@@ -1,0 +1,10 @@
+name: impact-check-does-not-plan-migration
+skill: planning-migrations
+fixture: monorepo
+prompt: |
+  I'm making `email` optional on the User contract in packages/contracts.
+  What else in the repo could this break?
+invocation: implicit
+neighbor: checking-blast-radius
+assert:
+  shouldActivate: false

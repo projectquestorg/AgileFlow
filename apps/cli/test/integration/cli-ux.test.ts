@@ -1,3 +1,6 @@
+import { createContext } from '@agileflow/core';
+import { cachedBundlePath } from '@agileflow/registry';
+import { pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
@@ -237,7 +240,8 @@ describe('verification', () => {
     // Tamper with both the cache and the registry copy of one package.
     const version = lockOf(sb).resolved['diagnosing-bugs'].version;
     for (const file of [
-      path.join(sb.cache, 'packages/@agileflow/diagnosing-bugs', version, 'bundle.json'),
+      // The package cache is per registry; the sandbox registry is a local directory.
+      cachedBundlePath(createContext({ cwd: sb.project, homeDir: sb.home, cacheDir: sb.cache, env: {} }), '@agileflow/diagnosing-bugs', version, pathToFileURL(sb.registry).toString()),
       path.join(sb.registry, 'packages/@agileflow/diagnosing-bugs', `${version}.json`),
     ]) {
       const bundle = JSON.parse(read(file));
@@ -277,7 +281,7 @@ describe('authoring', () => {
     expect(res.code).toBe(0);
     expect(res.stdout).toContain('Lint: passes the release gate.');
     const dir = path.join(sb.project, 'skills/releasing-packages');
-    expect(fs.readdirSync(path.join(dir, 'evals')).sort()).toEqual(['should-activate-1.yaml', 'should-not-activate-1.yaml', 'unrelated-question.yaml']);
+    expect(fs.readdirSync(path.join(dir, 'evals')).sort()).toEqual(['blocked-path.yaml', 'should-activate-1.yaml', 'should-not-activate-1.yaml', 'unrelated-question.yaml']);
     expect((await sb.af(['eval', '--lint', dir])).code).toBe(0);
     expect((await sb.af(['add', './skills/releasing-packages', '--yes'])).code).toBe(0);
     expect(exists(path.join(sb.project, '.agents/skills/releasing-packages/evals'))).toBe(false);

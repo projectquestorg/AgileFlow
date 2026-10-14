@@ -5,6 +5,7 @@ prompt: |
   not a developer.
 invocation: explicit
 fixture: eval-service
+path: happy
 assert:
   shouldActivate: true
 rubric:

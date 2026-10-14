@@ -38,6 +38,7 @@ priority: p1
 | `horizon` | no | `now`, `next`, `later` |
 | `priority` | no | `p0` urgent, `p1` high, `p2` normal, `p3` low |
 | `legacy_id` | no | the v4 epic ID this epic was imported from (`work import v4`) |
+| `legacy_source` | no | the v4 files it was read from (`work import v4`); the originals are never changed |
 
 An epic does not list its stories. Each story says `epic: EPIC-...`, and `agileflow work show <epic>` derives the list. An epic cannot be closed cleanly while it has unfinished stories.
 
@@ -78,10 +79,47 @@ depends_on: []
 | `epic` | no | an epic ID |
 | `depends_on` | no | story IDs this story cannot reasonably finish before (not "related") |
 | `legacy_id` | no | the v4 story ID this story was imported from (`work import v4`) |
+| `legacy_source` | no | the v4 files it was read from (`work import v4`); the originals are never changed |
 
 Fields such as assignee, points, sprint, component, labels, or timestamps are not part of schema 1; `check` warns about unknown fields.
 
-**Acceptance criteria** are Markdown checkboxes describing observable completion. Check one (`- [x]`) only after verifying it, not because code was written.
+**Acceptance criteria** are Markdown checkboxes describing observable completion. Check one (`- [x]`) only after verifying it, not because code was written. A checked box is a claim, not proof: record the proof as evidence.
+
+### Acceptance-criteria evidence
+
+Evidence lives in the story, in one fenced YAML block under an `## Evidence` heading. `agileflow work evidence` writes it; people and agents may also edit it by hand.
+
+````markdown
+## Evidence
+
+```yaml agileflow-evidence
+- criterion: Google appears as an authentication option.
+  kind: test
+  ref: test/auth.test.ts::shows google
+  note: covers the logged-out page
+  commit: 3bb3348b1f0c4c55a1e1f0d6f3a0d2b7c9e4a1f2
+  files:
+    test/auth.test.ts: sha256:9f86d081884c7d65
+    src/auth/google.ts: sha256:1b4f0e9851971998
+  recorded: 2026-09-29T12:00:00.000Z
+- criterion: An existing user can link Google.
+  kind: pr
+  ref: https://github.com/acme/app/pull/42
+  recorded: 2026-09-29T12:05:00.000Z
+```
+````
+
+| Key | Required | Meaning |
+| --- | --- | --- |
+| `criterion` | yes | the criterion text as written when the evidence was recorded (matching ignores case, spacing, and a trailing period) |
+| `kind` | yes | `test`, `inspection`, `pr`, or `manual` |
+| `ref` | yes | test name or `file:line`, inspected `file:line`, PR URL, or what was checked by hand |
+| `note` | no | one line |
+| `commit` | no | the Git commit checked out when it was recorded |
+| `files` | no | project-relative path to `sha256:` plus the first 16 hex digits of the file's SHA-256 at recording time |
+| `recorded` | no | ISO 8601 time |
+
+Each criterion is **verified** when it has evidence and every hashed file is unchanged, **stale** when a hashed file changed or disappeared since (any stale record makes the criterion stale), and **not verified** without evidence, whether or not its box is checked. Evidence whose `criterion` no longer matches a criterion (it was edited or removed) is listed separately, and `agileflow check` warns about it. The block is fenced, so its content never counts as acceptance criteria.
 
 ### Statuses
 

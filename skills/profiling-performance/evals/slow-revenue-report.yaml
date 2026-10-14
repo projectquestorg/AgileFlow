@@ -1,0 +1,86 @@
+name: slow-revenue-report
+skill: profiling-performance
+description: >
+  revenueByCustomer looks every invoice's customer and row up with
+  Array.find and copies the whole rows array on every paid invoice, so it is
+  quadratic: about a second at 20k invoices and several seconds at the
+  50k-invoice, 5k-customer size the user describes. The sort and formatting at
+  the end run once per customer and are not hot.
+fixture: eval-service
+setup: |
+  mkdir -p src/reports
+  cat > src/reports/revenue.js <<'JS'
+  import { roundCents } from '../billing/discounts.js';
+
+  /**
+   * Revenue per customer from paid invoices, highest first (ties by name).
+   * @param {{ id: string, customerId: string, total: number, status: string }[]} invoices
+   * @param {{ id: string, name: string }[]} customers
+   * @returns {{ customerId: string, name: string, revenue: number, invoices: number }[]}
+   */
+  export function revenueByCustomer(invoices, customers) {
+    let rows = [];
+    for (const invoice of invoices) {
+      if (invoice.status !== 'paid') continue;
+      const customer = customers.find((c) => c.id === invoice.customerId);
+      const existing = rows.find((r) => r.customerId === invoice.customerId);
+      if (existing) {
+        rows = rows.map((r) => (r === existing ? { ...r, revenue: r.revenue + invoice.total, invoices: r.invoices + 1 } : r));
+      } else {
+        rows = [...rows, { customerId: invoice.customerId, name: customer?.name ?? 'unknown', revenue: invoice.total, invoices: 1 }];
+      }
+    }
+    return rows
+      .map((r) => ({ ...r, revenue: roundCents(r.revenue) }))
+      .sort((a, b) => b.revenue - a.revenue || a.name.localeCompare(b.name));
+  }
+  JS
+  cat > test/revenue.test.js <<'JS'
+  import { test } from 'node:test';
+  import assert from 'node:assert/strict';
+  import { revenueByCustomer } from '../src/reports/revenue.js';
+
+  const customers = [
+    { id: 'c1', name: 'Acme Corp' },
+    { id: 'c2', name: 'Globex' },
+  ];
+
+  test('sums paid invoices per customer, highest revenue first', () => {
+    const rows = revenueByCustomer(
+      [
+        { id: 'i1', customerId: 'c1', total: 10.1, status: 'paid' },
+        { id: 'i2', customerId: 'c2', total: 50, status: 'paid' },
+        { id: 'i3', customerId: 'c1', total: 0.2, status: 'paid' },
+        { id: 'i4', customerId: 'c1', total: 99, status: 'open' },
+      ],
+      customers,
+    );
+    assert.deepEqual(rows, [
+      { customerId: 'c2', name: 'Globex', revenue: 50, invoices: 1 },
+      { customerId: 'c1', name: 'Acme Corp', revenue: 10.3, invoices: 2 },
+    ]);
+  });
+
+  test('names customers it cannot find "unknown"', () => {
+    const [row] = revenueByCustomer([{ id: 'i1', customerId: 'c9', total: 5, status: 'paid' }], customers);
+    assert.equal(row.name, 'unknown');
+  });
+  JS
+  node --test test/revenue.test.js > /dev/null
+  git add -A
+  git commit -qm 'feat(reports): add revenue by customer'
+prompt: |
+  The monthly revenue report (revenueByCustomer) takes several seconds on our
+  real data, about 50,000 invoices and 5,000 customers. Can you make it fast?
+invocation: implicit
+path: happy
+assert:
+  shouldActivate: true
+rubric:
+  - builds a reproducible benchmark at roughly the stated size (about 50k invoices, 5k customers) and records a baseline with repeated runs before changing code
+  - finds the hot spot with evidence (a profile, stage timings, or a growth check showing quadratic cost) - the per-invoice Array.find lookups and the copying of the rows array
+  - makes a targeted change such as Map lookups and in-place accumulation, without speculative changes to cold code such as the final sort or rounding
+  - keeps results identical (same rounding, ordering, and "unknown" names) and runs the tests
+  - reports before and after numbers from the same benchmark
+  - criterion: no dependency is added
+    fileUnchanged: 'package.json'

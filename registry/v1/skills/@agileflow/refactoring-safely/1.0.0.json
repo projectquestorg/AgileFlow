@@ -1,0 +1,21 @@
+{
+  "name": "@agileflow/refactoring-safely",
+  "version": "1.0.0",
+  "integrity": "sha256-ACkeT1Rai0JMRRVt1/A9+rDIzvc5abSaaO0Eaiwxo5U=",
+  "url": "packages/@agileflow/refactoring-safely/1.0.0.json",
+  "metadata": {
+    "description": "Restructure existing code (extract, rename, move, split, deduplicate, or untangle it) without changing its intended behavior, by pinning that behavior with existing or new characterization tests first, changing it in small verified steps, and stopping to report when behavior would have to change. Use when the user asks to refactor, restructure, clean up, reorganize, extract, split, deduplicate, or reduce the complexity of working code. Not for fixing bugs (diagnosing-bugs), adding features, or re-explaining something more simply (simplifying-explanations).",
+    "activation": "auto",
+    "files": 9,
+    "references": [],
+    "scripts": [],
+    "requirements": {
+      "commands": [],
+      "network": "none"
+    }
+  },
+  "compatibility": {
+    "agentSkills": true,
+    "bundleFormat": 1
+  }
+}

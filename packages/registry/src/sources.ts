@@ -42,6 +42,18 @@ export interface FetcherOptions {
   registry?: string;
   /** Directory relative registry paths in config resolve against. */
   registryBase?: string;
+  /** `registry` came from the project's agileflow.yaml (repository-controlled). */
+  registryFromProject?: boolean;
+}
+
+/**
+ * Whether `@agileflow/*` packages from the resolved registry are official.
+ * The user's environment and personal config are trusted; a registry named by
+ * the repository is not, unless it is the official default.
+ */
+export function isOfficialRegistry(options: FetcherOptions): boolean {
+  if (options.ctx.env.AGILEFLOW_REGISTRY || !options.registryFromProject) return true;
+  return resolveRegistryLocation(options).replace(/\/+$/, '') === DEFAULT_REGISTRY;
 }
 
 /** Registry location precedence: env > config > official default. */
@@ -350,6 +362,7 @@ export function createFetcher(options: FetcherOptions): PackageFetcher & { regis
 
   const fetcher: PackageFetcher & { registry: RegistryClient } = {
     registry,
+    officialRegistry: isOfficialRegistry(options),
 
     async resolve(_id: string, spec: SkillSpec, root: string): Promise<FetchedPackage> {
       const ref = parseSource(spec.source);
@@ -368,7 +381,7 @@ export function createFetcher(options: FetcherOptions): PackageFetcher & { regis
         if (!entry.integrity) {
           throw new IntegrityError(`${id} (the lockfile entry has no integrity; run \`agileflow update ${id}\`)`, '(recorded hash)', '(none)');
         }
-        const cached = await readCachedBundle(ctx, ref.name, entry.version);
+        const cached = await readCachedBundle(ctx, ref.name, entry.version, registry.base);
         if (cached) {
           const actual = hashTree(cached);
           if (actual === entry.integrity) {

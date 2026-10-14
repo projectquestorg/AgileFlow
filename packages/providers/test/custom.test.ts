@@ -45,7 +45,10 @@ describe('custom link providers from config', () => {
 
     const diags = await windsurf.validate(pctx, skills);
     expect(diags.map((d) => d.message)).toEqual(
-      expect.arrayContaining(['Windsurf compatibility links valid', 'Windsurf manual-only enforcement: semantic']),
+      expect.arrayContaining([
+        expect.stringMatching(/^Windsurf: visible in \.windsurf\/skills \(\d+ skills? via symlink; provider discovery not verified\)$/),
+        'Windsurf manual-only: advisory',
+      ]),
     );
     expect(await windsurf.inspect(pctx)).toMatchObject({ skillLocations: ['.windsurf/skills'], exposure: 'linked', manualInvocation: 'semantic' });
     // Custom providers write nothing into the canonical skill.

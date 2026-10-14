@@ -48,6 +48,13 @@
     "legacy_id": {
       "type": "string",
       "minLength": 1
+    },
+    "legacy_source": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     }
   },
   "required": [

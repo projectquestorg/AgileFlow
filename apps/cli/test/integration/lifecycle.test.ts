@@ -250,7 +250,7 @@ describe('check', () => {
     const healthy = await sb.af(['check']);
     expect(healthy.code).toBe(0);
     expect(healthy.stdout).toContain('[ok] agileflow.yaml valid');
-    expect(healthy.stdout).toContain('[ok] Claude compatibility links valid');
+    expect(healthy.stdout).toMatch(/\[ok\] Claude: visible in \.claude\/skills \(\d+ skills via symlink; provider discovery not verified\)/);
     expect(healthy.stdout).toContain('Result: healthy');
     expect(healthy.stdout).not.toMatch(/[✓✅❌]/);
 

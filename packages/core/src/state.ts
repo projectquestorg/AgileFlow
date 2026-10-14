@@ -20,7 +20,18 @@ const SyncStateSchema = z.object({
   root: z.string(),
   skills: z.record(
     z.string(),
-    z.object({ path: z.string(), renderedHash: z.string().optional() }),
+    z.object({
+      path: z.string(),
+      renderedHash: z.string().optional(),
+      /**
+       * Package integrity this machine installed (and so approved). A lock
+       * that later names other third-party content, from a teammate's
+       * change or a fresh clone, needs approval here before it is written.
+       */
+      integrity: z.string().optional(),
+      /** The lock's renderedHash when `renderedHash` (what was written here) differs from it. */
+      lockedHash: z.string().optional(),
+    }),
   ),
 });
 export type SyncState = z.infer<typeof SyncStateSchema>;

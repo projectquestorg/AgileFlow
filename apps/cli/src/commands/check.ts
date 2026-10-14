@@ -12,7 +12,6 @@ import path from 'node:path';
 import type { Cli } from '../runtime';
 import { EXIT, findProject, mutate, servicesFor } from '../runtime';
 import { syncReportJson } from './shared';
-import { workCheckSection } from './work';
 
 export interface CheckOptions {
   global?: boolean;
@@ -99,7 +98,9 @@ export async function runCheck(cli: Cli, options: CheckOptions): Promise<number>
         });
       }
     }
-    if (scope.kind === 'project') {
+    // Agile Work code loads only for projects that enable it.
+    if (scope.kind === 'project' && (await readProjectConfig(scope.configPath).catch(() => null))?.work?.enabled) {
+      const { workCheckSection } = await import('./work');
       const work = await workCheckSection(scope);
       if (work) {
         report.sections.push(work);

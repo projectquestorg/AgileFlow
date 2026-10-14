@@ -6,6 +6,7 @@ import {
   globalScope,
   isSameDir,
   OperationError,
+  pendingSkillWrites,
   projectScope,
   readGlobalConfig,
   readProjectConfig,
@@ -41,6 +42,8 @@ export interface Cli {
   invocation?: { command: string; args: string[] };
   /** Filled by commands: what changed and what was approved (history). */
   record?: { scope?: ScopeTarget; changed?: string[]; approved?: string[] };
+  /** Injected network/credential/clock effects for `agileflow cloud` (tests). */
+  cloud?: Partial<import('./cloud/client').CloudDeps>;
 }
 
 export class UsageError extends Error {
@@ -92,10 +95,12 @@ export async function scopeFor(ctx: Context, options: { global?: boolean }, crea
 export async function servicesFor(ctx: Context, scope: ScopeTarget): Promise<Services> {
   let registry: string | undefined;
   let registryBase: string | undefined;
+  let registryFromProject = false;
   try {
     if (scope.kind === 'project') {
       registry = (await readProjectConfig(scope.configPath))?.registry;
       registryBase = scope.root;
+      registryFromProject = !!registry;
     }
     if (!registry) {
       const g = globalScope(ctx);
@@ -105,7 +110,7 @@ export async function servicesFor(ctx: Context, scope: ScopeTarget): Promise<Ser
   } catch {
     // Invalid config is reported by the command itself.
   }
-  return { ctx, fetcher: createFetcher({ ctx, registry, registryBase }), adapters: await adaptersFor(ctx, scope) };
+  return { ctx, fetcher: createFetcher({ ctx, registry, registryBase, registryFromProject }), adapters: await adaptersFor(ctx, scope) };
 }
 
 /**
@@ -147,6 +152,24 @@ export async function mutate<T>(cli: Cli, scope: ScopeTarget, fn: () => Promise<
     },
     { command: `agileflow ${cli.invocation?.command ?? ''}`.trim() },
   );
+}
+
+/** Shown by read-only commands while a journaled write waits for recovery. */
+export const INTERRUPTED_NOTICE =
+  'interrupted operation pending recovery (run any agileflow command that changes skills, e.g. `agileflow sync`)';
+
+/**
+ * Skills an interrupted command left between two states, for read-only
+ * commands (`list`, `check`, `diff`, `verify`). Their files may already be
+ * new while the lock is still old, so they are reported as "interrupted",
+ * never as modified or missing. Prints the notice once per scope.
+ */
+export async function interruptedSkills(cli: Cli, scope: ScopeTarget): Promise<Set<string>> {
+  const pending = await pendingSkillWrites({ ctx: cli.ctx }, scope);
+  if (!pending) return new Set();
+  const where = scope.kind === 'project' ? '' : 'personal skills: ';
+  cli.out.warn(`${where}${INTERRUPTED_NOTICE}${pending.length ? `; affected: ${pending.join(', ')}` : ''}`);
+  return new Set(pending);
 }
 
 export function printEvents(cli: Cli, events: OperationEvent[]): void {

@@ -1,0 +1,8 @@
+name: migration-concept-does-not-plan
+skill: planning-migrations
+prompt: |
+  In general, what's the difference between a schema migration and a data
+  migration?
+invocation: implicit
+assert:
+  shouldActivate: false

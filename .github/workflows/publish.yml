@@ -3,6 +3,11 @@ name: Publish to npm
 # Triggered by tags created with scripts/release.sh (e.g. v5.0.0, v5.1.0-alpha.1).
 # Publishes with npm provenance (SLSA build provenance signed through Sigstore),
 # so `npm audit signatures` can verify the package came from this workflow.
+#
+# Authentication: npm trusted publishing (short-lived OIDC credentials for this
+# workflow; configure it once on npmjs.com under the package's settings with
+# this repository and publish.yml). NPM_TOKEN is only a fallback while trusted
+# publishing is not configured.
 on:
   push:
     tags:
@@ -21,8 +26,10 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+      - name: npm with trusted publishing support (11.5.1+)
+        run: npm install -g npm@^11.5.1
       - name: Tag matches the package version and is on main
         run: |
           version=$(node -p "require('./apps/cli/package.json').version")
@@ -42,6 +49,9 @@ jobs:
         run: npm run release-gate
       - name: Build
         run: npm run build:cli
+      - name: Smoke test the packed tarball in a clean environment
+        working-directory: apps/cli
+        run: node scripts/smoke-pack.mjs
       - name: Publish
         working-directory: apps/cli
         env:
@@ -50,3 +60,28 @@ jobs:
           version=$(node -p "require('./package.json').version")
           if [[ "$version" == *-* ]]; then tag=next; else tag=latest; fi
           npm publish --access public --provenance --tag "$tag"
+
+  published:
+    # What users get: the package from npm and the registry served from main.
+    needs: publish
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install the published package and use the public registry
+        shell: bash
+        working-directory: apps/cli
+        run: |
+          version=$(node -p "require('./package.json').version")
+          for i in 1 2 3 4 5 6; do
+            npm view "agileflow@$version" version >/dev/null 2>&1 && break
+            echo "waiting for npm to serve agileflow@$version"; sleep 20
+          done
+          node scripts/smoke-pack.mjs --from-npm "$version" --registry published

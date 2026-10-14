@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { "baseUrl": "../..", "noEmit": true },
+  "include": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.ts", "convex/**/*.ts"]
+}

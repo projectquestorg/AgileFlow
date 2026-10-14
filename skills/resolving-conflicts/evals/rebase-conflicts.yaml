@@ -129,6 +129,7 @@ setup: |
   conflicted=$(git diff --name-only --diff-filter=U)
   echo "$conflicted" | grep -qx 'src/billing/invoice.js'
   echo "$conflicted" | grep -qx 'package-lock.json'
+path: happy
 assert:
   shouldActivate: true
 rubric:

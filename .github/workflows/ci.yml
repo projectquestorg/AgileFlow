@@ -2,7 +2,8 @@ name: CI
 
 # Typecheck, tests, registry/schema freshness, the append-only registry rule,
 # the official skill release gate, and smoke tests of the built CLI on Linux,
-# macOS, and Windows.
+# macOS, and Windows, including cross-machine consistency: a project committed
+# with LF and cloned with CRLF syncs and checks cleanly on every OS.
 on:
   push:
     branches: [main, v5]
@@ -22,6 +23,7 @@ on:
       - action.yml
       - .gitattributes
       - .github/workflows/ci.yml
+      - .github/scripts/**
 
 permissions:
   contents: read
@@ -35,10 +37,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        node: ['20', '22']
+        node: ['22', '24']
         exclude:
           - os: macos-latest
-            node: '20'
+            node: '24'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -94,6 +96,17 @@ jobs:
           node "$GITHUB_WORKSPACE/apps/cli/bin/agileflow.js" verify
           node "$GITHUB_WORKSPACE/apps/cli/bin/agileflow.js" list --json > list.json
           node -e "JSON.parse(require('fs').readFileSync('list.json','utf8'))"
+      - name: 'Cross-machine consistency: LF commit, autocrlf clone, sync + check stay clean'
+        env:
+          AGILEFLOW_REGISTRY: ${{ github.workspace }}/registry
+          AGILEFLOW_NO_UPDATE_NOTIFIER: '1'
+        run: bash .github/scripts/cross-machine-smoke.sh
+      - name: 'Packed CLI in a clean HOME/PATH: init, check, sync'
+        if: matrix.os == 'ubuntu-latest' && matrix.node == '22'
+        working-directory: apps/cli
+        env:
+          AGILEFLOW_NO_UPDATE_NOTIFIER: '1'
+        run: node scripts/smoke-pack.mjs
       - name: 'Published package: install from tarball, audit runtime deps, run it'
         if: matrix.os == 'ubuntu-latest'
         env:
@@ -114,14 +127,18 @@ jobs:
   windows:
     # Windows has no symlink privilege by default, no executable bit, and Git
     # checks text files out with CRLF (core.autocrlf=true). This job proves the
-    # built CLI works there: junction/mirror fallback, line-ending-insensitive
-    # ownership, and path handling.
-    name: windows smoke (node 22)
+    # built CLI works there: link -> junction -> mirror fallback, line-ending
+    # and exec-bit insensitive ownership, path handling, and a project
+    # committed elsewhere (LF) syncing without lockfile or file changes.
+    name: windows (node 22)
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - run: git config --global core.autocrlf true
       - uses: actions/checkout@v4
+        with:
+          # registry:check verifies history against the latest v* release tag.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -130,8 +147,14 @@ jobs:
         run: npm ci --legacy-peer-deps --no-audit --no-fund
       - name: Typecheck
         run: npm run typecheck
-      - name: Core safety tests
-        run: npx vitest run packages/core/test/safety.test.ts packages/work/tests
+      - name: Cross-platform core tests (hash rule, exec bits, link fallback, render drift, crash safety)
+        run: >-
+          npx vitest run
+          packages/core/test/safety.test.ts
+          packages/core/test/platform.test.ts
+          packages/core/test/links-fallback.test.ts
+          packages/core/test/render-drift.test.ts
+          packages/work/tests
       - name: Registry is up to date (CRLF checkout must not change integrities)
         run: npm run registry:check
       - name: Build
@@ -160,3 +183,41 @@ jobs:
           $cli sync
           $cli verify
           test -z "$(git status --porcelain)"
+      - name: 'Cross-machine consistency: LF commit, autocrlf clone, links made (symlink or junction)'
+        shell: bash
+        env:
+          AGILEFLOW_REGISTRY: ${{ github.workspace }}/registry
+          AGILEFLOW_NO_UPDATE_NOTIFIER: '1'
+        run: bash .github/scripts/cross-machine-smoke.sh
+      - name: 'Cross-machine consistency with junctions (absolute targets)'
+        shell: bash
+        env:
+          AGILEFLOW_REGISTRY: ${{ github.workspace }}/registry
+          AGILEFLOW_NO_UPDATE_NOTIFIER: '1'
+        run: bash .github/scripts/cross-machine-smoke.sh junction
+      - name: 'Packed CLI in a clean HOME/PATH: init, check, sync'
+        working-directory: apps/cli
+        env:
+          AGILEFLOW_NO_UPDATE_NOTIFIER: '1'
+        run: node scripts/smoke-pack.mjs
+
+  windows-tests:
+    # The full core, provider, and provider-integration suites on Windows.
+    # Several older tests still assume POSIX (chmod modes, `symlink` without a
+    # type, `/` paths); this job reports them without blocking merges until
+    # they are made platform-aware, then `continue-on-error` goes.
+    name: windows full suites (node 22, informational)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - run: git config --global core.autocrlf true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install workspace dependencies (from the lockfile)
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Core, providers, and provider integration tests
+        run: npx vitest run packages/core packages/providers apps/cli/test/integration/providers.test.ts

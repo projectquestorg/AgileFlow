@@ -4,6 +4,7 @@ fixture: agile-app
 prompt: |
   Work on the rename story (STORY-R3N7M2QA).
 invocation: implicit
+path: happy
 assert:
   shouldActivate: true
 rubric:
@@ -12,4 +13,9 @@ rubric:
   - implements renameWorkspace with owner-only permission and 1-60 character trimmed names
   - verifies each acceptance criterion with evidence (tests added or run; npm test passes)
   - does not scope creep (no unrelated features, files, plans, or status files)
-  - checks only criteria it verified, and ends in-review (the Definition of Done requires a reviewed PR) rather than done
+  - records evidence for each verified criterion in the story's agileflow-evidence block (a test it ran, or the implementing file:line), and checks only criteria with evidence
+  - ends in-review (the Definition of Done requires a reviewed PR) rather than done
+  - criterion: evidence is recorded in the story
+    fileContains:
+      path: docs/agile/03-stories/STORY-R3N7M2QA-rename-workspace.md
+      pattern: '^(```|~~~)\s*(yaml\s+)?agileflow-evidence\s*$'

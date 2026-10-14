@@ -1,0 +1,24 @@
+{
+  "name": "@agileflow/filing-pr",
+  "version": "1.2.1",
+  "integrity": "sha256-VXk/sQiyPXpA0hFfz9f0G3PIQs622XoyvGHSRb6OYDQ=",
+  "url": "packages/@agileflow/filing-pr/1.2.1.json",
+  "metadata": {
+    "description": "Open a pull request for the current branch with a title that follows repository conventions and a description that leads with the problem, summarizes the solution, and includes verification evidence, then return the PR URL. Use when the user asks to file, open, create, raise, or submit a pull request (PR). Not for reviewing an existing PR (reviewing-changes), monitoring one through CI (babysitting-pr), or only writing a commit message (writing-commits).",
+    "activation": "auto",
+    "files": 9,
+    "references": [],
+    "scripts": [],
+    "requirements": {
+      "commands": [
+        "git",
+        "gh"
+      ],
+      "network": "required"
+    }
+  },
+  "compatibility": {
+    "agentSkills": true,
+    "bundleFormat": 1
+  }
+}

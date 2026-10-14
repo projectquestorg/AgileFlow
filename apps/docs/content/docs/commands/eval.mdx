@@ -10,6 +10,9 @@ agileflow eval --catalog skills --provider claude --mode full   # behavior + rub
 agileflow eval diagnosing-bugs --provider claude --scenario regression-debugging --runs 3
 agileflow eval --catalog skills --provider claude,codex --runs 3 --json --out report.json   # compare providers
 agileflow eval --lint ./my-skills/release-notes                        # lint any skill you author
+agileflow eval ./skills/diagnosing-bugs --compare --provider claude --mode full --runs 3   # candidate vs released vs no skill
+agileflow eval --pack core --provider claude --runs 3                 # activation across the whole pack
+agileflow eval ./skills/new-skill --pack core --compare --provider claude --runs 3        # does a new skill hurt the pack?
 ```
 
 Without `--provider`, `eval` runs only the structural release gate (the same as `--lint`). Arguments are skill names or directories; with no arguments it evaluates every skill in `--catalog`, or every skill locked in the current project.
@@ -21,7 +24,7 @@ Without `--provider`, `eval` runs only the structural release gate (the same as 
 | `--provider <ids>` | `claude`, `codex`, `gemini`, `opencode` (comma-separated; several print a side-by-side comparison). |
 | `--mode activation\|full` | `activation` (read-only, default) or `full` (behavior + rubric judging). |
 | `--runs <n>` | Runs per scenario (default 1). More than one reports a 95% confidence interval per scenario. |
-| `--judge claude\|none` | Rubric judge in full mode (default `claude`). |
+| `--judge claude\|none` | Rubric judge in full mode (default `claude`). With `none`, judge criteria stay ungraded and the scenario is inconclusive. |
 | `--judge-model <model>` | Model for the Claude judge. Never taken from `--model`. |
 | `--model <model>` | Model passed to the provider under test. |
 | `--fixtures <dir>` | Fixture repositories directory (default: `fixtures` next to `--catalog`, when it exists). |
@@ -30,14 +33,49 @@ Without `--provider`, `eval` runs only the structural release gate (the same as 
 | `--timeout <seconds>` | Per-run timeout (default 300). |
 | `--scenario <name>` | Only run this scenario (repeatable). |
 | `--question-preference <value>` | `provider-default`, `prefer`, `minimize`, or `all`. See [below](#question-preference-evals). |
-| `--json`, `--out <file>` | Machine-readable output, or write a JSON report. |
+| `--json`, `--out <file>` | Machine-readable output, or write a JSON report. `--out` is rewritten after every scenario and saves raw provider transcripts in `<file>.transcripts/`. |
 | `--keep` | Keep sandboxes for inspection. |
+| `--compare [arms]` | Compare the skill across arms: `baseline` (not installed), `released`, `candidate` (the skill you pass). Default: all three with `--mode full`, else `released,candidate`. See [Comparing skill versions](#comparing-skill-versions). |
+| `--released <version\|dir>` | With `--compare`: the released copy (a registry version, or a directory holding the skill or `<id>/`). Default: the version this project locks, else the latest published. |
+| `--pack <name\|installed>` | Install a whole pack (or this project's skills) together and report which skill activated for which request. With `--compare`: the pack without vs with the skills you pass. See [Pack activation](#pack-activation). |
+| `--seed <n>` | Seed for the randomized arm order of `--compare` (recorded in the report). |
 | `--no-isolate` | Run providers with your real HOME (your personal skills and settings apply). |
-| `--allow-setup` | Run `setup` scripts and `bin` commands of third-party skills. |
+| `--allow-setup` | Run `setup` scripts and `bin` commands of skills that are not official registry packages, including local directories. |
 
 Numeric flags are validated before anything runs (`--runs 0` or `--timeout abc` is a usage error).
 
-`eval` exits `1` when a skill fails the release gate, a scenario fails or errors (setup failure, provider crash or timeout, judge failure, isolation leak), or a `--question-preference all` comparison is out of order. Use it as a CI gate.
+`eval` exits `1` when a skill fails the release gate, the preflight finds a problem, a scenario fails or is inconclusive (setup failure, provider crash or timeout, judge failure, isolation leak, criteria left ungraded), or a `--question-preference all` comparison is out of order. Use it as a CI gate. An interrupted eval (Ctrl-C or `SIGTERM`) stops the provider, deletes its sandboxes and isolated HOMEs, writes the partial report with `complete: false`, and exits `130` or `143`.
+
+## Results
+
+Every scenario ends in one of four states:
+
+| Status | Meaning |
+| --- | --- |
+| `passed` | The required checks ran and met their criteria: activation, rubric threshold, safety, question behavior. |
+| `failed` | The skill ran and behaved incorrectly: wrong activation, rubric below the threshold, a `forbid` rule broken, or the wrong asking behavior. |
+| `inconclusive` | A run could not be scored, so quality was not established. Never counted as a pass. |
+| `not-run` | The scenario never ran: excluded by `--scenario` (`notRun: filtered`), held out from ordinary runs (`held-out`), stopped by a failed preflight (`preflight`), or its comparison arm could not run (`unavailable`). |
+
+An inconclusive run has an error kind, and the summary counts them (`errorKinds`):
+
+| Kind | Cause |
+| --- | --- |
+| `fixture` | The scenario's fixture repository is missing. |
+| `sandbox` | The sandbox repository could not be built. |
+| `setup` | A `setup` script failed, timed out, or was not allowed to run. |
+| `provider` | The provider CLI crashed, could not start, timed out, or closed its input early. |
+| `isolation` | The measurement was contaminated: the provider saw your personal skills, or loaded the skill from outside the sandbox. |
+| `judge` | The judge failed, timed out, or answered with something unusable (for example "Invalid API key" or invalid JSON). |
+| `check` | A rule check could not be evaluated. |
+| `ungraded` | Required criteria were never graded: judge rubric items or `interaction` success criteria with `--judge none`. |
+| `scenario` | A scenario file failed to load (counted per file; the preflight reports these before any run). |
+
+A crashed provider is not a successful negative test, and an unavailable judge is not evidence that a rubric passed. When a safety rule is broken, or the runs that were observed already miss the activation pass rate, the scenario is `failed` even if another run was inconclusive.
+
+Inconclusive runs keep their evidence: the observed activation and where the skill was loaded from, the rule checks that were graded (with the judge criteria listed as ungraded), the judge's raw reply, and the raw transcript (inline for errored runs, and as a file next to the `--out` report).
+
+**Preflight.** Before any provider run, `eval` checks everything that would fail for reasons other than the skill and lists all of it at once: provider (and judge) CLIs on PATH, invalid scenario files, unknown `--scenario` names, missing fixtures, `setup` scripts or `bin` commands that are not allowed to run, and `git`/`sh`. Any problem exits `1` without starting a run.
 
 ## Scenarios
 
@@ -59,7 +97,9 @@ rubric:
   - identifies root cause
 ```
 
-The file name must match `name`. `fixture` defaults to `clean-node`; a fixture that does not exist is an error, never a silent fallback. Optional fields: `description`, `invocation` (`implicit`, the default, or `explicit`), `rubric`, `forbid`, `kind`, `neighbor`, `bin`, and `interaction` (see [Question preference evals](#question-preference-evals)).
+The file name must match `name`. `fixture` defaults to `clean-node`; a fixture that does not exist is an error, never a silent fallback. Optional fields: `description`, `invocation` (`implicit`, the default, or `explicit`), `path`, `rubric`, `forbid`, `kind`, `neighbor`, `bin`, and `interaction` (see [Question preference evals](#question-preference-evals)).
+
+`path` marks which path through the skill a positive scenario exercises: `happy` (the normal case), `blocked` (the skill must stop or ask: missing input, an unsafe step, a failed precondition), or `failure` (something goes wrong midway and the skill must report it honestly).
 
 Negative scenarios (`shouldActivate: false`) use similar prompts that must not load the skill. When another catalog skill has a similar description, a negative scenario whose prompt belongs to that skill names it with `neighbor: <id>`, so trigger conflicts are measured (the lint warns until one exists). Manual skills use `invocation: explicit` for positive scenarios: the harness invokes the skill by name.
 
@@ -76,7 +116,23 @@ rubric:
   - fileChanged: 'src/billing/**'                              # a matching file was created, modified, or deleted
   - fileUnchanged: 'test/**'
   - fileContains: { path: src/billing/bulk.js, pattern: '>=\s*BULK_THRESHOLD' }
+  - run: npm test                                              # run in the sandbox after the agent finishes; exit 0 passes
+  - run: node scripts/check.js
+    exitCode: 1                                                # or expect another exit code
+  - maxFilesChanged: 3                                         # no more than this many files changed
 ```
+
+Use rule checks wherever the outcome is checkable and keep the judge for real judgment. `run` commands are the skill's code: they run under the same trust rules as `setup`, with the same scrubbed environment and timeout.
+
+`assert.changes` lists the files the task is expected to change; any other changed file is an unnecessary edit, reported per run (`unexpectedChanges`) and compared across arms by `--compare`:
+
+```yaml
+assert:
+  shouldActivate: true
+  changes: ['src/billing/**', 'test/billing/**']
+```
+
+`heldOut: true` keeps a scenario out of ordinary runs (it is reported as `not-run`, `notRun: held-out`), so authors do not tune a skill against it. `--compare` and `--pack` run held-out scenarios and report them separately.
 
 ### Safety expectations and adversarial scenarios
 
@@ -110,26 +166,74 @@ bin:
     esac
 ```
 
-`setup` scripts and `bin` commands are code from the skill package: they run only for official skills and local skill directories you pass, and need `--allow-setup` otherwise. They run inside the sandbox with the isolated environment and a timeout (120 s for `setup`).
+`setup` scripts and `bin` commands are code from the skill package. Without `--allow-setup` they run only for packages from the official registry (not when `AGILEFLOW_REGISTRY` or the project config points elsewhere); a local directory, including a checkout of this repository, needs `--allow-setup`. Allowed scripts run in the sandbox repository with a scrubbed environment: system variables only (no API keys, tokens, or provider configuration) and a HOME without any login files, and `setup` has a 120 s timeout. This limits what a script can reach through its environment; it is not an operating-system sandbox, so review third-party scripts before allowing them.
 
 ## Release gate (`--lint`)
 
-A skill passes when it has: a description that says what it does and when to activate; a `## Done when` completion section; a small body (ideal 30-120 lines, soft limit 200, maximum 500); valid `agileflow.skill.yaml`; at least three scenarios including a negative trigger and a positive scenario with a rubric (or `interaction` success criteria). Official skills must also keep frontmatter to `name` and `description` and use `package.name: "@agileflow/<id>"`. Scripts in `scripts/` should be referenced from `SKILL.md`.
+A skill passes when it has: a description that says what it does and when to activate; a `## Done when` completion section; a small body (ideal 30-120 lines, soft limit 200, maximum 500); valid `agileflow.skill.yaml`; at least three scenarios including a negative trigger and a positive scenario with a rubric (or `interaction` success criteria); and every `references/...` file that `SKILL.md` mentions. Official skills must also keep frontmatter to `name` and `description` and use `package.name: "@agileflow/<id>"`.
+
+Official skills are held to more: each near neighbor (a catalog skill whose description is similar enough to compete for the same prompts) needs a negative scenario with `neighbor: <id>`, and positive scenarios marked with `path` need a `happy` path and a `blocked` or `failure` path. Warnings flag scripts in `scripts/` and files in `references/` that `SKILL.md` never mentions, a description that names a skill id in parentheses that is not in the catalog (`Not for ... (reviewing-changes)`), a body that tells the agent to ask the user while `capabilities.userInteraction` is `none` (or declares `optional`/`required` but never says when to ask), official skills without any `neighbor`-tagged negative or without `path` on their positives; an info note flags official bodies above 60 lines.
 
 ## Provider evals
 
 `--provider claude|codex|gemini|opencode` runs each scenario in a fresh sandbox repository with the whole catalog installed exactly as `agileflow add` would install it, so activation precision is measured with competing skills present. Activation is read from the provider's own tool calls. `--mode full` lets the agent act and has a judge (Claude) grade the rubric. The judge sees the agent's tool calls, its final response, and the final state of the sandbox (`git status`, diffs, and the content of new files), so rubric items about files the agent wrote are graded on the files themselves.
 Provider evals need the provider CLI installed and signed in.
 
-**Isolation.** Each run gets a throwaway HOME (with its own XDG, Codex, and AgileFlow directories) that contains only the provider's own login files: for Claude `~/.claude/.credentials.json` and the login fields of `~/.claude.json`, for Codex `$CODEX_HOME/auth.json`, for Gemini its OAuth files and selected auth type, for OpenCode its `auth.json`. Your personal skills, instructions, MCP servers, and settings never reach an eval; if the provider still reports a personal skill as visible, the run errors. A token the provider refreshed during the run is written back to your real login file when nothing else changed it meanwhile. API key environment variables pass through. `--no-isolate` opts out.
+**Isolation.** Each run gets a throwaway HOME (with its own XDG, Codex, and AgileFlow directories). Your environment does not pass through wholesale: the provider gets system variables (PATH, locale, proxies, certificates) and its own configuration and credential variables only, so unrelated tokens never reach it. When the provider's credential variable is set (`ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN` for Claude, `CODEX_API_KEY` for Codex), its login files are not copied; otherwise only its login files are: for Claude `~/.claude/.credentials.json` and the login fields of `~/.claude.json`, for Codex `$CODEX_HOME/auth.json`, for Gemini its OAuth files and selected auth type, for OpenCode its `auth.json`. The report records the auth mode (`env`, `login`, `env+login`, `none`, or `inherited` with `--no-isolate`) and the variable and file names, never their values. Claude runs and the Claude judge also skip user-scope settings (`--setting-sources project,local`); managed policy settings still apply. Your personal skills, instructions, MCP servers, and settings never reach an eval. A token the provider refreshed during the run is written back to your real login file when nothing else changed it meanwhile. `--no-isolate` opts out.
 
-**Metrics.** Activation is scored over implicit-trigger scenarios as a confusion matrix: precision (when the skill loaded, was it wanted?), recall (when it was wanted, did it load?), and F1, per skill and per provider. Errored runs are excluded from scoring and counted separately. With `--runs` above 1 every scenario reports its pass rate with a Wilson 95% confidence interval, so a flaky 4/5 is distinguishable from a solid 5/5. Several providers print a comparison table of the same scenarios side by side.
+**Provenance.** Activation by name is not enough: a same-named personal copy of the skill would look identical. Each activated run records which `SKILL.md` it loaded (from file reads and Claude's "Base directory for this skill" note). A path outside the sandbox makes the run an `isolation` error, not a pass. A personal skill the provider lists as visible is a leak too, including a same-named copy of a catalog skill when the provider lists that name twice. Where a provider does not report the loaded file (Gemini, OpenCode skill tools) or its visible skills, the report says the source is `unverified` or that the leak check was not available, instead of implying it was checked.
 
-**Judge.** Rule checks are graded without a model; string rubric items go to the Claude judge (`--judge-model`). A judge that fails, times out, or returns something unparseable makes the run an error, never a pass.
+**Metrics.** Three measures are reported separately:
 
-**JSON report** (`--json` or `--out`): `{ schemaVersion: 1, ok, exitCode, lint: [...], reports: [{ provider, questionPreference, summary: { scenarios, passed, failed, errored, truePositive, falsePositive, trueNegative, falseNegative, precision, recall, f1, ... }, skills: [...], results: [{ skill, scenario, kind, status, passRate: { passed, runs, rate, ci95 }, rubricScore, safetyPass, runs: [...] }] }], providerComparison, preferenceComparisons }`. Fields are only added within a `schemaVersion`.
+- **Implicit activation** over implicit-trigger scenarios, as a confusion matrix: precision (when the skill loaded, was it wanted?), recall (when it was wanted, did it load?), and F1, per skill and per provider. Runs count when activation was observed, even if grading failed afterwards; crashed, timed-out, or contaminated runs are excluded.
+- **Explicit invocation**: explicit-invocation runs that loaded the skill (a load check, not a trigger).
+- **Task completion** (full mode): positive runs whose rubric was fully met (and whose interaction judge, when it ran, found the task succeeded). Inconclusive runs are excluded, never counted as incomplete. Activation mode does not measure rubrics or task completion.
+
+With `--runs` above 1 every scenario reports its pass rate with a Wilson 95% confidence interval, so a flaky 4/5 is distinguishable from a solid 5/5. Several providers print a comparison table of the same scenarios side by side.
+
+**Judge.** Rule checks are graded without a model; string rubric items go to the Claude judge (`--judge-model`). A judge that fails, times out, or returns something unparseable makes the run inconclusive (`judge`), never a pass; with `--judge none` those criteria are `ungraded` and the scenario is inconclusive.
+
+**Versions.** Each report records what exactly ran: the provider CLI version, the requested model and the models the provider reported using, the judge's model, CLI version, and auth mode, each skill's package version with content hashes (`contentHash` for the installed files, `evalsHash` for `evals/`), each scenario's fixture with its content hash, and the AgileFlow version.
+
+**JSON report** (`--json` or `--out`): `{ schemaVersion: 2, ok, exitCode, complete, interrupted, agileflowVersion, preflight: [{ subject, message }], comparisons: [{ kind: skill, provider, skill, seed, runs, mode, arms: [{ id, unavailable, skill: { version, contentHash } }], scenarios: [{ scenario, heldOut, measure, arms: [{ arm, completion, correctActivation, intervention, changedFiles, unexpectedChanges, durationMs, tokens, costUsd }], pairs: [{ reference, candidate, rate: { delta, ci95 }, ..., verdict, reasons }] }], summary: { authoring, heldOut }, verdict, passed, reports: { <arm>: report } } | { kind: pack, pack, added, skills: [{ skill, set, precision, recall, verdict }], activation, heldOutActivation, verdict, passed, reports }], packActivation: [{ pack, provider, authoring: { matrix, perSkill }, heldOut }], lint: [...], reports: [{ provider, mode, questionPreference, environment: { providerVersion, model: { requested, observed }, auth, judge }, summary: { scenarios, passed, failed, inconclusive, notRun, runs, erroredRuns, errorKinds, truePositive, falsePositive, trueNegative, falseNegative, precision, recall, f1, explicit, taskCompletion, provenance, adversarial }, skills: [{ skill, version, contentHash, evalsHash, activation, explicit, taskCompletion, ... }], results: [{ skill, scenario, kind, status, notRun, fixture, passRate: { passed, runs, rate, ci95 }, rubricScore, safetyPass, runs: [{ status, error: { kind, message }, activated, activationObserved, provenance, rubric, taskCompleted, judgeReply, transcriptFile, rawTranscript, ... }] }] }], providerComparison, preferenceComparisons }`. `--out` is rewritten after every scenario with `complete: false` until the eval finishes, so an aborted run still leaves the results so far. Fields are only added within a `schemaVersion`; version 2 renamed the `error` status and `errored` count to `inconclusive` and added `not-run`.
 
 Installed project skills do not contain their `evals/` directory; `agileflow eval <skill>` in a project reads scenarios from the locked package in the cache.
+
+## Comparing skill versions
+
+"Did this skill improve the result, and was the improvement worth its overhead?" `--compare` answers it by running the same scenarios under matched conditions in up to three arms:
+
+| Arm | Installed in the sandbox |
+| --- | --- |
+| `baseline` | Everything in `--catalog` except the skill under test. |
+| `released` | The released skill: `--released <version\|dir>`, else the version this project locks, else the latest published version. |
+| `candidate` | The skill directory you pass. |
+
+Every arm uses the same fixture state, provider, model, prompt, and `--runs` trials, and the arm order is shuffled for every trial (reproducible with `--seed`) so drift over the session does not favor one arm. Scenarios come from the candidate, including held-out ones. A released version that cannot be loaded fails the preflight.
+
+For each scenario and pair of arms (candidate vs released, candidate vs baseline), the report gives:
+
+- **Task completion** (rubric fully met, rule checks included) for positive scenarios in full mode, and **correct activation** otherwise, with the difference and its Newcombe 95% interval. The baseline is only compared on task completion: without the skill there is nothing to activate.
+- **Intervention required** (runs that stopped to ask the user), **unnecessary edits** (files changed outside `assert.changes`, and changed files overall), **elapsed time**, **tokens**, and **cost**, as differences of means with 95% intervals. Tokens and cost appear where the provider reports usage (Claude, and tokens for Codex); otherwise "not reported".
+- A **verdict**: `improves` or `regresses` only when the difference lies beyond the 95% interval, `no-difference` otherwise, and `regresses` whenever the candidate fails a scenario the released version passes. Any infrastructure error or missing run in any arm (a provider crash, a broken judge, contamination, ungraded criteria), even an arm no pair compares, makes that scenario `inconclusive`, never a win. A candidate that breaks a `forbid` rule `regresses`, whatever its completion.
+
+Results are pooled per pair over authoring scenarios and, separately, over held-out scenarios. The overall verdict is the worst one found; the comparison passes when it is `improves` or `no-difference`. A pair with nothing to compare (for example `--compare baseline,candidate` on activation-only scenarios) is `inconclusive`: a gate never passes on nothing measured. Each arm keeps its full report (`reports.<arm>`) with the installed skill's version and content hash, and runs already finished are kept if a later run fails or the eval is interrupted.
+
+**Release gate.** Compare every changed skill against its released version and against no skill:
+
+```bash
+agileflow eval diagnosing-bugs filing-pr --catalog skills --fixtures fixtures \
+  --compare --released path/to/release-checkout/skills \
+  --provider claude --mode full --runs 3 --allow-setup --json --out compare-report.json
+```
+
+It exits `1` when a candidate regresses against the released version or against no skill, or when any comparison is inconclusive, so a broken judge or a crashing provider cannot produce a green gate. The nightly workflow runs this for every skill whose version changed since the last release tag.
+
+## Pack activation
+
+`--pack <name>` installs a whole pack together (members come from `--catalog` when present there, else from the registry; `installed` uses this project's skills) and runs every member's scenarios, held-out ones included, in activation mode. Besides the usual per-scenario results, it reports a confusion matrix across the pack: for each request, the skill it belongs to (the scenario's skill for positives, the `neighbor` for negatives whose neighbor is installed, else none) against the skills that actually activated, with precision and recall per skill.
+
+`--pack <name> --compare` with new skills as arguments runs the pack without and with them, interleaved like `--compare`, and reports each existing skill's precision and recall on the pack's own requests in both arms, for authoring and held-out requests separately. A drop beyond the 95% interval is a material regression and fails the command. A skill you pass that is already a pack member replaces that member in the `with` arm, and its own scenarios run in both arms. Any run that could not be scored (the new skills' scenarios included), or no existing skill compared, makes the comparison `inconclusive`; a `forbid` rule broken with the new skills installed is a regression.
 
 ## Question preference evals
 

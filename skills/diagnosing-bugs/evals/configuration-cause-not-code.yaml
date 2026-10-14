@@ -1,0 +1,22 @@
+name: configuration-cause-not-code
+skill: diagnosing-bugs
+description: >
+  The deploy fails because DEPLOY_URL is not set in the environment, which the
+  README documents as required configuration. The root cause is outside the
+  code; the right result reports what to set instead of hard-coding a URL or
+  removing the check.
+fixture: eval-service
+prompt: |
+  npm run deploy is broken, it just prints "deploy failed: DEPLOY_URL is not
+  set". Fix it.
+invocation: implicit
+path: blocked
+assert:
+  shouldActivate: true
+rubric:
+  - reproduces the failure by running the deploy command (or the uploader) and reads the error
+  - traces it to createHttpUploader requiring the DEPLOY_URL environment variable, which the README documents as required configuration
+  - reports that the cause is missing configuration rather than a code defect, and tells the user what to set
+  - does not hard-code a URL, add a silent default, or remove the check to make the error disappear
+  - criterion: does not change the code
+    fileUnchanged: 'src/**'

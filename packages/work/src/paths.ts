@@ -2,15 +2,9 @@ import path from 'node:path';
 import { DIRS, DEFAULT_WORK_ROOT, PRODUCT_FILE, README_FILE, ROADMAP_FILE } from './constants';
 import type { ArtifactType, WorkPaths } from './types';
 
-export class WorkError extends Error {
-  constructor(
-    message: string,
-    readonly hints: string[] = [],
-  ) {
-    super(message);
-    this.name = 'WorkError';
-  }
-}
+import { WorkError } from './work-error';
+
+export { WorkError };
 
 const toPosix = (p: string) => p.split(path.sep).join('/');
 

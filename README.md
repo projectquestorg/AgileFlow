@@ -136,7 +136,7 @@ Every command takes `--json`; `agileflow work list --ready --json` gives agent o
 | `reviewing-story`           | auto   | Check an implementation against its story, criterion by criterion. |
 | `recording-decisions`       | auto   | Record a decision (context, decision, consequences) in Work or your ADR directory. |
 
-Packs are named collections: `core` (the first four plus `resolving-conflicts`), `github` (PR workflows, need `gh`), `communication` (the manual skills), `agile` (the Agile Work skills). `agileflow init --yes` installs `core`; `agileflow work init` offers `agile`.
+Packs are named collections: `core` (the first four plus `resolving-conflicts`), `github` (PR workflows, need `gh`), `communication` (the manual skills), `agile` (the Agile Work skills), and the opt-in `engineering` pack (`writing-tests`, `refactoring-safely`, `writing-commits`, `reviewing-security`, `profiling-performance`, `planning-migrations`; add it with `agileflow add @agileflow/engineering`). `agileflow init --yes` installs `core`; `agileflow work init` offers `agile`.
 
 Skills also come from anywhere else:
 

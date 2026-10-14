@@ -1,0 +1,9 @@
+name: implement-story-does-not-create-epic
+skill: creating-epics
+fixture: agile-app
+prompt: |
+  Pick up STORY-R3N7M2QA and implement it.
+invocation: implicit
+neighbor: working-story
+assert:
+  shouldActivate: false

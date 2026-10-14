@@ -16,6 +16,8 @@ import {
 } from '@agileflow/core';
 import { decodeBundle, IntegrityError, verifyIntegrity } from './integrity';
 import { OFFICIAL_PINS } from './official-pins';
+import { SignatureError, SignedRootSchema, updateRoot, verifySnapshot, type RootMeta, type Signed, type SnapshotMeta } from './signing';
+import { TRUSTED_ROOT } from './trust-root';
 
 /** Official static registry, served from the AgileFlow repository. */
 export const DEFAULT_REGISTRY = 'https://raw.githubusercontent.com/projectquestorg/AgileFlow/main/registry';
@@ -48,6 +50,15 @@ export const RegistryVersionSchema = z.object({
     license: z.string().optional(),
     /** Agent Skills `compatibility` note from SKILL.md frontmatter, when declared. */
     compatibility: z.string().optional(),
+    /** Eval evidence published with this version (absent in older versions). */
+    evals: z
+      .object({
+        scenarios: z.number().int().nonnegative(),
+        lastRun: z
+          .object({ passRate: z.number().min(0).max(1), runs: z.number().int().positive(), date: z.string(), provider: z.string() })
+          .optional(),
+      })
+      .optional(),
   }),
   compatibility: z.object({ agentSkills: z.boolean(), bundleFormat: z.number().int().positive() }),
 });
@@ -104,7 +115,16 @@ export interface RegistryClientOptions {
   timeoutMs?: number;
   /** Known-good integrities (defaults to the pins shipped with this CLI). */
   pins?: Record<string, Record<string, string>>;
+  /** Registry trust root (defaults to the one pinned in this CLI; null: none). */
+  trustRoot?: Signed<RootMeta> | null;
+  /** Current time for expiry checks (tests). */
+  now?: () => Date;
 }
+
+/** Outcome of checking the registry's signed metadata. */
+export type SignedStatus =
+  | { status: 'verified'; root: number; snapshot: SnapshotMeta; manifest: RegistryManifest }
+  | { status: 'unsigned'; reason: string };
 
 /**
  * Client for a static registry laid out as:
@@ -124,6 +144,8 @@ export class RegistryClient {
   readonly base: string;
   private readonly memo = new Map<string, Promise<unknown>>();
   private readonly pins: Record<string, Record<string, string>>;
+  private readonly trustRoot: Signed<RootMeta> | null;
+  private signed: Promise<SignedStatus> | null = null;
 
   constructor(
     location: string,
@@ -132,6 +154,7 @@ export class RegistryClient {
   ) {
     this.base = normalizeLocation(location, ctx.cwd);
     this.pins = options.pins ?? OFFICIAL_PINS;
+    this.trustRoot = options.trustRoot === undefined ? TRUSTED_ROOT : options.trustRoot;
     if (/^http:\/\//i.test(this.base) && !isLoopback(this.base) && !insecure(ctx.env)) {
       throw new RegistryError(`Refusing plain-http registry ${this.base}`, [
         'Use an https:// URL or a local directory.',
@@ -193,9 +216,16 @@ export class RegistryClient {
         ]);
         continue;
       }
-      // A redirect may never downgrade to plain http.
+      // A redirect may never downgrade to plain http, and may not hand the
+      // registry's unsigned documents over to another host.
       if (res.url && /^http:\/\//i.test(res.url) && !isLoopback(res.url) && !insecure(this.ctx.env)) {
         throw new RegistryError(`Registry redirected ${url} to insecure ${res.url}`);
+      }
+      if (res.url && !sameOrigin(res.url, url) && !crossHostAllowed(this.ctx.env)) {
+        throw new RegistryError(`Registry redirected ${url} to another host (${res.url})`, [
+          'Point AgileFlow at the final registry URL instead.',
+          'To follow cross-host redirects anyway, set AGILEFLOW_ALLOW_REDIRECTS=1.',
+        ]);
       }
       if (res.status === 404) return null;
       if (res.status === 403 || res.status === 429) {
@@ -315,6 +345,84 @@ export class RegistryClient {
     }
   }
 
+  /**
+   * Signatures are required for the official registry once this CLI pins a
+   * trust root. A registry the user points AgileFlow at (a mirror, a local
+   * build) is verified when it publishes signed metadata, and required to
+   * with AGILEFLOW_REQUIRE_SIGNED=1.
+   */
+  get signaturesRequired(): boolean {
+    if (!this.trustRoot) return false;
+    const flag = this.ctx.env.AGILEFLOW_REQUIRE_SIGNED;
+    return this.base === DEFAULT_REGISTRY || flag === '1' || flag === 'true';
+  }
+
+  private stateDir(): string {
+    return path.join(this.ctx.cacheDir, 'registry', sha256Hex(this.base).slice(0, 16));
+  }
+
+  /** Verify the root chain, the snapshot signature, freshness, and the manifest bytes it binds. */
+  signedMetadata(): Promise<SignedStatus> {
+    this.signed ??= this.loadSigned();
+    this.signed.catch(() => (this.signed = null));
+    return this.signed;
+  }
+
+  private async loadSigned(): Promise<SignedStatus> {
+    if (!this.trustRoot) return { status: 'unsigned', reason: 'this AgileFlow release pins no registry trust root' };
+    const readJson = async (rel: string): Promise<unknown | null> => {
+      const buf = await this.fetchBytes(this.resolveUrl(rel));
+      if (!buf) return null;
+      try {
+        return JSON.parse(buf.toString('utf8'));
+      } catch {
+        throw new SignatureError(`Registry returned invalid JSON for ${rel}`);
+      }
+    };
+    const snapshotRaw = await readJson('v1/snapshot.json');
+    if (snapshotRaw === null) {
+      if (this.signaturesRequired) {
+        throw new SignatureError(`Registry ${this.base} publishes no signed snapshot (v1/snapshot.json)`, [
+          'The official registry must be signed; this looks like a tampered or incomplete mirror.',
+        ]);
+      }
+      return { status: 'unsigned', reason: 'the registry publishes no signed snapshot' };
+    }
+    const now = this.options.now?.() ?? new Date();
+    // Start from the newest root this machine already verified, so a registry
+    // cannot hide a key rotation by serving an older chain.
+    const rootFile = path.join(this.stateDir(), 'trusted-root.json');
+    let start = this.trustRoot;
+    try {
+      const cached = SignedRootSchema.parse(JSON.parse(await fs.promises.readFile(rootFile, 'utf8')));
+      if (cached.signed.version > start.signed.version) start = cached;
+    } catch {
+      // no cached root yet
+    }
+    const root = await updateRoot(start, (n) => readJson(`v1/root/${n}.json`), now);
+    const manifestBytes = await this.fetchBytes(this.resolveUrl('v1/manifest.json'));
+    if (!manifestBytes) throw new SignatureError(`Registry ${this.base} has a signed snapshot but no manifest`);
+    const versionFile = path.join(this.stateDir(), 'snapshot-version');
+    const lastSeen = Number((await fs.promises.readFile(versionFile, 'utf8').catch(() => '')).trim()) || undefined;
+    const snapshot = verifySnapshot(root.signed, snapshotRaw, manifestBytes, { lastSeen, now });
+    const parsed = RegistryManifestSchema.safeParse(JSON.parse(manifestBytes.toString('utf8')));
+    if (!parsed.success) throw new RegistryError(`Registry manifest is malformed: ${formatZodError(parsed.error)}`);
+    if (root.signed.version > this.trustRoot.signed.version) await writeFileAtomic(rootFile, JSON.stringify(root)).catch(() => undefined);
+    if (!lastSeen || snapshot.version > lastSeen) await writeFileAtomic(versionFile, String(snapshot.version)).catch(() => undefined);
+    return { status: 'verified', root: root.signed.version, snapshot, manifest: parsed.data };
+  }
+
+  /** Official packages must appear in the signed manifest with exactly this integrity. */
+  private async checkSigned(meta: RegistryVersion): Promise<void> {
+    if (!this.trustRoot || !meta.name.startsWith('@agileflow/')) return;
+    const signed = await this.signedMetadata();
+    if (signed.status !== 'verified') return;
+    const published = signed.manifest.packages[meta.name]?.[meta.version];
+    if (published !== meta.integrity) {
+      throw new SignatureError(`${meta.name}@${meta.version} is not in the registry's signed manifest${published ? ' with this integrity' : ''}`);
+    }
+  }
+
   /** True when this CLI release pins `name@version`. */
   isPinned(name: string, version: string): boolean {
     return !!this.pins[name]?.[version];
@@ -333,7 +441,7 @@ export class RegistryClient {
     if (expectedIntegrity && expectedIntegrity !== meta.integrity) {
       throw new IntegrityError(`${meta.name}@${meta.version} (registry vs lockfile)`, expectedIntegrity, meta.integrity);
     }
-    const cached = await readCachedBundle(this.ctx, meta.name, meta.version);
+    const cached = await readCachedBundle(this.ctx, meta.name, meta.version, this.base);
     if (cached) {
       try {
         verifyIntegrity(`${meta.name}@${meta.version} (cache)`, cached, meta.integrity);
@@ -342,6 +450,8 @@ export class RegistryClient {
         // Corrupt or stale cache entry; fall through to a fresh download.
       }
     }
+    // Cached bundles were verified when downloaded; new ones need the signature check.
+    await this.checkSigned(meta);
     const url = this.bundleUrl(meta.url);
     let bytes = await this.fetchBytes(url);
     if (!bytes) {
@@ -360,7 +470,7 @@ export class RegistryClient {
       throw new RegistryError(`Bundle at ${url} contains ${bundle.name}@${bundle.version}, expected ${meta.name}@${meta.version}`);
     }
     verifyIntegrity(`${meta.name}@${meta.version}`, bundle.tree, meta.integrity);
-    await writeFileAtomic(cachedBundlePath(this.ctx, meta.name, meta.version), bytes);
+    await writeFileAtomic(cachedBundlePath(this.ctx, meta.name, meta.version, this.base), bytes);
     return bundle.tree;
   }
 }
@@ -379,6 +489,18 @@ function insecure(env: Record<string, string | undefined>): boolean {
   return env.AGILEFLOW_ALLOW_INSECURE === '1' || env.AGILEFLOW_ALLOW_INSECURE === 'true';
 }
 
+function crossHostAllowed(env: Record<string, string | undefined>): boolean {
+  return env.AGILEFLOW_ALLOW_REDIRECTS === '1' || env.AGILEFLOW_ALLOW_REDIRECTS === 'true';
+}
+
+function sameOrigin(a: string, b: string): boolean {
+  try {
+    return new URL(a).origin === new URL(b).origin;
+  } catch {
+    return false;
+  }
+}
+
 function isLoopback(url: string): boolean {
   try {
     const host = new URL(url).hostname;
@@ -388,16 +510,26 @@ function isLoopback(url: string): boolean {
   }
 }
 
-export function cachedBundlePath(ctx: Context, name: string, version: string): string {
+/**
+ * Package cache location for `name@version` downloaded from `registry` (a
+ * RegistryClient `base`). Each registry has its own cache, so a registry a
+ * repository once pointed at can never supply bytes later read as coming
+ * from another one (for example the official registry).
+ */
+export function cachedBundlePath(ctx: Context, name: string, version: string, registry: string): string {
   if (!isScopedName(name) || semver.valid(version) !== version) {
     throw new RegistryError(`Invalid package ${name}@${version}`);
   }
-  return path.join(ctx.cacheDir, 'packages', ...name.split('/'), version, 'bundle.json');
+  const root =
+    registry === DEFAULT_REGISTRY
+      ? path.join(ctx.cacheDir, 'packages')
+      : path.join(ctx.cacheDir, 'packages', '_registry', sha256Hex(registry).slice(0, 16));
+  return path.join(root, ...name.split('/'), version, 'bundle.json');
 }
 
-export async function readCachedBundle(ctx: Context, name: string, version: string): Promise<TreeFile[] | null> {
+export async function readCachedBundle(ctx: Context, name: string, version: string, registry: string): Promise<TreeFile[] | null> {
   try {
-    const bundle = decodeBundle(await fs.promises.readFile(cachedBundlePath(ctx, name, version)));
+    const bundle = decodeBundle(await fs.promises.readFile(cachedBundlePath(ctx, name, version, registry)));
     if (bundle.name !== name || bundle.version !== version) return null;
     return bundle.tree;
   } catch {

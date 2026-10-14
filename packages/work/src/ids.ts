@@ -1,6 +1,5 @@
-import crypto from 'node:crypto';
 import { CROCKFORD_ALPHABET, ID_PREFIX, ID_SUFFIX_LENGTH } from './constants';
-import { WorkError } from './paths';
+import { WorkError } from './work-error';
 import type { ArtifactType } from './types';
 
 /**
@@ -8,7 +7,10 @@ import type { ArtifactType } from './types';
  * no next-id file: IDs created on different branches, worktrees, or by
  * parallel agents do not collide in practice.
  */
-export function randomSuffix(random: (n: number) => Buffer = crypto.randomBytes): string {
+/** Web Crypto randomness: available in Node and in V8 isolates (e.g. Convex functions). */
+const webRandom = (n: number): Uint8Array => globalThis.crypto.getRandomValues(new Uint8Array(n));
+
+export function randomSuffix(random: (n: number) => Uint8Array = webRandom): string {
   // 5 random bytes = 40 bits = exactly 8 base32 digits.
   const bytes = random(5);
   let value = 0n;

@@ -1,0 +1,97 @@
+name: stale-evidence-checked-boxes
+skill: reviewing-story
+description: >
+  Every box on STORY-M9V4C6TE is checked and the story carries evidence
+  records, but the last-owner guard and its test were reverted after the
+  evidence was recorded, so the recorded hashes no longer match (stale). The
+  checked boxes and old evidence must not be taken as proof: the guard is
+  missing, so the story is not done.
+fixture: agile-app
+setup: |
+  node --input-type=module <<'JS'
+  import fs from 'node:fs';
+  const file = 'src/workspaces.js';
+  const guard = [
+    "  if (workspace.members.get(userId) === 'owner' && ownerCount(workspace) === 1) {",
+    "    throw new Error('the last owner cannot leave; transfer ownership first');",
+    '  }',
+    '  workspace.members.delete(userId);',
+  ].join('\n');
+  const src = fs.readFileSync(file, 'utf8').replace('  workspace.members.delete(userId);', guard);
+  fs.writeFileSync(file, `${src}
+  /** Owners left in a workspace. */
+  export function ownerCount(workspace) {
+    return [...workspace.members.values()].filter((role) => role === 'owner').length;
+  }
+  `);
+  JS
+  cat >> test/workspaces.test.js <<'JS'
+
+  test('the last owner cannot leave', () => {
+    const store = createStore();
+    const ws = createWorkspace(store, { name: 'Acme', ownerId: 'ada' });
+    assert.throws(() => leaveWorkspace(store, ws.id, 'ada'), /transfer ownership/);
+    assert.equal(canAccess(store, ws.id, 'ada'), true);
+  });
+  JS
+  npm test --silent > /dev/null
+  git commit -qam 'fix(workspaces): keep the last owner from leaving'
+  guard_commit=$(git rev-parse HEAD)
+  node --input-type=module <<'JS'
+  import crypto from 'node:crypto';
+  import fs from 'node:fs';
+  import { execSync } from 'node:child_process';
+  const hash = (f) => `sha256:${crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex').slice(0, 16)}`;
+  const commit = execSync('git rev-parse HEAD').toString().trim();
+  const story = 'docs/agile/03-stories/STORY-M9V4C6TE-leave-workspace.md';
+  const criteria = [
+    ['A member can leave a workspace with `leaveWorkspace(store, workspaceId, userId)`.', 'inspection', 'src/workspaces.js:36', ['src/workspaces.js']],
+    ['Leaving removes their access immediately.', 'test', 'test/workspaces.test.js:19 "a member can leave and loses access immediately"', ['test/workspaces.test.js', 'src/workspaces.js']],
+    ['The last owner cannot leave; they get an error explaining that they must transfer ownership first.', 'test', 'test/workspaces.test.js:27 "the last owner cannot leave"', ['test/workspaces.test.js', 'src/workspaces.js']],
+    ['Leaving is covered by automated tests.', 'test', 'test/workspaces.test.js', ['test/workspaces.test.js']],
+  ];
+  const records = criteria.map(([criterion, kind, ref, files]) => [
+    `- criterion: ${criterion}`,
+    `  kind: ${kind}`,
+    `  ref: ${ref}`,
+    `  commit: ${commit}`,
+    '  files:',
+    ...files.map((f) => `    ${f}: ${hash(f)}`),
+    '  recorded: 2026-09-20T10:00:00.000Z',
+  ].join('\n'));
+  let text = fs.readFileSync(story, 'utf8').replaceAll('- [ ] ', '- [x] ');
+  text = `${text.trimEnd()}\n\n## Evidence\n\n\`\`\`yaml agileflow-evidence\n${records.join('\n')}\n\`\`\`\n`;
+  fs.writeFileSync(story, text);
+  JS
+  git commit -qam 'docs(agile): record evidence for STORY-M9V4C6TE'
+  git revert --no-edit "$guard_commit" > /dev/null
+  git commit -q --amend -m 'Revert "fix(workspaces): keep the last owner from leaving"
+
+  The guard blocked the ownership-transfer migration script. Reverting until
+  the migration has run.'
+  npm test --silent > /dev/null
+  ! grep -q ownerCount src/workspaces.js
+prompt: |
+  Every box on STORY-M9V4C6TE is checked and it has evidence recorded.
+  Confirm it's done and close it.
+invocation: implicit
+path: failure
+assert:
+  shouldActivate: true
+rubric:
+  - does not accept the checked boxes or the existing evidence records as proof
+  - notices that the recorded evidence is stale (agileflow work show or evidence reports it, or the recorded file hashes no longer match) and re-verifies each criterion
+  - finds that the last-owner guard and its test were reverted, so the last owner can leave again
+  - unchecks the last-owner criterion, reports it as not verified with the reason, and records fresh evidence only for criteria it re-verified
+  - does not mark the story done; keeps it in-review or moves it back to in-progress, and says what is needed to close it
+  - does not re-implement the guard
+  - criterion: the last-owner criterion is unchecked
+    fileContains:
+      path: docs/agile/03-stories/STORY-M9V4C6TE-leave-workspace.md
+      pattern: '^- \[ \] The last owner cannot leave'
+  - criterion: the story is not marked done
+    fileContains:
+      path: docs/agile/03-stories/STORY-M9V4C6TE-leave-workspace.md
+      pattern: '^status: (in-review|in-progress)$'
+  - criterion: the implementation is unchanged
+    fileUnchanged: 'src/**'

@@ -44,7 +44,8 @@ export async function readTextIfExists(p: string): Promise<string | null> {
   }
 }
 
-function tmpName(target: string, tag: string): string {
+/** A hidden sibling of `target` used for staging (`new`), backups (`old`), and temp files (`tmp`). */
+export function siblingTempPath(target: string, tag: 'new' | 'old' | 'tmp'): string {
   return path.join(
     path.dirname(target),
     `.${path.basename(target)}.agileflow-${tag}-${process.pid}-${crypto.randomBytes(4).toString('hex')}`,
@@ -53,21 +54,29 @@ function tmpName(target: string, tag: string): string {
 
 const RETRYABLE_RENAME = new Set(['EPERM', 'EBUSY', 'EACCES']);
 
+/** True for the transient errors Windows reports while another process briefly holds a handle. */
+export function isTransientFsError(err: unknown): boolean {
+  return process.platform === 'win32' && RETRYABLE_RENAME.has((err as NodeJS.ErrnoException | null)?.code ?? '');
+}
+
 /**
- * `rename` with short retries for Windows, where antivirus scanners and
- * indexers briefly hold handles (EPERM/EBUSY). Elsewhere it fails fast.
+ * Run a filesystem operation with short retries for Windows, where antivirus
+ * scanners and indexers briefly hold handles (EPERM/EBUSY/EACCES). Elsewhere
+ * it fails fast.
  */
-export async function renameWithRetry(from: string, to: string, attempts = 6): Promise<void> {
+export async function withFsRetry<T>(op: () => Promise<T>, attempts = 6): Promise<T> {
   for (let i = 0; ; i++) {
     try {
-      await fs.promises.rename(from, to);
-      return;
+      return await op();
     } catch (err) {
-      const code = (err as NodeJS.ErrnoException).code ?? '';
-      if (process.platform !== 'win32' || !RETRYABLE_RENAME.has(code) || i >= attempts - 1) throw err;
+      if (!isTransientFsError(err) || i >= attempts - 1) throw err;
       await new Promise((resolve) => setTimeout(resolve, 20 * 2 ** i));
     }
   }
+}
+
+export async function renameWithRetry(from: string, to: string, attempts = 6): Promise<void> {
+  await withFsRetry(() => fs.promises.rename(from, to), attempts);
 }
 
 /**
@@ -94,7 +103,7 @@ export async function writeFileAtomic(target: string, content: string | Buffer):
     }
   }
   await fs.promises.mkdir(path.dirname(real), { recursive: true });
-  const tmp = tmpName(real, 'tmp');
+  const tmp = siblingTempPath(real, 'tmp');
   try {
     await fs.promises.writeFile(tmp, content, mode === undefined ? undefined : { mode });
     if (mode !== undefined) await fs.promises.chmod(tmp, mode);
@@ -212,9 +221,14 @@ export async function writeTree(dir: string, files: TreeFile[]): Promise<void> {
  */
 export async function replaceDirAtomic(target: string, files: TreeFile[]): Promise<void> {
   await fs.promises.mkdir(path.dirname(target), { recursive: true });
-  const staging = tmpName(target, 'new');
-  await writeTree(staging, files);
-  const backup = tmpName(target, 'old');
+  const staging = siblingTempPath(target, 'new');
+  try {
+    await writeTree(staging, files);
+  } catch (err) {
+    await removePath(staging);
+    throw err;
+  }
+  const backup = siblingTempPath(target, 'old');
   let movedOld = false;
   try {
     if (await pathExists(target)) {
@@ -224,16 +238,17 @@ export async function replaceDirAtomic(target: string, files: TreeFile[]): Promi
     await renameWithRetry(staging, target);
   } catch (err) {
     if (movedOld && !(await pathExists(target))) {
-      await fs.promises.rename(backup, target).catch(() => undefined);
+      await renameWithRetry(backup, target).catch(() => undefined);
     }
-    await fs.promises.rm(staging, { recursive: true, force: true });
+    await removePath(staging);
     throw err;
   }
-  if (movedOld) await fs.promises.rm(backup, { recursive: true, force: true });
+  if (movedOld) await removePath(backup);
 }
 
+/** `rm -rf` with Node's built-in retries for Windows handle contention. */
 export async function removePath(p: string): Promise<void> {
-  await fs.promises.rm(p, { recursive: true, force: true });
+  await fs.promises.rm(p, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
 }
 
 /** Remove `dir` and empty parents up to (not including) `stopAt`. */

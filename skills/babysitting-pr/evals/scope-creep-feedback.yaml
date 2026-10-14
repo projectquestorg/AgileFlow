@@ -96,6 +96,7 @@ prompt: |
   CI and reviewers throw at it. One reviewer also asked me to redo the whole
   settings page while I'm at it.
 invocation: implicit
+path: blocked
 assert:
   shouldActivate: true
 rubric:

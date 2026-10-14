@@ -5,7 +5,8 @@
   "description": "AgileFlow monorepo: portable workflows for coding agents (CLI, skills, registry, website, docs)",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "apps/cloud/dashboard"
   ],
   "scripts": {
     "dev:website": "npm run dev -w apps/website",
@@ -19,6 +20,7 @@
     "test:conformance": "AGILEFLOW_CONFORMANCE=1 vitest run apps/cli/test/conformance",
     "registry:build": "npm run registry:build -w apps/cli",
     "registry:check": "npm run registry:check -w apps/cli",
+    "registry:sign": "npm run registry:sign -w apps/cli --",
     "schemas:build": "npm run schemas:build -w apps/cli",
     "release-gate": "npm run release-gate -w apps/cli",
     "prepare": "husky || true"
@@ -30,8 +32,8 @@
   "author": "AgileFlow Contributors",
   "license": "MIT",
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
   },
   "devDependencies": {
     "husky": "^9.1.7",

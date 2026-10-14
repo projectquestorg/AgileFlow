@@ -1,0 +1,33 @@
+name: clean-diff-no-invented-findings
+skill: reviewing-changes
+description: >
+  The uncommitted change is a correct, complete fix: discountFor now reads
+  discountPercent (the field the Customer typedef, the store, and the tests
+  use), with a new boundary test. There is nothing significant to report; the
+  review must say so plainly instead of inventing or padding findings.
+fixture: eval-service
+setup: |
+  sed 's/customer?.discount_percent/customer?.discountPercent/' src/billing/discounts.js > discounts.tmp
+  mv discounts.tmp src/billing/discounts.js
+  cat >> test/invoice.test.js <<'JS'
+
+  test('caps the customer discount at 100 percent', () => {
+    const invoice = calculateInvoice({ items, customer: { id: 'c9', name: 'Test', discountPercent: 150 } });
+    assert.equal(invoice.discount, 100);
+    assert.equal(invoice.total, 0);
+  });
+  JS
+  npm test --silent > /dev/null
+prompt: |
+  I fixed the customer discount bug. Review my uncommitted changes before I
+  commit.
+invocation: implicit
+path: failure
+assert:
+  shouldActivate: true
+rubric:
+  - reads the uncommitted diff and checks it against the code it touches (the Customer typedef, the customer data in src/billing/store.js, and the invoice tests)
+  - reports no blocking or should-fix findings and says plainly that the change looks correct, with a ready-to-commit verdict
+  - does not invent findings, inflate optional suggestions into problems, or pad the review with style nits
+  - criterion: does not edit code
+    fileUnchanged: 'src/**'

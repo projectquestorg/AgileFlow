@@ -1,6 +1,6 @@
 import type { TreeFile } from './fs';
 import { parseSidecar, parseSkillMarkdown, SIDECAR_FILE, SKILL_FILE } from './skill';
-import { EVALS_DIR, MANAGED_NOTICE_PREFIX } from './render';
+import { EVALS_DIR, managedNotice } from './render';
 
 /**
  * Static review of a skill package before it reaches an agent.
@@ -188,10 +188,20 @@ export function scanSkill(files: TreeFile[]): RiskFinding[] {
         add({ severity: 'medium', rule: 'encoded-payload', file: file.path, line: i + 1, message: 'contains a long encoded blob' });
       }
     });
+    // Only the exact notice AgileFlow renders is exempt; a look-alike can carry instructions.
+    let ownNotice: string | null = null;
+    if (file.path === SKILL_FILE) {
+      try {
+        const name = parseSkillMarkdown(text).name;
+        ownNotice = name ? managedNotice(name) : null;
+      } catch {
+        ownNotice = null;
+      }
+    }
     if (file.path === SKILL_FILE || file.path.endsWith('.md')) {
       for (const m of text.matchAll(HTML_COMMENT_RE)) {
         const body = m[1] ?? '';
-        if (m[0].startsWith(MANAGED_NOTICE_PREFIX) || !/[a-z]{3,}\s+[a-z]{3,}/i.test(body)) continue;
+        if (m[0] === ownNotice || !/[a-z]{3,}\s+[a-z]{3,}/i.test(body)) continue;
         const line = text.slice(0, m.index).split(/\r?\n/).length;
         add({
           severity: 'medium',
@@ -208,6 +218,14 @@ export function scanSkill(files: TreeFile[]): RiskFinding[] {
         const fm = parseSkillMarkdown(text).frontmatter;
         const tools = fm['allowed-tools'];
         const list = Array.isArray(tools) ? tools.map(String) : typeof tools === 'string' ? tools.split(/[\s,]+/) : [];
+        if (fm.hooks !== undefined) {
+          add({
+            severity: 'high',
+            rule: 'hooks',
+            file: file.path,
+            message: 'declares hooks: commands the provider runs automatically, outside the agent\'s approval flow',
+          });
+        }
         const broad = list.filter((t) => /^(?:Bash|Shell|shell|bash)(?:\(\*\))?$/.test(t.trim()));
         if (broad.length) {
           add({
