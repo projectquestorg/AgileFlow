@@ -50,7 +50,7 @@ jobs:
       # apps/docs has a pre-existing peer-dependency conflict.
       - name: Install workspace dependencies (from the lockfile)
         run: npm ci --legacy-peer-deps --no-audit --no-fund
-      - name: Typecheck
+      - name: Typecheck (tsc-rs)
         run: npm run typecheck
       - name: Unit and integration tests
         run: npx vitest run
@@ -128,7 +128,7 @@ jobs:
           cache: npm
       - name: Install workspace dependencies (from the lockfile)
         run: npm ci --legacy-peer-deps --no-audit --no-fund
-      - name: Typecheck
+      - name: Typecheck (tsc-rs)
         run: npm run typecheck
       - name: Core safety tests
         run: npx vitest run packages/core/test/safety.test.ts packages/work/tests
