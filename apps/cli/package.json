@@ -38,7 +38,7 @@
   "scripts": {
     "start": "node bin/agileflow.js",
     "build": "node scripts/build.mjs",
-    "typecheck": "tsc -p ../../tsconfig.json",
+    "typecheck": "tsc-rs --noEmit -p ../../tsconfig.json",
     "test": "vitest run --config ../../vitest.config.ts",
     "test:watch": "vitest --config ../../vitest.config.ts",
     "registry:build": "tsx scripts/build-registry.ts",
